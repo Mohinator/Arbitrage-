@@ -174,66 +174,109 @@ function ManagerPage({ manager, onLogout }) {
 
   const genAutomation = () => {
     const preview = [];
+
+    // Group active non-excluded players by platform
     const activePlayers = players.filter(p => p.status==="Да" && !excludedIds.has(p.id));
+    const byPlatform = {};
+    activePlayers.forEach(p => {
+      if (!byPlatform[p.platform_id]) byPlatform[p.platform_id] = [];
+      byPlatform[p.platform_id].push(p);
+    });
 
-    activePlayers.forEach(player => {
-      const plat = platforms.find(p => p.id===player.platform_id);
+    Object.entries(byPlatform).forEach(([platformId, platPlayers]) => {
+      const plat = platforms.find(p => p.id===platformId);
       if (!plat) return;
-      const existingRds = getPlayerRds(player.id);
-      const existingCount = existingRds.length;
-      if (existingCount >= 7) return;
 
-      const rdPlan = [];
-      const depDate = new Date(player.date);
       const minDep = plat.min_deposit || 10;
       const targetSch = plat.target_avg_check;
+      const playerCount = platPlayers.length;
 
-      // RD1 within 3 days of deposit
-      let currentAmount = calcEffectiveTotal(player);
-      let currentCount = existingCount > 0 ? 1 : 1; // player counts as 1
+      // Current total across all platform players
+      const currentTotal = platPlayers.reduce((s, p) => s + calcEffectiveTotal(p), 0);
 
-      // Generate RDs until SCH target is reached or max 7 RDs
+      // How much we need to add in total across all players
+      const needed = Math.max(0, targetSch * playerCount - currentTotal);
+
+      if (needed <= 0) return;
+
+      // Distribute needed amount randomly across players
+      // Each player gets random share, respecting max 9 RDs
+      const playerPlans = platPlayers.map(player => {
+        const existingRds = getPlayerRds(player.id);
+        return { player, existingRds, slotsLeft: 9 - existingRds.length, rdPlan: [] };
+      }).filter(p => p.slotsLeft > 0);
+
+      if (playerPlans.length === 0) return;
+
+      // Distribute needed amount - generate until platform SCH is met
       let attempts = 0;
-      const MAX_ATTEMPTS = 1000;
-      let tempRds = [];
-      let tempTotal = Number(player.deposit) + existingRds.reduce((s,r) => s+Number(r.amount), 0);
+      const MAX_ATTEMPTS = 500;
+      let bestPlans = null;
+      let bestDiff = Infinity;
 
-      while (tempTotal / 1 < targetSch && tempRds.length + existingCount < 7 && attempts < MAX_ATTEMPTS) {
+      while (attempts < MAX_ATTEMPTS) {
         attempts++;
-        tempRds = [];
-        tempTotal = Number(player.deposit) + existingRds.reduce((s,r) => s+Number(r.amount), 0);
-        const slotsLeft = 7 - existingCount;
-        for (let i = 0; i < slotsLeft; i++) {
-          const amt = genRdAmount(minDep);
-          tempRds.push(amt);
-          tempTotal += amt;
-          if (tempTotal / 1 >= targetSch) break;
+
+        // Reset plans
+        playerPlans.forEach(pp => pp.rdPlan = []);
+
+        let remaining = needed;
+        let totalAdded = 0;
+
+        // Distribute remaining across players randomly
+        for (let round = 0; round < 9 && remaining > 0; round++) {
+          for (const pp of playerPlans) {
+            if (pp.rdPlan.length >= pp.slotsLeft || remaining <= 0) continue;
+            const amt = genRdAmount(minDep);
+            pp.rdPlan.push(amt);
+            totalAdded += amt;
+            remaining -= amt;
+          }
+        }
+
+        const newTotal = currentTotal + totalAdded;
+        const newSch = newTotal / playerCount;
+        const diff = Math.abs(newSch - targetSch);
+
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestPlans = playerPlans.map(pp => ({ ...pp, rdPlan: [...pp.rdPlan] }));
+          if (newSch >= targetSch && diff < 2) break;
         }
       }
 
-      // Assign dates - RD1 within 3 days, rest spread over month
-      const monthEnd = new Date(depDate.getFullYear(), depDate.getMonth()+1, 0);
-      const daysLeft = Math.max(7, Math.floor((monthEnd - depDate) / (1000*60*60*24)));
-      const rd1Date = new Date(depDate);
-      rd1Date.setDate(rd1Date.getDate() + 1 + Math.floor(Math.random() * 3));
+      if (!bestPlans) return;
 
-      tempRds.forEach((amt, i) => {
-        let rdDate;
-        if (i === 0) {
-          rdDate = rd1Date;
-        } else {
-          const spread = Math.floor(daysLeft / (tempRds.length));
-          rdDate = new Date(rd1Date);
-          rdDate.setDate(rdDate.getDate() + spread * i + Math.floor(Math.random() * 3 - 1));
-        }
-        rdPlan.push({
-          rd_number: existingCount + i + 1,
-          amount: amt,
-          date: rdDate.toISOString().slice(0,10),
+      // Assign dates
+      bestPlans.forEach(pp => {
+        if (pp.rdPlan.length === 0) return;
+        const depDate = new Date(pp.player.date);
+        const existingCount = pp.existingRds.length;
+        const monthEnd = new Date(depDate.getFullYear(), depDate.getMonth()+1, 0);
+        const daysInMonth = Math.max(14, Math.floor((monthEnd - depDate) / (1000*60*60*24)));
+
+        const rd1Date = new Date(depDate);
+        rd1Date.setDate(rd1Date.getDate() + 1 + Math.floor(Math.random() * 3));
+
+        const rdPlanWithDates = pp.rdPlan.map((amt, i) => {
+          let rdDate;
+          if (i === 0) {
+            rdDate = new Date(rd1Date);
+          } else {
+            const spread = Math.floor(daysInMonth / pp.rdPlan.length);
+            rdDate = new Date(rd1Date);
+            rdDate.setDate(rdDate.getDate() + spread * i + Math.floor(Math.random() * 3 - 1));
+          }
+          return {
+            rd_number: existingCount + i + 1,
+            amount: amt,
+            date: rdDate.toISOString().slice(0,10),
+          };
         });
-      });
 
-      if (rdPlan.length > 0) preview.push({ player, plat, rdPlan, total: tempTotal });
+        const playerTotal = calcEffectiveTotal(pp.player) + pp.rdPlan.reduce((s,a) => s+a, 0);
+        preview.push({ player:pp.player, plat, rdPlan:rdPlanWithDates, total:playerTotal });
+      });
     });
 
     setAutomationPreview(preview);
@@ -270,13 +313,29 @@ function ManagerPage({ manager, onLogout }) {
   const addRd = async (playerId) => {
     if (!rdForm.amount) { showToast("Введи сумму", "error"); return; }
     const rdNum = getNextRdNumber(playerId);
-    if (rdNum > 7) { showToast("Максимум 7 РД", "error"); return; }
+    if (rdNum > 9) { showToast("Максимум 9 РД", "error"); return; }
     await supabase.from("redeposits").insert({ player_id:playerId, rd_number:rdNum, amount:Number(rdForm.amount), date:rdForm.date });
     const nextRd = new Date(new Date(rdForm.date).setDate(new Date(rdForm.date).getDate()+7)).toISOString().slice(0,10);
     await supabase.from("players").update({ next_rd_date:nextRd }).eq("id", playerId);
     showToast("РД добавлен!");
     setShowAddRd(null);
     setRdForm({ amount:"", date:new Date().toISOString().slice(0,10) });
+    load();
+  };
+
+  const markRdDone = async (playerId, rdNumber, amount, date) => {
+    // Check if rd already exists as fact
+    const existing = redeposits.find(r => r.player_id===playerId && r.rd_number===rdNumber);
+    if (existing) {
+      // Already fact, open edit
+      setShowEditRd({ playerId, rdNumber, amount:existing.amount, date:existing.date });
+      return;
+    }
+    // Mark planned as done - insert as fact
+    await supabase.from("redeposits").insert({ player_id:playerId, rd_number:rdNumber, amount:Number(amount), date:date });
+    const nextRd = new Date(new Date(date).setDate(new Date(date).getDate()+7)).toISOString().slice(0,10);
+    await supabase.from("players").update({ next_rd_date:nextRd }).eq("id", playerId);
+    showToast("РД отмечен как выполненный!");
     load();
   };
 
@@ -450,14 +509,19 @@ function ManagerPage({ manager, onLogout }) {
                 <table style={{ width:"100%", borderCollapse:"collapse" }}>
                   <thead>
                     <tr style={{ background:T.thBg }}>
-                      {["Лид","Платформа","РД1","РД2","РД3","РД4","РД5","РД6","РД7","Итого","СЧ"].map(h => (
+                      {["Лид","Платформа","РД1","РД2","РД3","РД4","РД5","РД6","РД7","РД8","РД9","Итого","СЧ"].map(h => (
                         <th key={h} style={{ padding:"8px 10px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", borderBottom:`1px solid ${T.border}` }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {automationPreview.map(item => {
-                      const rdArr = Array(7).fill(null).map((_,i) => item.rdPlan.find(r=>r.rd_number===i+1)||null);
+                      const rdArr = Array(9).fill(null).map((_,i) => item.rdPlan.find(r=>r.rd_number===i+1)||null);
+                      const platPreviewPlayers = automationPreview.filter(x => x.plat.id === item.plat.id);
+                      const platTotal = platPreviewPlayers.reduce((s,x) => {
+                        const existing = players.filter(p => p.platform_id===item.plat.id&&p.status==="Да");
+                        return s;
+                      }, 0);
                       const schFact = item.total;
                       const ok = schFact >= item.plat.target_avg_check;
                       return (
@@ -538,8 +602,7 @@ function ManagerPage({ manager, onLogout }) {
             <table style={{ width:"100%", borderCollapse:"collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ ...S.th, borderRight:`2px solid #6366f1` }} colSpan={11}>МОИ ЛИДЫ</th>
-                  <th style={S.th} colSpan={9}>РАСПИСАНИЕ РД</th>
+                  <th style={S.th} colSpan={15}>МОИ ЛИДЫ</th>
                 </tr>
                 <tr>
                   <th style={S.th}></th>
@@ -548,13 +611,11 @@ function ManagerPage({ manager, onLogout }) {
                   <th style={S.th}>Имя</th>
                   <th style={S.th}>SUB18</th>
                   <th style={S.th}>Деп</th>
-                  <th style={S.rdTh}>Рд1</th><th style={S.rdTh}>Рд2</th><th style={S.rdTh}>Рд3</th><th style={S.rdTh}>Рд4</th><th style={S.rdTh}>Рд5</th><th style={S.rdTh}>Рд6</th><th style={S.rdTh}>Рд7</th>
+                  <th style={S.rdTh}>Рд1</th><th style={S.rdTh}>Рд2</th><th style={S.rdTh}>Рд3</th><th style={S.rdTh}>Рд4</th><th style={S.rdTh}>Рд5</th><th style={S.rdTh}>Рд6</th><th style={S.rdTh}>Рд7</th><th style={S.rdTh}>Рд8</th><th style={S.rdTh}>Рд9</th>
                   <th style={S.th}>Всего</th>
                   <th style={S.th}>Статус</th>
-                  <th style={{ ...S.th, borderRight:`2px solid #6366f1` }}>BLIK</th>
-                  <th style={{ ...S.th, borderRight:`2px solid #6366f1` }}>След. РД</th>
-                  <th style={S.rdTh}>Рд1</th><th style={S.rdTh}>Рд2</th><th style={S.rdTh}>Рд3</th><th style={S.rdTh}>Рд4</th><th style={S.rdTh}>Рд5</th><th style={S.rdTh}>Рд6</th><th style={S.rdTh}>Рд7</th>
-                  <th style={S.th}>Следующий РД</th>
+                  <th style={S.th}>BLIK</th>
+                  <th style={S.th}>След. РД</th>
                   <th style={S.th}>Действие</th>
                 </tr>
               </thead>
@@ -562,7 +623,7 @@ function ManagerPage({ manager, onLogout }) {
                 {filteredPlayers.map(player => {
                   const rds = getPlayerRds(player.id);
                   const planned = plannedRds[player.id] || [];
-                  const rdArr = Array(7).fill(null).map((_,i) => {
+                  const rdArr = Array(9).fill(null).map((_,i) => {
                     const fact = rds.find(r => r.rd_number===i+1);
                     const plan = planned.find(r => r.rd_number===i+1);
                     return fact ? { ...fact, isFact:true } : plan ? { ...plan, isFact:false } : null;
@@ -571,7 +632,6 @@ function ManagerPage({ manager, onLogout }) {
                   const rdStatus = getRdStatus(player);
                   const plat = platforms.find(p => p.id===player.platform_id);
                   const isExcluded = excludedIds.has(player.id);
-                  const rdDateArr = Array(7).fill("").map((_,i) => rds.find(r=>r.rd_number===i+1)?.date||"");
 
                   return (
                     <tr key={player.id} style={{ opacity:isExcluded?0.45:1 }}>
@@ -590,11 +650,21 @@ function ManagerPage({ manager, onLogout }) {
                       <td style={{ ...S.td, color:T.text, fontWeight:600 }}>{player.deposit}€</td>
                       {rdArr.map((rd,i) => {
                         const isToday = rd && !rd.isFact && rd.date===today;
+                        const rdColor = isToday ? "#f59e0b" : rd ? (rd.isFact ? T.rdFact : T.rdPlan) : T.border;
                         return (
-                          <td key={i} style={{ ...S.rdTd, color:isToday?"#f59e0b":rd?rd.isFact?T.rdFact:T.rdPlan:T.border, fontWeight:rd?.isFact?600:400, cursor:rd?.isFact?"pointer":"default" }}
-                            onClick={() => rd?.isFact && setShowEditRd({ playerId:player.id, rdNumber:rd.rd_number, amount:rd.amount, date:rd.date })}
-                            title={rd?.isFact?"Нажми чтобы изменить":undefined}>
-                            {rd ? rd.amount+"€" : "—"}
+                          <td key={i} style={{ ...S.rdTd, color:rdColor, fontWeight:rd?.isFact?600:400, cursor:rd?"pointer":"default", lineHeight:1.2 }}
+                            onClick={() => {
+                              if (!rd) return;
+                              if (rd.isFact) setShowEditRd({ playerId:player.id, rdNumber:rd.rd_number, amount:rd.amount, date:rd.date });
+                              else markRdDone(player.id, rd.rd_number, rd.amount, rd.date);
+                            }}
+                            title={rd?.isFact?"Нажми чтобы изменить":"Нажми чтобы отметить как выполненный"}>
+                            {rd ? (
+                              <div>
+                                <div>{rd.amount}€</div>
+                                <div style={{ fontSize:9, color:isToday?"#f59e0b":rd.isFact?T.muted:T.rdPlan, marginTop:1 }}>{formatDate(rd.date)}</div>
+                              </div>
+                            ) : "—"}
                           </td>
                         );
                       })}
@@ -602,22 +672,13 @@ function ManagerPage({ manager, onLogout }) {
                       <td style={S.td}>
                         <StatusBadge status={player.status} dark={dark} onClick={e => setStatusPopup({ playerId:player.id, x:e.clientX-10, y:e.clientY+8 })} />
                       </td>
-                      <td style={{ ...S.td, borderRight:`2px solid #6366f1` }}>
+                      <td style={S.td}>
                         {player.is_blik && <span style={{ background:dark?"#451a03":"#fef3c7", color:dark?"#d97706":"#92400e", padding:"2px 6px", borderRadius:4, fontSize:10, fontWeight:700 }}>BLIK</span>}
                       </td>
-                      <td style={{ ...S.td, borderRight:`2px solid #6366f1` }}>
+                      <td style={S.td}>
                         {rdStatus==="today" && <span style={{ color:"#f59e0b", fontWeight:700, fontSize:11 }}>⚠ {formatDate(player.next_rd_date)}</span>}
                         {rdStatus==="late" && <span style={{ color:"#f87171", fontWeight:700, fontSize:11 }}>⚠ {formatDate(player.next_rd_date)}</span>}
                         {rdStatus==="ok" && <span style={{ color:T.sub, fontSize:11 }}>{formatDate(player.next_rd_date)}</span>}
-                        {rdStatus==="none" && <span style={{ color:T.border, fontSize:11 }}>—</span>}
-                      </td>
-                      {rdDateArr.map((d,i) => (
-                        <td key={i} style={{ ...S.rdTd, color:d?T.sub:T.border, fontSize:10 }}>{d?formatDate(d):"—"}</td>
-                      ))}
-                      <td style={S.td}>
-                        {rdStatus==="today" && <span style={{ color:"#f59e0b", fontWeight:700, fontSize:11 }}>🔔 Сегодня</span>}
-                        {rdStatus==="late" && <span style={{ color:"#f87171", fontWeight:700, fontSize:11 }}>⚠ Просрочен</span>}
-                        {rdStatus==="ok" && <span style={{ color:dark?"#86efac":"#166534", fontSize:11 }}>{formatDate(player.next_rd_date)}</span>}
                         {rdStatus==="none" && <span style={{ color:T.border, fontSize:11 }}>—</span>}
                       </td>
                       <td style={S.td}>
