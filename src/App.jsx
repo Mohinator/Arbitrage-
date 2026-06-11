@@ -284,7 +284,9 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         draggable={!readonly} onDragStart={()=>handleDragStart(globalIdx)} onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
                         style={{ background:colorInfo.bg||"transparent" }}>
                         {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи">⠿</span></td>}
-                        {!readonly && <td style={S.td}></td>}
+                        {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
+                          <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
+                        </td>}
                         <td style={{ ...S.td,color:T.muted,fontSize:11 }}>{player.date}</td>
                         <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis" }}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,fontSize:12,fontWeight:500 }}>
