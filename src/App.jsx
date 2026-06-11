@@ -100,11 +100,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [localPlayers, setLocalPlayers] = useState(players);
   const [dragIdx, setDragIdx] = useState(null);
 
-  useEffect(() => {
-    const nulls = (players||[]).filter(p=>!p||!p.id);
-    if(nulls.length) console.warn('PlayersTable got null players:', nulls.length, redeposits?.length, plannedRds?.length);
-    setLocalPlayers((players||[]).filter(p=>p&&p.id));
-  }, [players]);
+  useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
 
   const today = new Date().toISOString().slice(0,10);
   const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
@@ -400,8 +396,6 @@ function ManagerPage({ manager, onLogout }) {
     ]);
     setPlatforms(p||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
     setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]);
-    if((rd||[]).some(r=>!r)) console.warn('NULL in redeposits!', rd);
-    if((pl||[]).some(p=>!p)) console.warn('NULL in players!', pl);
     const myGeoList=(ug||[]).map(u=>u&&u.geos).filter(g=>g&&g.id);
     setMyGeos(myGeoList);
     const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
