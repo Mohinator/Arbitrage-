@@ -234,7 +234,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
-            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={readonly?13:15}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
+            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={13}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
@@ -355,14 +355,13 @@ function ManagerPage({ manager, onLogout }) {
   const [allManagers, setAllManagers] = useState([]);
   const [geos, setGeos] = useState([]);
   const [myGeos, setMyGeos] = useState([]);
-  const [userGeos, setUserGeos] = useState([]);
   const [players, setPlayers] = useState([]);
   const [allPlayers, setAllPlayers] = useState([]); // all players in my geos
   const [redeposits, setRedeposits] = useState([]);
   const [plannedRds, setPlannedRds] = useState([]);
   const [tab, setTab] = useState("main");
   const [activeGeo, setActiveGeo] = useState(null);
-  const [viewingManager, setViewingManager] = useState({}); // { geoId: managerId }
+  const [viewingManager, setViewingManager] = useState(null); // manager id to view
   const [toast, setToast] = useState(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddRd, setShowAddRd] = useState(null);
@@ -375,16 +374,11 @@ function ManagerPage({ manager, onLogout }) {
   const [filterMonth, setFilterMonth] = useState("");
   const [leadForm, setLeadForm] = useState({ date:new Date().toISOString().slice(0,10), platform_id:"", name:"", sub18:"", deposit:"", is_blik:false, status:"Да", next_rd_date:"" });
   const [rdForm, setRdForm] = useState({ amount:"", date:new Date().toISOString().slice(0,10) });
-  const [showPlatformForm, setShowPlatformForm] = useState(false);
-  const [editingPlatform, setEditingPlatform] = useState(null);
-  const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
-  const [showGeoForm, setShowGeoForm] = useState(false);
-  const [geoForm, setGeoForm] = useState({ name:"", code:"" });
 
   const showToast = (msg, type="ok", onUndo=null) => { setToast({msg,type,onUndo}); setTimeout(()=>setToast(null),4000); };
 
   const load = async () => {
-    const [{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:ug },{ data:g },{ data:am },{ data:allUg }] = await Promise.all([
+    const [{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:ug },{ data:g },{ data:am }] = await Promise.all([
       supabase.from("platforms").select("*").eq("is_active",true).order("sort_order").order("name"),
       supabase.from("players").select("*").order("sort_order",{ascending:true,nullsFirst:false}).order("date",{ascending:false}),
       supabase.from("redeposits").select("*"),
@@ -392,14 +386,12 @@ function ManagerPage({ manager, onLogout }) {
       supabase.from("user_geos").select("*, geos(*)").eq("manager_id",manager.id),
       supabase.from("geos").select("*").eq("is_active",true),
       supabase.from("managers").select("*").eq("is_active",true),
-      supabase.from("user_geos").select("*"),
     ]);
     setPlatforms(p||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
-    setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]);
+    setGeos(g||[]); setAllManagers(am||[]);
     const myGeoList=(ug||[]).map(u=>u.geos).filter(Boolean);
     setMyGeos(myGeoList);
-    const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
-    if (myGeoList.length>0&&!activeGeo) setActiveGeo(firstGeo);
+    if (myGeoList.length>0&&!activeGeo) setActiveGeo(myGeoList[0].id);
     const myPlayers=(pl||[]).filter(p=>p.manager_id===manager.id);
     setPlayers(myPlayers);
     setAllPlayers(pl||[]);
@@ -422,36 +414,12 @@ function ManagerPage({ manager, onLogout }) {
     return Number(player.deposit)+rds.reduce((s,r)=>s+Number(r.amount),0);
   };
 
-  const openPlatformForm = (p=null) => {
-    setEditingPlatform(p);
-    setPForm(p?{name:p.name,target_avg_check:p.target_avg_check,min_deposit:p.min_deposit||"",min_deposit_blik:p.min_deposit_blik||"",cap:p.cap||"",date_added:p.date_added||"",is_active:p.is_active!==false,reset_monthly:p.reset_monthly||false,geo_id:p.geo_id||""}:{name:"",target_avg_check:"",min_deposit:"",min_deposit_blik:"",cap:"",date_added:new Date().toISOString().slice(0,10),is_active:true,reset_monthly:false,geo_id:activeGeo||""});
-    setShowPlatformForm(true);
-  };
-  const savePlatform = async () => {
-    if(!pForm.name||!pForm.target_avg_check){ showToast("Заполни поля","error"); return; }
-    const data={name:pForm.name,target_avg_check:Number(pForm.target_avg_check),min_deposit:Number(pForm.min_deposit)||0,min_deposit_blik:Number(pForm.min_deposit_blik)||null,cap:pForm.cap?Number(pForm.cap):null,date_added:pForm.date_added||null,is_active:pForm.is_active,reset_monthly:pForm.reset_monthly,geo_id:pForm.geo_id||null};
-    if(editingPlatform){ await supabase.from("platforms").update(data).eq("id",editingPlatform.id); showToast("Обновлено!"); }
-    else{ await supabase.from("platforms").insert(data); showToast("Добавлено!"); }
-    setShowPlatformForm(false); load();
-  };
-  const deletePlatform = async (id) => { if(!confirm("Удалить платформу?")) return; await supabase.from("platforms").delete().eq("id",id); load(); };
-  const createGeo = async () => {
-    if(!geoForm.name.trim()) return;
-    await supabase.from("geos").insert({name:geoForm.name.trim(),code:geoForm.code.trim().toUpperCase()});
-    showToast("Гео добавлено!"); setGeoForm({name:"",code:""}); setShowGeoForm(false); load();
-  };
-
   const genRdAmount = (minDep) => {
     const min=Number(minDep)||10,r=Math.random()*100;
     if(r<65) return Math.round(min+Math.random()*(min*0.38));
     if(r<85) return Math.round(min*1.4+Math.random()*(min*0.38));
     if(r<95) return Math.round(min*1.8+Math.random()*(min*0.18));
     return Math.round(min*2.0+Math.random()*(min*0.2));
-  };
-
-  const getMinDeposit = (plat, player) => {
-    if(player.is_blik&&plat.min_deposit_blik) return Number(plat.min_deposit_blik);
-    return Number(plat.min_deposit)||10;
   };
 
   const genAutomation = () => {
@@ -470,13 +438,7 @@ function ManagerPage({ manager, onLogout }) {
       for(let a=0;a<300;a++){
         plans.forEach(pp=>pp.amts=[]);
         let rem=needed;
-        for(let r=0;r<9&&rem>0;r++) for(const pp of plans){
-          if(pp.amts.length>=pp.slots||rem<=0) continue;
-          const amt=genRdAmount(getMinDeposit(plat,pp.player));
-          const wouldAdd=Math.min(amt,rem);
-          pp.amts.push(wouldAdd);
-          rem-=wouldAdd;
-        }
+        for(let r=0;r<9&&rem>0;r++) for(const pp of plans){ if(pp.amts.length>=pp.slots||rem<=0) continue; const amt=genRdAmount(min); pp.amts.push(amt); rem-=amt; }
         const added=plans.reduce((s,pp)=>s+pp.amts.reduce((a,b)=>a+b,0),0);
         const diff=Math.abs((curTotal+added)/cnt-target);
         if(diff<bestDiff){ bestDiff=diff; best=plans.map(pp=>({...pp,amts:[...pp.amts]})); }
@@ -525,11 +487,7 @@ function ManagerPage({ manager, onLogout }) {
   const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
   const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
-  const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms;
-
   const filteredPlayers = players.filter(p=>{
-    const plat=platforms.find(pl=>pl.id===p.platform_id);
-    if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
     if(filterPlatform&&p.platform_id!==filterPlatform) return false;
     if(filterStatus&&p.status!==filterStatus) return false;
     if(searchQuery){ const q=searchQuery.toLowerCase(); if(!p.name?.toLowerCase().includes(q)&&!p.sub18?.toLowerCase().includes(q)) return false; }
@@ -575,7 +533,7 @@ function ManagerPage({ manager, onLogout }) {
             {[["Дата","date","date"],["Продукт","platform_id","select"],["Имя лида","name","text"],["SUB18","sub18","text"],["Депозит (€)","deposit","number"]].map(([l,k,t])=>(
               <div key={k} style={{ gridColumn:k==="name"?"1/-1":undefined }}>
                 <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
-                {t==="select"?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">Выбери платформу</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                {t==="select"?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">Выбери платформу</option>{platforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
                   :<input type={t} value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}/>}
               </div>
             ))}
@@ -693,7 +651,7 @@ function ManagerPage({ manager, onLogout }) {
             <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
             <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
               <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+              {platforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
               <option value="">Все статусы</option>
@@ -711,9 +669,7 @@ function ManagerPage({ manager, onLogout }) {
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Команда</h2>
           {myGeos.length===0&&<p style={{ color:T.muted,fontSize:13 }}>Вы не назначены ни на одно гео. Обратитесь к администратору.</p>}
           {myGeos.map(geo=>{
-            const geoManagerIds=userGeos.filter(ug=>ug.geo_id===geo.id).map(ug=>ug.manager_id);
-            const geoManagers2=allManagers.filter(m=>m.id!==manager.id&&geoManagerIds.includes(m.id));
-            const viewing=viewingManager[geo.id]||null;
+            const geoManagers2=allManagers.filter(m=>m.id!==manager.id);
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
                 <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
@@ -724,9 +680,9 @@ function ManagerPage({ manager, onLogout }) {
                     const mPlayers=allPlayers.filter(p=>p.manager_id===m.id&&p.status==="Да");
                     const total=mPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
                     const avg=mPlayers.length>0?total/mPlayers.length:0;
-                    const isViewing=viewing===m.id;
+                    const isViewing=viewingManager===m.id;
                     return(
-                      <div key={m.id} onClick={()=>setViewingManager(prev=>({...prev,[geo.id]:isViewing?null:m.id}))} style={{ background:isViewing?`linear-gradient(135deg,${dark?"#1e3a5f":"#dbeafe"},${dark?"#1e2235":"#eff6ff"})`:T.surface,border:`1px solid ${isViewing?"#6366f1":T.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",transition:"all .2s",minWidth:160 }}>
+                      <div key={m.id} onClick={()=>setViewingManager(isViewing?null:m.id)} style={{ background:isViewing?`linear-gradient(135deg,${dark?"#1e3a5f":"#dbeafe"},${dark?"#1e2235":"#eff6ff"})`:T.surface,border:`1px solid ${isViewing?"#6366f1":T.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",transition:"all .2s",minWidth:160 }}>
                         <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
                           <div style={{ width:7,height:7,borderRadius:"50%",background:m.role==="team_lead"?"#14b8a6":"#6366f1" }}/>
                           <span style={{ fontWeight:700,color:T.text,fontSize:13 }}>{m.name}</span>
@@ -737,16 +693,15 @@ function ManagerPage({ manager, onLogout }) {
                       </div>
                     );
                   })}
-                  {geoManagers2.length===0&&<p style={{ color:T.muted,fontSize:13 }}>Нет других менеджеров в этом гео</p>}
                 </div>
-                {viewing&&(
+                {viewingManager&&(
                   <div>
                     <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
-                      <span style={{ color:T.text,fontWeight:600,fontSize:14 }}>{allManagers.find(m=>m.id===viewing)?.name}</span>
+                      <span style={{ color:T.text,fontWeight:600,fontSize:14 }}>{allManagers.find(m=>m.id===viewingManager)?.name}</span>
                       <span style={{ color:T.muted,fontSize:12 }}>— только просмотр</span>
                     </div>
                     <PlayersTable
-                      players={allPlayers.filter(p=>p.manager_id===viewing)}
+                      players={allPlayers.filter(p=>p.manager_id===viewingManager)}
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                       manager={manager} dark={dark}
                       readonly={!isTeamLead}
@@ -855,101 +810,31 @@ function ManagerPage({ manager, onLogout }) {
         </div>
       )}
 
-      {showGeoForm&&(
-        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.7)" }}>
-            <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>Добавить гео</h3>
-            <div style={{ marginBottom:12 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Название *</label><input value={geoForm.name} onChange={e=>setGeoForm(f=>({...f,name:e.target.value}))} placeholder="Польша" style={IS}/></div>
-            <div style={{ marginBottom:18 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Код (2 буквы)</label><input value={geoForm.code} onChange={e=>setGeoForm(f=>({...f,code:e.target.value}))} placeholder="PL" maxLength={3} style={IS}/></div>
-            <div style={{ display:"flex",gap:10 }}>
-              <button onClick={createGeo} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Добавить</button>
-              <button onClick={()=>setShowGeoForm(false)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showPlatformForm&&(
-        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.7)" }}>
-            <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>{editingPlatform?"Редактировать":"Добавить"} платформу</h3>
-            {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Мин. депозит BLIK (€)","min_deposit_blik","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
-              <div key={k} style={{ marginBottom:12 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
-            ))}
-            <div style={{ marginBottom:12 }}>
-              <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Гео</label>
-              <select value={pForm.geo_id} onChange={e=>setPForm(f=>({...f,geo_id:e.target.value}))} style={IS}>
-                <option value="">Без гео</option>
-                {geos.map(g=><option key={g.id} value={g.id}>{g.name}{g.code?` (${g.code})`:""}</option>)}
-              </select>
-            </div>
-            <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
-              {[["is_active","Платформа активна"],["reset_monthly","Сбрасывать СЧ каждый месяц"]].map(([k,l])=>(
-                <label key={k} style={{ display:"flex",alignItems:"center",gap:8,cursor:"pointer" }}>
-                  <input type="checkbox" checked={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.checked}))} style={{ width:14,height:14,accentColor:"#6366f1",cursor:"pointer" }}/>
-                  <span style={{ color:T.sub,fontSize:13 }}>{l}</span>
-                </label>
-              ))}
-            </div>
-            <div style={{ display:"flex",gap:10 }}>
-              <button onClick={savePlatform} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Сохранить</button>
-              <button onClick={()=>setShowPlatformForm(false)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* PLATFORMS */}
       {tab==="platforms"&&(
         <div style={{ padding:"16px 20px" }}>
-          {isTeamLead&&(
-            <div style={{ display:"flex",justifyContent:"flex-end",gap:8,marginBottom:16 }}>
-              <button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Гео</button>
-              <button onClick={()=>openPlatformForm()} className="btn-p" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Платформу</button>
-            </div>
-          )}
-          {myGeos.map(geo=>{
-            const geoPlatStats=platformStats.filter(p=>p.geo_id===geo.id);
-            return(
-              <div key={geo.id} style={{ marginBottom:28 }}>
-                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                  <span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"3px 12px",borderRadius:6,fontSize:13,fontWeight:700 }}>{geo.name}</span>
-                  {isTeamLead&&<button onClick={()=>{ setPForm(f=>({...f,geo_id:geo.id})); openPlatformForm(); }} className="btn-p" style={{ padding:"5px 12px",fontSize:12,borderRadius:7 }}>+ Добавить</button>}
-                </div>
-                <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-                  <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Нужно добрать",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?9:8} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
-                      {geoPlatStats.map(p=>{
-                        const ok=p.avgCheck>=p.target_avg_check;
-                        return(
-                          <tr key={p.id} className="row-hover">
-                            <td style={{ ...S.td,fontWeight:600,color:T.text }}>{p.name}</td>
-                            <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{p.date_added||"—"}</td>
-                            <td style={{ ...S.td,color:T.sub }}>{p.min_deposit||"—"}€</td>
-                            <td style={{ ...S.td,color:"#d97706" }}>{p.min_deposit_blik?p.min_deposit_blik+"€":"—"}</td>
-                            <td style={S.td}><span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.target_avg_check}€</span></td>
-                            <td style={{ ...S.td,color:T.sub }}>{p.cap||"—"}</td>
-                            <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{p.totalCount}</td>
-                            <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
-                            {isTeamLead&&<td style={{ ...S.td,display:"flex",gap:6 }}>
-                              <button onClick={()=>openPlatformForm(p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                              </button>
-                              <button onClick={()=>deletePlatform(p.id)} className="btn-g btn-danger" style={{ border:"1px solid #7f1d1d",color:"#fca5a5",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                              </button>
-                            </td>}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
+          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
+            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+              <thead><tr>{["Платформа","Гео","Дата","Мин. деп","Цель СЧ","Капа","Мои лиды","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>
+                {platformStats.map(p=>{
+                  const geo=geos.find(g=>g.id===p.geo_id);
+                  return(
+                    <tr key={p.id} className="row-hover">
+                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{p.name}</td>
+                      <td style={S.td}>{geo?<span style={{ background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600 }}>{geo.name}</span>:"—"}</td>
+                      <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{p.date_added||"—"}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{p.min_deposit||"—"}€</td>
+                      <td style={S.td}><span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.target_avg_check}€</span></td>
+                      <td style={{ ...S.td,color:T.sub }}>{p.cap||"—"}</td>
+                      <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{p.totalCount}</td>
+                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -1003,7 +888,7 @@ function AdminPage({ onLogout }) {
   const [activityLog, setActivityLog] = useState([]);
   const [tab, setTab] = useState("overview"); const [toast, setToast] = useState(null); const [newName, setNewName] = useState(""); const [newRole, setNewRole] = useState("manager");
   const [showPlatformForm, setShowPlatformForm] = useState(false); const [editingPlatform, setEditingPlatform] = useState(null);
-  const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
+  const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
   const [selectedManager, setSelectedManager] = useState(null);
   const [assigningManager, setAssigningManager] = useState(null); // manager id for geo assignment
@@ -1047,8 +932,8 @@ function AdminPage({ onLogout }) {
     load();
   };
 
-  const openPlatformForm = (p=null) => { setEditingPlatform(p); setPForm(p?{name:p.name,target_avg_check:p.target_avg_check,min_deposit:p.min_deposit||"",min_deposit_blik:p.min_deposit_blik||"",cap:p.cap||"",date_added:p.date_added||"",is_active:p.is_active!==false,reset_monthly:p.reset_monthly||false,geo_id:p.geo_id||""}:{name:"",target_avg_check:"",min_deposit:"",min_deposit_blik:"",cap:"",date_added:new Date().toISOString().slice(0,10),is_active:true,reset_monthly:false,geo_id:""}); setShowPlatformForm(true); };
-  const savePlatform = async () => { if(!pForm.name||!pForm.target_avg_check){ showToast("Заполни поля","error"); return; } const data={name:pForm.name,target_avg_check:Number(pForm.target_avg_check),min_deposit:Number(pForm.min_deposit)||0,min_deposit_blik:pForm.min_deposit_blik?Number(pForm.min_deposit_blik):null,cap:pForm.cap?Number(pForm.cap):null,date_added:pForm.date_added||null,is_active:pForm.is_active,reset_monthly:pForm.reset_monthly,geo_id:pForm.geo_id||null}; if(editingPlatform){ await supabase.from("platforms").update(data).eq("id",editingPlatform.id); showToast("Обновлено!"); }else{ await supabase.from("platforms").insert(data); showToast("Добавлено!"); } setShowPlatformForm(false); load(); };
+  const openPlatformForm = (p=null) => { setEditingPlatform(p); setPForm(p?{name:p.name,target_avg_check:p.target_avg_check,min_deposit:p.min_deposit||"",cap:p.cap||"",date_added:p.date_added||"",is_active:p.is_active!==false,reset_monthly:p.reset_monthly||false,geo_id:p.geo_id||""}:{name:"",target_avg_check:"",min_deposit:"",cap:"",date_added:new Date().toISOString().slice(0,10),is_active:true,reset_monthly:false,geo_id:""}); setShowPlatformForm(true); };
+  const savePlatform = async () => { if(!pForm.name||!pForm.target_avg_check){ showToast("Заполни поля","error"); return; } const data={name:pForm.name,target_avg_check:Number(pForm.target_avg_check),min_deposit:Number(pForm.min_deposit)||0,cap:pForm.cap?Number(pForm.cap):null,date_added:pForm.date_added||null,is_active:pForm.is_active,reset_monthly:pForm.reset_monthly,geo_id:pForm.geo_id||null}; if(editingPlatform){ await supabase.from("platforms").update(data).eq("id",editingPlatform.id); showToast("Обновлено!"); }else{ await supabase.from("platforms").insert(data); showToast("Добавлено!"); } setShowPlatformForm(false); load(); };
   const deletePlatform = async (id) => { if(!confirm("Удалить?")) return; await supabase.from("platforms").delete().eq("id",id); load(); };
 
   const getPlayerRds = (pid) => redeposits.filter(r=>r.player_id===pid);
@@ -1085,7 +970,7 @@ function AdminPage({ onLogout }) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div className="slide-in" style={{background:"#1a1d27",border:"1px solid #2d3148",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.7)"}}>
             <h3 style={{color:"#fff",marginBottom:18,fontSize:15,fontWeight:700}}>{editingPlatform?"Редактировать":"Добавить"} платформу</h3>
-            {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Мин. депозит BLIK (€)","min_deposit_blik","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
+            {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
               <div key={k} style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#64748b",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
             ))}
             <div style={{marginBottom:12}}>
