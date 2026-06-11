@@ -683,7 +683,8 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"]].map(([key,label])=>(
+        {[["main","Мои лиды"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
+          .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
       </div>
@@ -955,6 +956,43 @@ function ManagerPage({ manager, onLogout }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* OVERVIEW for teamlead */}
+      {tab==="overview"&&isTeamLead&&(
+        <div style={{ padding:"16px 20px" }}>
+          <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка по платформам</h2>
+          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
+            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+              <thead><tr>{["Платформа","Менеджер","Лидов","Сумма","СЧ факт","СЧ цель","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>
+                {geoPlatforms.map(plat=>{
+                  const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===activeGeo).map(ug=>ug.manager_id);
+                  const geoMgrs=allManagers.filter(m=>m&&geoManagerIds.includes(m.id));
+                  return geoMgrs.map(mgr=>{
+                    const mPlayers=allPlayers.filter(p=>p&&p.manager_id===mgr.id&&p.platform_id===plat.id&&p.status==="Да");
+                    if(mPlayers.length===0) return null;
+                    const total=mPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                    const avg=mPlayers.length>0?total/mPlayers.length:0;
+                    const need=Math.max(0,plat.target_avg_check*mPlayers.length-total);
+                    const ok=avg>=plat.target_avg_check;
+                    return(
+                      <tr key={`${plat.id}-${mgr.id}`} className="row-hover">
+                        <td style={{ ...S.td,fontWeight:600,color:T.text }}>{plat.name}</td>
+                        <td style={{ ...S.td,color:T.sub }}>{mgr.name}</td>
+                        <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{mPlayers.length}</td>
+                        <td style={{ ...S.td,color:T.sub }}>{total.toFixed(0)}€</td>
+                        <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{avg.toFixed(1)}€</span></td>
+                        <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
+                        <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"✓"}</td>
+                      </tr>
+                    );
+                  }).filter(Boolean);
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
