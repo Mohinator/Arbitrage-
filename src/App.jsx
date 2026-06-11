@@ -90,7 +90,10 @@ function Toast({ msg, type, onUndo }) {
 }
 
 // ── Players Table (shared between manager/team_lead views) ───────────────────
-function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast }) {
+function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds }) {
+  const [_localExcluded, _setLocalExcluded] = useState(new Set());
+  const excludedIds = _excludedIds || _localExcluded;
+  const setExcludedIds = _setExcludedIds || _setLocalExcluded;
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
@@ -713,7 +716,7 @@ function ManagerPage({ manager, onLogout }) {
             </select>
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
-          <PlayersTable players={filteredPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast}/>
+          <PlayersTable players={filteredPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds}/>
         </div>
       )}
 
