@@ -710,8 +710,7 @@ function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Команда</h2>
           {myGeos.length===0&&<p style={{ color:T.muted,fontSize:13 }}>Вы не назначены ни на одно гео. Обратитесь к администратору.</p>}
-          {myGeos.map(geo=>{
-            if(!geo||!geo.id) return null;
+          {myGeos.filter(geo=>geo&&geo.id===activeGeo).map(geo=>{
             const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===geo.id&&ug.manager_id).map(ug=>ug.manager_id);
             const geoManagers2=allManagers.filter(m=>m&&m.id!==manager.id&&geoManagerIds.includes(m.id));
             const viewing=viewingManager[geo.id]||null;
@@ -909,7 +908,7 @@ function ManagerPage({ manager, onLogout }) {
               <button onClick={()=>openPlatformForm()} className="btn-p" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Платформу</button>
             </div>
           )}
-          {myGeos.map(geo=>{
+          {myGeos.filter(geo=>geo.id===activeGeo).map(geo=>{
             const geoPlatStats=platformStats.filter(p=>p.geo_id===geo.id);
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
