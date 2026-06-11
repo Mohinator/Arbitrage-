@@ -1229,7 +1229,7 @@ function AdminPage({ onLogout }) {
                         <tr key={m.id} className="row-hover">
                           <td style={{...S.td,fontWeight:600,color:"#e2e8f0"}}>{m.name}</td>
                           <td style={S.td}><code style={{background:"#0f1117",border:"1px solid #2d3148",padding:"3px 8px",borderRadius:5,fontSize:12,color:"#a5b4fc",letterSpacing:"0.1em"}}>{m.token}</code></td>
-                          <td style={S.td}><span style={{background:m.role==="team_lead"?"linear-gradient(135deg,#0f766e,#14b8a6)":"rgba(99,102,241,.15)",color:m.role==="team_lead"?"#fff":"#a5b4fc",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{m.role==="team_lead"?"Тим лид":"Менеджер"}</span></td>
+                          <td style={S.td}><span onClick={()=>toggleManagerRole(m)} style={{background:m.role==="team_lead"?"linear-gradient(135deg,#0f766e,#14b8a6)":"rgba(99,102,241,.15)",color:m.role==="team_lead"?"#fff":"#a5b4fc",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",userSelect:"none"}} title="Нажми для смены роли">{m.role==="team_lead"?"Тим лид":"Менеджер"}</span></td>
                           <td style={S.td}>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                               {mGeos.map(g=><span key={g.id} style={{background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:11,padding:"1px 7px",borderRadius:5,fontWeight:600}}>{g.name}</span>)}
@@ -1239,7 +1239,6 @@ function AdminPage({ onLogout }) {
                           <td style={S.td}><span style={{background:m.is_active?"linear-gradient(135deg,#14532d,#166534)":"#1e2235",color:m.is_active?"#86efac":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{m.is_active?"Активен":"Отключён"}</span></td>
                           <td style={{...S.td,color:"#94a3b8"}}>{players.filter(p=>p.manager_id===m.id).length}</td>
                           <td style={{...S.td,display:"flex",gap:6}}>
-                            <button onClick={()=>toggleManagerRole(m)} className="btn-g" style={{border:"1px solid #2d3148",color:m.role==="team_lead"?"#14b8a6":"#a5b4fc",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.role==="team_lead"?"→ Менеджер":"→ Тим лид"}</button>
                             <button onClick={()=>toggleManager(m)} className="btn-g" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.is_active?"Откл":"Вкл"}</button>
                             <button onClick={()=>deleteManager(m.id)} className="btn-g btn-danger" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>Удалить</button>
                           </td>
