@@ -100,7 +100,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [localPlayers, setLocalPlayers] = useState(players);
   const [dragIdx, setDragIdx] = useState(null);
 
-  useEffect(() => { setLocalPlayers(players); }, [players]);
+  useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
 
   const today = new Date().toISOString().slice(0,10);
   const getPlayerRds = (pid) => redeposits.filter(r=>r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
@@ -187,7 +187,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const handleDragEnd = async () => {
     if (readonly) return;
     setDragIdx(null);
-    await Promise.all(localPlayers.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
+    await Promise.all(localPlayers.filter(p=>p&&p.id).map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
   };
 
   const toggleMonth = (mk) => setHiddenMonths(prev=>{ const n=new Set(prev); n.has(mk)?n.delete(mk):n.add(mk); return n; });
