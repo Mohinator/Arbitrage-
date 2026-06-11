@@ -914,7 +914,6 @@ function ManagerPage({ manager, onLogout }) {
           {isTeamLead&&(
             <div style={{ display:"flex",justifyContent:"flex-end",gap:8,marginBottom:16 }}>
               <button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Гео</button>
-              <button onClick={()=>openPlatformForm()} className="btn-p" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Платформу</button>
             </div>
           )}
           {myGeos.filter(geo=>geo.id===activeGeo).map(geo=>{
