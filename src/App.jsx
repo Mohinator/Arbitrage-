@@ -255,7 +255,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
-            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+16+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
+            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+17+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
@@ -280,7 +280,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
               return (
                 <>
                   <tr key={`m-${mk}`}>
-                    <td colSpan={readonly?13:15} style={{ padding:"7px 12px",background:T.monthHdr,borderBottom:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}` }}>
+                    <td colSpan={(readonly?0:2)+17+(isPoland?1:0)} style={{ padding:"7px 12px",background:T.monthHdr,borderBottom:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}` }}>
                       <div style={{ display:"flex",alignItems:"center",gap:10 }}>
                         <button onClick={()=>toggleMonth(mk)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"2px 10px",borderRadius:6,cursor:"pointer",fontSize:11 }}>
                           {isHidden?"▶ Показать":"▼ Скрыть"}
@@ -363,7 +363,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                 </>
               );
             })}
-            {localPlayers.length===0&&<tr><td colSpan={readonly?13:15} style={{ padding:24,textAlign:"center",color:T.muted }}>Нет лидов</td></tr>}
+            {localPlayers.length===0&&<tr><td colSpan={(readonly?0:2)+17+(isPoland?1:0)} style={{ padding:24,textAlign:"center",color:T.muted }}>Нет лидов</td></tr>}
           </tbody>
         </table>
       </div>
