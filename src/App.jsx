@@ -911,18 +911,15 @@ function ManagerPage({ manager, onLogout }) {
       {/* PLATFORMS */}
       {tab==="platforms"&&(
         <div style={{ padding:"16px 20px" }}>
-          {isTeamLead&&(
-            <div style={{ display:"flex",justifyContent:"flex-end",gap:8,marginBottom:16 }}>
-              <button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"8px 16px",fontSize:13,borderRadius:8 }}>+ Гео</button>
-            </div>
-          )}
           {myGeos.filter(geo=>geo.id===activeGeo).map(geo=>{
             const geoPlatStats=platformStats.filter(p=>p.geo_id===geo.id);
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
-                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                  <span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"3px 12px",borderRadius:6,fontSize:13,fontWeight:700 }}>{geo.name}</span>
-                  {isTeamLead&&<button onClick={()=>{ setPForm(f=>({...f,geo_id:geo.id})); openPlatformForm(); }} className="btn-p" style={{ padding:"5px 12px",fontSize:12,borderRadius:7 }}>+ Добавить</button>}
+              <div style={{ display:"flex",justifyContent:"flex-end",gap:8,marginBottom:10 }}>
+                  <span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"3px 12px",borderRadius:6,fontSize:13,fontWeight:700,display:"flex",alignItems:"center" }}>{geo.name}</span>
+                  <div style={{ flex:1 }}/>
+                  {isTeamLead&&<button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Гео</button>}
+                  {isTeamLead&&<button onClick={()=>{ setPForm(f=>({...f,geo_id:geo.id})); openPlatformForm(); }} className="btn-p" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Добавить</button>}
                 </div>
                 <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                   <table style={{ width:"100%",borderCollapse:"collapse" }}>
