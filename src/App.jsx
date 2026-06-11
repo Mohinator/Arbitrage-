@@ -475,36 +475,63 @@ function ManagerPage({ manager, onLogout }) {
     const active=players.filter(p=>p.status==="Да"&&!excludedIds.has(p.id));
     const byPlat={};
     active.forEach(p=>{ if(!byPlat[p.platform_id]) byPlat[p.platform_id]=[]; byPlat[p.platform_id].push(p); });
+
     Object.entries(byPlat).forEach(([pid,pps])=>{
       const plat=platforms.find(p=>p.id===pid); if(!plat) return;
-      const min=plat.min_deposit||10,target=plat.target_avg_check,cnt=pps.length;
+      const target=plat.target_avg_check, cnt=pps.length;
       const curTotal=pps.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-      const needed=Math.max(0,target*cnt-curTotal); if(needed<=0) return;
-      const plans=pps.map(p=>({player:p,existing:getPlayerRds(p.id),slots:9-getPlayerRds(p.id).length,amts:[]})).filter(pp=>pp.slots>0);
+      const needed=Math.max(0,target*cnt-curTotal);
+      if(needed<=0) return;
+
+      // Строим пул слотов — каждый лид может получить от 0 до (9 - уже_есть_РД) РД
+      const plans=pps.map(p=>({
+        player:p,
+        existing:getPlayerRds(p.id),
+        slots:9-getPlayerRds(p.id).length,
+        amts:[]
+      })).filter(pp=>pp.slots>0);
       if(!plans.length) return;
-      let best=null,bestDiff=Infinity;
+
+      // Ищем лучшее распределение за 300 попыток
+      let best=null, bestDiff=Infinity;
       for(let a=0;a<300;a++){
         plans.forEach(pp=>pp.amts=[]);
         let rem=needed;
-        for(let r=0;r<9&&rem>0;r++) for(const pp of plans){
-          if(pp.amts.length>=pp.slots||rem<=0) continue;
-          const amt=genRdAmount(getMinDeposit(plat,pp.player));
-          const wouldAdd=Math.min(amt,rem);
-          pp.amts.push(wouldAdd);
-          rem-=wouldAdd;
+
+        // Перемешиваем планы рандомно чтобы разные лиды получали разное кол-во РД
+        const shuffled=[...plans].sort(()=>Math.random()-.5);
+
+        for(let r=0;r<9&&rem>0;r++){
+          for(const pp of shuffled){
+            if(pp.amts.length>=pp.slots||rem<=0) continue;
+            const min=getMinDeposit(plat,pp.player);
+            const amt=genRdAmount(min);
+            // Не добавляем больше чем осталось нужно
+            if(rem<=0) break;
+            pp.amts.push(amt);
+            rem-=amt;
+          }
         }
+
         const added=plans.reduce((s,pp)=>s+pp.amts.reduce((a,b)=>a+b,0),0);
-        const diff=Math.abs((curTotal+added)/cnt-target);
+        const newAvg=(curTotal+added)/cnt;
+        const diff=Math.abs(newAvg-target);
         if(diff<bestDiff){ bestDiff=diff; best=plans.map(pp=>({...pp,amts:[...pp.amts]})); }
-        if((curTotal+added)/cnt>=target&&diff<1.5) break;
+        if(newAvg>=target&&diff<2) break;
       }
       if(!best) return;
+
       best.forEach(pp=>{
         if(!pp.amts.length) return;
-        const dep=new Date(pp.player.date),ec=pp.existing.length;
-        const mEnd=new Date(dep.getFullYear(),dep.getMonth()+1,0),dLeft=Math.max(14,Math.floor((mEnd-dep)/(1000*60*60*24)));
-        const rd1=new Date(dep); rd1.setDate(rd1.getDate()+1+Math.floor(Math.random()*3));
-        const rdPlan=pp.amts.map((amt,i)=>{ const dt=new Date(rd1); if(i>0) dt.setDate(dt.getDate()+Math.floor(dLeft/pp.amts.length)*i+Math.floor(Math.random()*2)); return{rd_number:ec+i+1,amount:amt,date:dt.toISOString().slice(0,10)}; });
+        const dep=new Date(pp.player.date), ec=pp.existing.length;
+        const mEnd=new Date(dep.getFullYear(),dep.getMonth()+1,0);
+        const dLeft=Math.max(14,Math.floor((mEnd-new Date())/(1000*60*60*24)));
+        const rd1=new Date(); rd1.setDate(rd1.getDate()+1+Math.floor(Math.random()*3));
+        const rdPlan=pp.amts.map((amt,i)=>{
+          const dt=new Date(rd1);
+          if(i>0) dt.setDate(dt.getDate()+Math.round(dLeft/pp.amts.length)*i+Math.floor(Math.random()*2));
+          return{ rd_number:ec+i+1, amount:amt, date:dt.toISOString().slice(0,10) };
+        });
         preview.push({player:pp.player,plat,rdPlan,total:calcEffectiveTotal(pp.player)+pp.amts.reduce((s,a)=>s+a,0)});
       });
     });
