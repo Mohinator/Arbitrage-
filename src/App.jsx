@@ -537,12 +537,15 @@ function ManagerPage({ manager, onLogout }) {
       best.forEach(pp=>{
         if(!pp.amts.length) return;
         const dep=new Date(pp.player.date), ec=pp.existing.length;
-        const mEnd=new Date(dep.getFullYear(),dep.getMonth()+1,0);
-        const dLeft=Math.max(14,Math.floor((mEnd-new Date())/(1000*60*60*24)));
-        const rd1=new Date(); rd1.setDate(rd1.getDate()+1+Math.floor(Math.random()*3));
-        const rdPlan=pp.amts.map((amt,i)=>{
-          const dt=new Date(rd1);
-          if(i>0) dt.setDate(dt.getDate()+Math.round(dLeft/pp.amts.length)*i+Math.floor(Math.random()*2));
+        // Растягиваем на 30 дней с даты депозита
+        const periodDays=30;
+        const step=Math.floor(periodDays/pp.amts.length);
+        // Сортируем суммы по возрастанию чтобы не повторялись подряд
+        const sortedAmts=[...pp.amts].sort((a,b)=>a-b);
+        const rdPlan=sortedAmts.map((amt,i)=>{
+          const dt=new Date(dep);
+          const offset=i===0?3:step*i+Math.floor(Math.random()*2);
+          dt.setDate(dt.getDate()+offset);
           return{ rd_number:ec+i+1, amount:amt, date:dt.toISOString().slice(0,10) };
         });
         preview.push({player:pp.player,plat,rdPlan,total:calcEffectiveTotal(pp.player)+pp.amts.reduce((s,a)=>s+a,0)});
