@@ -19,6 +19,8 @@ const CSS = `
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
 .btn-p{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s;box-shadow:0 2px 8px rgba(99,102,241,.3);}
 .btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(99,102,241,.5);filter:brightness(1.1);}
 .btn-a{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s;box-shadow:0 2px 8px rgba(20,184,166,.3);}
@@ -302,7 +304,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                           const rdColor=isToday?"#f59e0b":rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
                           if (isInline&&!readonly) return (
                             <td key={i} style={S.rdTd}>
-                              <input autoFocus className="rd-input" type="number" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
+                              <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}}
                                 onKeyDown={e=>{ if(e.key==="Enter") saveInlineRd(); if(e.key==="Escape"){ setInlineEdit(null); setInlineVal(""); }}}
                                 onBlur={saveInlineRd}/>
                             </td>
@@ -509,7 +511,13 @@ function ManagerPage({ manager, onLogout }) {
     if(!leadForm.platform_id||!leadForm.name||!leadForm.deposit){ showToast("Заполни все поля","error"); return; }
     const nextRd=leadForm.next_rd_date||new Date(new Date().setDate(new Date().getDate()+7)).toISOString().slice(0,10);
     const maxOrder=players.length>0?Math.max(...players.map(p=>p.sort_order||0))+1:0;
-    await supabase.from("players").insert({manager_id:manager.id,platform_id:leadForm.platform_id,date:leadForm.date,name:leadForm.name,sub18:leadForm.sub18,deposit:Number(leadForm.deposit),is_blik:leadForm.is_blik,status:leadForm.status,next_rd_date:nextRd,sort_order:maxOrder});
+    // Дублируем статус если лид уже есть в системе по имени или sub18
+    let status=leadForm.status;
+    if(leadForm.name||leadForm.sub18){
+      const existing=allPlayers.find(p=>p&&((leadForm.name&&p.name===leadForm.name)||(leadForm.sub18&&p.sub18===leadForm.sub18)));
+      if(existing) status=existing.status;
+    }
+    await supabase.from("players").insert({manager_id:manager.id,platform_id:leadForm.platform_id,date:leadForm.date,name:leadForm.name,sub18:leadForm.sub18,deposit:Number(leadForm.deposit),is_blik:leadForm.is_blik,status,next_rd_date:nextRd,sort_order:maxOrder});
     showToast("Лид добавлен!"); setShowAddLead(false);
     setLeadForm({date:new Date().toISOString().slice(0,10),platform_id:"",name:"",sub18:"",deposit:"",is_blik:false,status:"Да",next_rd_date:""});
     load();
