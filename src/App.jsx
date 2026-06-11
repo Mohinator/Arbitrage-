@@ -304,7 +304,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                           const rdColor=isToday?"#f59e0b":rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
                           if (isInline&&!readonly) return (
                             <td key={i} style={S.rdTd}>
-                              <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}}
+                              <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
                                 onKeyDown={e=>{ if(e.key==="Enter") saveInlineRd(); if(e.key==="Escape"){ setInlineEdit(null); setInlineVal(""); }}}
                                 onBlur={saveInlineRd}/>
                             </td>
