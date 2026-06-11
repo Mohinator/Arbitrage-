@@ -396,7 +396,7 @@ function ManagerPage({ manager, onLogout }) {
     ]);
     setPlatforms(p||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
     setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]);
-    const myGeoList=(ug||[]).map(u=>u.geos).filter(Boolean);
+    const myGeoList=(ug||[]).map(u=>u&&u.geos).filter(g=>g&&g.id);
     setMyGeos(myGeoList);
     const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
     if (myGeoList.length>0&&!activeGeo) setActiveGeo(firstGeo);
@@ -711,8 +711,9 @@ function ManagerPage({ manager, onLogout }) {
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Команда</h2>
           {myGeos.length===0&&<p style={{ color:T.muted,fontSize:13 }}>Вы не назначены ни на одно гео. Обратитесь к администратору.</p>}
           {myGeos.map(geo=>{
-            const geoManagerIds=userGeos.filter(ug=>ug.geo_id===geo.id).map(ug=>ug.manager_id);
-            const geoManagers2=allManagers.filter(m=>m.id!==manager.id&&geoManagerIds.includes(m.id));
+            if(!geo||!geo.id) return null;
+            const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===geo.id&&ug.manager_id).map(ug=>ug.manager_id);
+            const geoManagers2=allManagers.filter(m=>m&&m.id!==manager.id&&geoManagerIds.includes(m.id));
             const viewing=viewingManager[geo.id]||null;
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
