@@ -400,6 +400,8 @@ function ManagerPage({ manager, onLogout }) {
     ]);
     setPlatforms(p||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
     setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]);
+    if((rd||[]).some(r=>!r)) console.warn('NULL in redeposits!', rd);
+    if((pl||[]).some(p=>!p)) console.warn('NULL in players!', pl);
     const myGeoList=(ug||[]).map(u=>u&&u.geos).filter(g=>g&&g.id);
     setMyGeos(myGeoList);
     const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
@@ -419,8 +421,9 @@ function ManagerPage({ manager, onLogout }) {
     return allManagers.filter(m => m.id !== manager.id);
   })() : [];
 
-  const getPlayerRds = (pid) => redeposits.filter(r=>r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
+  const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
   const calcEffectiveTotal = (player) => {
+    if(!player||!player.id) return 0;
     const rds=getPlayerRds(player.id);
     if (player.status==="Кинул"&&rds.length>0) return Number(player.deposit)+rds.slice(0,-1).reduce((s,r)=>s+Number(r.amount),0);
     return Number(player.deposit)+rds.reduce((s,r)=>s+Number(r.amount),0);
@@ -725,7 +728,7 @@ function ManagerPage({ manager, onLogout }) {
                 </div>
                 <div style={{ display:"flex",gap:10,flexWrap:"wrap",marginBottom:16 }}>
                   {geoManagers2.map(m=>{
-                    const mPlayers=allPlayers.filter(p=>p.manager_id===m.id&&p.status==="Да");
+                    const mPlayers=allPlayers.filter(p=>p&&p.id&&p.manager_id===m.id&&p.status==="Да");
                     const total=mPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
                     const avg=mPlayers.length>0?total/mPlayers.length:0;
                     const isViewing=viewing===m.id;
