@@ -767,7 +767,7 @@ function ManagerPage({ manager, onLogout }) {
                   <div>
                     <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
                       <span style={{ color:T.text,fontWeight:600,fontSize:14 }}>{allManagers.find(m=>m.id===viewing)?.name}</span>
-                      <span style={{ color:T.muted,fontSize:12 }}>— только просмотр</span>
+                      <span style={{ color:T.muted,fontSize:12 }}>— {isTeamLead?"редактирование":"только просмотр"}</span>
                     </div>
                     <PlayersTable
                       players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing)}
