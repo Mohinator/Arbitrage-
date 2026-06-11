@@ -771,13 +771,11 @@ function ManagerPage({ manager, onLogout }) {
                 const ps=platformStats.find(s=>s.id===plat.id)||plat;
                 const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
                 const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
-                // Запланированный СЧ с учётом плановых РД
+                // Запланированный СЧ = фактический + плановые РД сверху
                 const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
-                const plannedTotal=activePlayers.reduce((s,p)=>{
-                  const pRds=plannedRds.filter(r=>r&&r.player_id===p.id);
-                  return s+calcEffectiveTotal(p)+pRds.reduce((a,r)=>a+Number(r.amount),0);
-                },0);
-                const plannedAvg=activePlayers.length>0?plannedTotal/activePlayers.length:0;
+                const factTotal=activePlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                const plannedExtra=activePlayers.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
+                const plannedAvg=activePlayers.length>0?(factTotal+plannedExtra)/activePlayers.length:0;
                 return(
                   <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"10px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
                     <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
