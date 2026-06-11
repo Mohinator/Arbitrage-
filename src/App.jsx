@@ -90,7 +90,7 @@ function Toast({ msg, type, onUndo }) {
 }
 
 // ── Players Table (shared between manager/team_lead views) ───────────────────
-function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds }) {
+function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds, isPoland=true }) {
   const [_localExcluded, _setLocalExcluded] = useState(new Set());
   const excludedIds = _excludedIds || _localExcluded;
   const setExcludedIds = _setExcludedIds || _setLocalExcluded;
@@ -134,12 +134,20 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     const { playerId, rdNumber } = inlineEdit;
     const amount = parseFloat(inlineVal);
     if (!amount||amount<=0) { setInlineEdit(null); setInlineVal(""); return; }
+    // Сохраняем как плановый — станет фактическим по клику
+    await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
+    await supabase.from("planned_redeposits").insert({ player_id:playerId, rd_number:rdNumber, amount, date:today });
+    setInlineEdit(null); setInlineVal(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
+  };
+
+  const confirmPlannedRd = async (playerId, rdNumber, amount) => {
+    if (readonly) return;
     await supabase.from("redeposits").insert({ player_id:playerId, rd_number:rdNumber, amount, date:today });
     await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
     const nextRd=new Date(new Date(today).setDate(new Date(today).getDate()+7)).toISOString().slice(0,10);
     await supabase.from("players").update({ next_rd_date:nextRd }).eq("id",playerId);
     await logAction("rd_added",playerId,{rd_number:rdNumber,amount,date:today});
-    setInlineEdit(null); setInlineVal(""); showToast("РД добавлен!"); onReload();
+    showToast("РД подтверждён!"); onReload();
   };
 
   const editRd = async () => {
@@ -247,7 +255,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
-            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={readonly?13:15}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
+            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+3+9+3+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
@@ -259,7 +267,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
               {Array(9).fill(0).map((_,i)=><th key={i} style={S.rdTh}>Рд{i+1}</th>)}
               <th style={S.th}>Всего</th>
               <th style={S.th}>Статус</th>
-              <th style={S.th}>BLIK</th>
+              {isPoland&&<th style={S.th}>BLIK</th>}
               <th style={S.th}>Заметка</th>
             </tr>
           </thead>
@@ -337,7 +345,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         })}
                         <td style={{ ...S.td,color:T.text,fontWeight:700 }}>{total}€</td>
                         <td style={S.td}><StatusBadge status={player.status} dark={dark} onClick={readonly?undefined:e=>setStatusPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})}/></td>
-                        <td style={S.td}>{player.is_blik&&<span style={{ background:dark?"linear-gradient(135deg,#451a03,#78350f)":"linear-gradient(135deg,#fef3c7,#fde68a)",color:dark?"#d97706":"#92400e",padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:700 }}>BLIK</span>}</td>
+                        {isPoland&&<td style={S.td}>{player.is_blik&&<span style={{ background:dark?"linear-gradient(135deg,#451a03,#78350f)":"linear-gradient(135deg,#fef3c7,#fde68a)",color:dark?"#d97706":"#92400e",padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:700 }}>BLIK</span>}</td>}
                         <td style={{ ...S.td,maxWidth:140 }}>
                           {commentEdit===player.id&&!readonly?(
                             <input autoFocus value={commentVal} onChange={e=>setCommentVal(e.target.value)}
@@ -634,41 +642,38 @@ function ManagerPage({ manager, onLogout }) {
       {toast&&<Toast msg={toast.msg} type={toast.type} onUndo={toast.onUndo}/>}
 
       {showAddLead&&(
-        <Modal onClose={()=>setShowAddLead(false)}>
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setShowAddLead(false)}>
+          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.6)" }} onClick={e=>e.stopPropagation()}>
           <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>Добавить лида</h3>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12 }}>
             {[["Дата","date","date"],["Продукт","platform_id","select"],["Имя лида","name","text"],["SUB18","sub18","text"],["Депозит (€)","deposit","number"]].map(([l,k,t])=>(
               <div key={k} style={{ gridColumn:k==="name"?"1/-1":undefined }}>
                 <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
-                {t==="select"?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">Выбери платформу</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                  :<input type={t} value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}/>}
+                {t==="select"
+                  ?<select value={leadForm[k]} onChange={e=>{ const v=e.target.value; setLeadForm(f=>({...f,[k]:v})); }} style={IS}><option value="">Выбери платформу</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                  :<input type={t==="number"?"text":t} inputMode={t==="number"?"numeric":undefined} value={leadForm[k]} onChange={e=>{ const v=e.target.value; setLeadForm(f=>({...f,[k]:v})); }} style={IS}/>}
               </div>
             ))}
           </div>
+          {(()=>{ const activeGeoObj=myGeos.find(g=>g.id===activeGeo); const isPoland=activeGeoObj?.code==='PL'; return isPoland?(
           <div style={{ marginBottom:12 }}>
             <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>BLIK?</label>
             <div style={{ display:"flex",background:T.inputBg,borderRadius:7,padding:2,gap:2,width:"fit-content" }}>
               {[["Нет",false],["BLIK",true]].map(([l,v])=><button key={String(v)} onClick={()=>setLeadForm(f=>({...f,is_blik:v}))} style={{ border:"none",padding:"5px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,background:leadForm.is_blik===v?(v?"linear-gradient(135deg,#d97706,#f59e0b)":"linear-gradient(135deg,#6366f1,#818cf8)"):"transparent",color:leadForm.is_blik===v?"#fff":T.muted,transition:"all .2s" }}>{l}</button>)}
             </div>
-          </div>
+          </div>):null; })()}
           <div style={{ marginBottom:12 }}>
             <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>Статус</label>
             <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
               {STATUSES.map(st=><span key={st} onClick={()=>setLeadForm(f=>({...f,status:st}))} style={{ cursor:"pointer",outline:leadForm.status===st?"2px solid #6366f1":"none",borderRadius:20,outlineOffset:2 }}><StatusBadge status={st} dark={dark}/></span>)}
             </div>
           </div>
-          <div style={{ marginBottom:18 }}>
-            <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>Следующий РД</label>
-            <div style={{ display:"flex",gap:8 }}>
-              <input type="date" value={leadForm.next_rd_date} onChange={e=>setLeadForm(f=>({...f,next_rd_date:e.target.value}))} style={{ ...IS,flex:1 }}/>
-              {[7,14].map(d=><button key={d} onClick={()=>{ const dt=new Date(); dt.setDate(dt.getDate()+d); setLeadForm(f=>({...f,next_rd_date:dt.toISOString().slice(0,10)})); }} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,cursor:"pointer",fontSize:11 }}>+{d}дн</button>)}
-            </div>
-          </div>
           <div style={{ display:"flex",gap:10 }}>
             <button onClick={addLead} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Добавить</button>
             <button onClick={()=>setShowAddLead(false)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
           </div>
-        </Modal>
+          </div>
+        </div>
       )}
 
       {showAutomation&&(
@@ -819,7 +824,7 @@ function ManagerPage({ manager, onLogout }) {
             ))}
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
-          <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds}/>
+          <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds} isPoland={myGeos.find(g=>g.id===activeGeo)?.code==='PL'}/>
         </div>
       )}
 
@@ -1105,11 +1110,51 @@ function ManagerPage({ manager, onLogout }) {
         </div>
       )}
 
-      {/* OVERVIEW for teamlead */}
       {tab==="overview"&&isTeamLead&&(
         <div style={{ padding:"16px 20px" }}>
-          <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка по платформам</h2>
-          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
+          <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка</h2>
+
+          {/* Manager summary */}
+          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>По менеджерам</h3>
+          <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:28 }}>
+            {(()=>{
+              const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===activeGeo).map(ug=>ug.manager_id);
+              const geoMgrs=allManagers.filter(m=>m&&geoManagerIds.includes(m.id));
+              return geoMgrs.map(mgr=>{
+                const mPlayers=allPlayers.filter(p=>p&&p.manager_id===mgr.id);
+                const active=mPlayers.filter(p=>p.status==="Да");
+                const overdue=mPlayers.filter(p=>p.next_rd_date&&p.next_rd_date<today);
+                const noPlanned=active.filter(p=>!plannedRds.some(r=>r&&r.player_id===p.id));
+                const total=active.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                const avg=active.length>0?total/active.length:0;
+                return(
+                  <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
+                      <div style={{ width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1" }}/>
+                      <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{mgr.name}</span>
+                      {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4 }}>ТЛ</span>}
+                    </div>
+                    <div style={{ display:"flex",gap:20,flexWrap:"wrap" }}>
+                      <div style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></div>
+                      <div style={{ fontSize:12,color:T.muted }}>СЧ: <strong style={{ color:avg>0?"#86efac":T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
+                      <div style={{ fontSize:12,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
+                      {overdue.length>0&&<div style={{ fontSize:12,color:"#fca5a5" }}>⚠ Просрочено РД: <strong>{overdue.length}</strong></div>}
+                      {noPlanned.length>0&&<div style={{ fontSize:12,color:"#f59e0b" }}>📋 Без плановых РД: <strong>{noPlanned.length}</strong></div>}
+                    </div>
+                    {overdue.length>0&&(
+                      <div style={{ marginTop:8,fontSize:11,color:T.muted }}>
+                        Просрочены: {overdue.map(p=><span key={p.id} style={{ background:"rgba(239,68,68,.1)",color:"#fca5a5",padding:"1px 6px",borderRadius:4,marginRight:4 }}>{p.name}</span>)}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {/* Platform stats */}
+          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>По платформам</h3>
+          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
               <thead><tr>{["Платформа","Менеджер","Лидов","Сумма","СЧ факт","СЧ цель","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
