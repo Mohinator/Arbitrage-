@@ -785,17 +785,14 @@ function ManagerPage({ manager, onLogout }) {
                       <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                       <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
                     </div>
-                    {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {ps.needMore.toFixed(0)}€</div>}
-                    {capPct!==null&&(
-                      <div style={{ marginTop:2 }}>
-                        <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
-                          <span>Капа</span><span>{ps.totalCount||0}/{ps.cap}</span>
-                        </div>
-                        <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                          <div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>
-                        </div>
+                    <div style={{ marginTop:2 }}>
+                      <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
+                        <span>Капа</span><span>{ps.totalCount||0}{ps.cap?`/${ps.cap}`:""}</span>
                       </div>
-                    )}
+                      <div style={{ background:T.border,borderRadius:4,height:4 }}>
+                        {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
