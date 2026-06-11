@@ -255,7 +255,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
-            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+17+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
+            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+16+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
