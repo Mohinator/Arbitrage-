@@ -366,7 +366,7 @@ function ManagerPage({ manager, onLogout }) {
   const [plannedRds, setPlannedRds] = useState([]);
   const [tab, setTab] = useState("main");
   const [activeGeo, setActiveGeo] = useState(null);
-  const [viewingManager, setViewingManager] = useState({}); // { geoId: managerId }
+  const [viewingManager, setViewingManager] = useState(() => ({})); // { geoId: managerId }
   const [toast, setToast] = useState(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddRd, setShowAddRd] = useState(null);
@@ -720,7 +720,7 @@ function ManagerPage({ manager, onLogout }) {
           {myGeos.filter(geo=>geo&&geo.id===activeGeo).map(geo=>{
             const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===geo.id&&ug.manager_id).map(ug=>ug.manager_id);
             const geoManagers2=allManagers.filter(m=>m&&m.id!==manager.id&&geoManagerIds.includes(m.id));
-            const viewing=viewingManager[geo.id]||null;
+            const viewing=(viewingManager||{})[geo.id]||null;
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
                 <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
