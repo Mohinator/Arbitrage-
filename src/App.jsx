@@ -193,7 +193,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const toggleMonth = (mk) => setHiddenMonths(prev=>{ const n=new Set(prev); n.has(mk)?n.delete(mk):n.add(mk); return n; });
 
   const playersByMonth = {};
-  localPlayers.forEach(p=>{ const mk=getMonthKey(p.date); if(!playersByMonth[mk]) playersByMonth[mk]=[]; playersByMonth[mk].push(p); });
+  localPlayers.filter(p=>p&&p.id).forEach(p=>{ const mk=getMonthKey(p.date); if(!playersByMonth[mk]) playersByMonth[mk]=[]; playersByMonth[mk].push(p); });
   const months = Object.keys(playersByMonth).sort().reverse();
 
   const T = dark ? { border:"#2d3148",text:"#e2e8f0",muted:"#64748b",sub:"#94a3b8",inputBg:"#0f1117",thBg:"#151824",rowBorder:"#1e2235",rdPlan:"#3d4268",rdFact:"#e2e8f0",monthHdr:"#1a1d27",surface:"#1a1d27" }
@@ -400,9 +400,9 @@ function ManagerPage({ manager, onLogout }) {
     setMyGeos(myGeoList);
     const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
     if (myGeoList.length>0&&!activeGeo) setActiveGeo(firstGeo);
-    const myPlayers=(pl||[]).filter(p=>p.manager_id===manager.id);
+    const myPlayers=(pl||[]).filter(p=>p&&p.id&&p.manager_id===manager.id);
     setPlayers(myPlayers);
-    setAllPlayers(pl||[]);
+    setAllPlayers((pl||[]).filter(p=>p&&p.id));
   };
   useEffect(()=>{ load(); },[]);
 
