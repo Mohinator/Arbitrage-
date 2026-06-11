@@ -587,6 +587,8 @@ function ManagerPage({ manager, onLogout }) {
   const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
   const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
+  const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms;
+
   const filteredPlayers = players.filter(p=>{
     const plat=platforms.find(pl=>pl.id===p.platform_id);
     if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
