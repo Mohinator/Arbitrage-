@@ -1042,6 +1042,7 @@ function AdminPage({ onLogout }) {
   };
   const deleteManager = async (id) => { if(!confirm("Удалить?")) return; await supabase.from("managers").delete().eq("id",id); load(); };
   const toggleManager = async (m) => { await supabase.from("managers").update({is_active:!m.is_active}).eq("id",m.id); load(); };
+  const toggleManagerRole = async (m) => { const newRole=m.role==="team_lead"?"manager":"team_lead"; await supabase.from("managers").update({role:newRole}).eq("id",m.id); showToast(`${m.name} → ${newRole==="team_lead"?"Тим лид":"Менеджер"}`); load(); };
 
   const createGeo = async () => {
     if(!geoForm.name.trim()) return;
@@ -1239,6 +1240,7 @@ function AdminPage({ onLogout }) {
                           <td style={S.td}><span style={{background:m.is_active?"linear-gradient(135deg,#14532d,#166534)":"#1e2235",color:m.is_active?"#86efac":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{m.is_active?"Активен":"Отключён"}</span></td>
                           <td style={{...S.td,color:"#94a3b8"}}>{players.filter(p=>p.manager_id===m.id).length}</td>
                           <td style={{...S.td,display:"flex",gap:6}}>
+                            <button onClick={()=>toggleManagerRole(m)} className="btn-g" style={{border:"1px solid #2d3148",color:m.role==="team_lead"?"#14b8a6":"#a5b4fc",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.role==="team_lead"?"→ Менеджер":"→ Тим лид"}</button>
                             <button onClick={()=>toggleManager(m)} className="btn-g" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.is_active?"Откл":"Вкл"}</button>
                             <button onClick={()=>deleteManager(m.id)} className="btn-g btn-danger" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>Удалить</button>
                           </td>
