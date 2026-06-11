@@ -100,11 +100,15 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [localPlayers, setLocalPlayers] = useState(players);
   const [dragIdx, setDragIdx] = useState(null);
 
-  useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
+  useEffect(() => {
+    const nulls = (players||[]).filter(p=>!p||!p.id);
+    if(nulls.length) console.warn('PlayersTable got null players:', nulls.length, redeposits?.length, plannedRds?.length);
+    setLocalPlayers((players||[]).filter(p=>p&&p.id));
+  }, [players]);
 
   const today = new Date().toISOString().slice(0,10);
-  const getPlayerRds = (pid) => redeposits.filter(r=>r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
-  const getPlayerPlanned = (pid) => plannedRds.filter(r=>r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
+  const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
+  const getPlayerPlanned = (pid) => (plannedRds||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
   const calcTotal = (player) => { const rds=getPlayerRds(player.id); return Number(player.deposit)+rds.reduce((s,r)=>s+Number(r.amount),0); };
   const formatDate = (d) => { if(!d) return "—"; return d.slice(5).replace("-","."); };
   const getMonthKey = (date) => date?date.slice(0,7):"";
@@ -746,7 +750,7 @@ function ManagerPage({ manager, onLogout }) {
                       <span style={{ color:T.muted,fontSize:12 }}>— только просмотр</span>
                     </div>
                     <PlayersTable
-                      players={allPlayers.filter(p=>p.manager_id===viewing)}
+                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing)}
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                       manager={manager} dark={dark}
                       readonly={!isTeamLead}
