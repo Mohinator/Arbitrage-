@@ -859,10 +859,16 @@ function ManagerPage({ manager, onLogout }) {
                   <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#6366f1",flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</div>
-                      <div style={{ fontSize:12,color:T.muted,marginTop:2 }}>{plat?.name} · РД{rdNum}</div>
+                      <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:3 }}>
+                        <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
+                        {player.sub18&&<span onClick={()=>{ navigator.clipboard.writeText(player.sub18); showToast("SUB18 скопирован"); }} style={{ color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer",borderBottom:`1px dashed ${T.border}` }} title="Скопировать SUB18">{player.sub18}</span>}
+                      </div>
+                      <div style={{ fontSize:12,color:T.muted }}>{plat?.name} · РД{rdNum}</div>
                     </div>
-                    <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#a5b4fc",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
+                    <div style={{ textAlign:"right" }}>
+                      {(()=>{ const pRd=plannedRds.find(r=>r&&r.player_id===player.id&&r.rd_number===rdNum); return pRd?<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc",marginBottom:2 }}>{pRd.amount}€</div>:null; })()}
+                      <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#a5b4fc",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
+                    </div>
                   </div>
                 ))}
               </div>
