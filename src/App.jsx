@@ -386,7 +386,8 @@ function ManagerPage({ manager, onLogout }) {
   const [tab, setTab] = useState("main");
   const [activeGeo, setActiveGeo] = useState(null);
   const [viewingManager, setViewingManager] = useState(() => ({})); // { geoId: managerId }
-  const [pinnedPlatforms, setPinnedPlatforms] = useState([]);
+  const [pinnedPlatforms, setPinnedPlatforms] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(`pinned_${manager.id}`)||"[]"); }catch{ return []; } });
+  const updatePinnedPlatforms = (fn) => { setPinnedPlatforms(prev=>{ const next=typeof fn==='function'?fn(prev):fn; localStorage.setItem(`pinned_${manager.id}`,JSON.stringify(next)); return next; }); };
   const [showPlatformPicker, setShowPlatformPicker] = useState(false);
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
@@ -804,7 +805,7 @@ function ManagerPage({ manager, onLogout }) {
                   <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:200,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
                     {geoPlatforms.map(p=>(
                       <label key={p.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer" }}>
-                        <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>setPinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
+                        <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>updatePinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
                         <span style={{ fontSize:13,color:T.text }}>{p.name}</span>
                       </label>
                     ))}
