@@ -378,6 +378,10 @@ function ManagerPage({ manager, onLogout }) {
   const [tab, setTab] = useState("main");
   const [activeGeo, setActiveGeo] = useState(null);
   const [viewingManager, setViewingManager] = useState(() => ({})); // { geoId: managerId }
+  const [pinnedPlatforms, setPinnedPlatforms] = useState([]);
+  const [showPlatformPicker, setShowPlatformPicker] = useState(false);
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddRd, setShowAddRd] = useState(null);
@@ -575,7 +579,18 @@ function ManagerPage({ manager, onLogout }) {
   const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
   const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
-  const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms;
+  const sortedPlayers = React.useMemo(()=>{
+    if(!sortCol) return filteredPlayers;
+    return [...filteredPlayers].sort((a,b)=>{
+      let av,bv;
+      if(sortCol==='date'){ av=a.date||''; bv=b.date||''; }
+      else if(sortCol==='deposit'){ av=Number(a.deposit)||0; bv=Number(b.deposit)||0; }
+      else if(sortCol==='total'){ av=calcEffectiveTotal(a); bv=calcEffectiveTotal(b); }
+      if(av<bv) return sortDir==='asc'?-1:1;
+      if(av>bv) return sortDir==='asc'?1:-1;
+      return 0;
+    });
+  },[filteredPlayers,sortCol,sortDir]);
 
   const filteredPlayers = players.filter(p=>{
     const plat=platforms.find(pl=>pl.id===p.platform_id);
@@ -724,7 +739,7 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
+        {[["main","Мои лиды"],["todo","📋 Задачи"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -740,6 +755,53 @@ function ManagerPage({ manager, onLogout }) {
               <span style={{ color:dark?"#fbbf24":"#92400e",fontSize:13 }}>{todayRds.map(p=>p.name).join(" · ")}</span>
             </div>
           )}
+
+          {/* Platform panel */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center" }}>
+              {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
+                const ps=platformStats.find(s=>s.id===plat.id)||plat;
+                const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
+                const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
+                return(
+                  <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:160 }}>
+                    <div style={{ fontSize:11,fontWeight:700,color:T.text,marginBottom:4 }}>{plat.name}</div>
+                    <div style={{ display:"flex",gap:10,alignItems:"center" }}>
+                      <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>СЧ {(ps.avgCheck||0).toFixed(1)}€</span>
+                      <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
+                    </div>
+                    {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b",marginTop:2 }}>↑ {ps.needMore.toFixed(0)}€</div>}
+                    {capPct!==null&&(
+                      <div style={{ marginTop:6 }}>
+                        <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
+                          <span>Капа</span><span>{ps.totalCount||0}/{ps.cap}</span>
+                        </div>
+                        <div style={{ background:T.border,borderRadius:4,height:4 }}>
+                          <div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ position:"relative" }}>
+                <button onClick={()=>setShowPlatformPicker(p=>!p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12 }}>
+                  {pinnedPlatforms.length>0?"⚙ Платформы":"+ Добавить платформы"}
+                </button>
+                {showPlatformPicker&&(
+                  <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:200,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
+                    {geoPlatforms.map(p=>(
+                      <label key={p.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer" }}>
+                        <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>setPinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
+                        <span style={{ fontSize:13,color:T.text }}>{p.name}</span>
+                      </label>
+                    ))}
+                    <button onClick={()=>setShowPlatformPicker(false)} style={{ marginTop:8,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 0",cursor:"pointer",fontSize:12 }}>Закрыть</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
             <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
             <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
@@ -750,9 +812,52 @@ function ManagerPage({ manager, onLogout }) {
               <option value="">Все статусы</option>
               {STATUSES.map(s=><option key={s}>{s}</option>)}
             </select>
+            {[['date','Дата'],['deposit','Деп'],['total','СЧ']].map(([col,label])=>(
+              <button key={col} onClick={()=>{ if(sortCol===col) setSortDir(d=>d==='asc'?'desc':'asc'); else{ setSortCol(col); setSortDir('desc'); }}} style={{ background:sortCol===col?"rgba(99,102,241,.2)":"transparent",border:`1px solid ${sortCol===col?"#6366f1":T.border}`,color:sortCol===col?"#a5b4fc":T.muted,padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>
+                {label} {sortCol===col?(sortDir==='asc'?'↑':'↓'):''}
+              </button>
+            ))}
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
-          <PlayersTable players={filteredPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds}/>
+          <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds}/>
+        </div>
+      )}
+
+      {/* TODO */}
+      {tab==="todo"&&(
+        <div style={{ padding:"16px 20px" }}>
+          <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Задачи на сегодня</h2>
+          {(()=>{
+            const todayStr=new Date().toISOString().slice(0,10);
+            const tasks=players.filter(p=>p.status==="Да").map(p=>{
+              const planned=plannedRds.filter(r=>r&&r.player_id===p.id).sort((a,b)=>a.rd_number-b.rd_number);
+              const nextPlan=planned[0];
+              const factRds=redeposits.filter(r=>r&&r.player_id===p.id);
+              const nextRdNum=factRds.length+1;
+              const isToday=p.next_rd_date===todayStr||(nextPlan&&nextPlan.date===todayStr);
+              const isOverdue=p.next_rd_date&&p.next_rd_date<todayStr;
+              if(!isToday&&!isOverdue) return null;
+              const plat=platforms.find(pl=>pl.id===p.platform_id);
+              return{ player:p, plat, rdNum:nextRdNum, date:p.next_rd_date||nextPlan?.date, isOverdue };
+            }).filter(Boolean);
+
+            if(tasks.length===0) return <div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>На сегодня задач нет 🎉</div>;
+
+            return(
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                {tasks.map(({player,plat,rdNum,date,isOverdue})=>(
+                  <div key={player.id} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                    <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#f59e0b",flexShrink:0 }}/>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</div>
+                      <div style={{ fontSize:12,color:T.muted,marginTop:2 }}>{plat?.name} · РД{rdNum}</div>
+                    </div>
+                    <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#fbbf24",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1090,6 +1195,7 @@ function AdminPage({ onLogout }) {
   const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
   const [selectedManager, setSelectedManager] = useState(null);
+  const [selectedHistoryGeo, setSelectedHistoryGeo] = useState(null);
   const [assigningManager, setAssigningManager] = useState(null); // manager id for geo assignment
 
   const showToast = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
@@ -1395,10 +1501,12 @@ function AdminPage({ onLogout }) {
                 const geoPlatforms=platforms.filter(p=>p.geo_id===g.id);
                 const geoManagers2=userGeos.filter(ug=>ug.geo_id===g.id).map(ug=>managers.find(m=>m.id===ug.manager_id)).filter(Boolean);
                 return(
-                  <div key={g.id} style={{background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:16}}>
+                  <div key={g.id} style={{background:"#1a1d27",border:`1px solid ${g.is_active===false?"#7f1d1d":"#2d3148"}`,borderRadius:10,padding:16,opacity:g.is_active===false?0.6:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                       {g.code&&<span style={{background:"linear-gradient(135deg,#6366f1,#818cf8)",color:"#fff",padding:"2px 8px",borderRadius:6,fontSize:12,fontWeight:700}}>{g.code}</span>}
-                      <span style={{color:"#fff",fontWeight:700,fontSize:14}}>{g.name}</span>
+                      <span style={{color:"#fff",fontWeight:700,fontSize:14,flex:1}}>{g.name}</span>
+                      <button onClick={async()=>{ await supabase.from("geos").update({is_active:g.is_active===false?true:false}).eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>{g.is_active===false?"Показать":"Скрыть"}</button>
+                      <button onClick={async()=>{ if(!confirm(`Удалить гео "${g.name}"?`)) return; await supabase.from("geos").delete().eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Удалить</button>
                     </div>
                     <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>Платформ: <strong style={{color:"#94a3b8"}}>{geoPlatforms.length}</strong></div>
                     <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>Менеджеров: <strong style={{color:"#94a3b8"}}>{geoManagers2.length}</strong></div>
@@ -1414,11 +1522,15 @@ function AdminPage({ onLogout }) {
 
         {tab==="history"&&(
           <div>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
               <h2 style={{color:"#fff",fontSize:18,margin:0}}>История действий</h2>
+              <select value={selectedHistoryGeo||""} onChange={e=>{ setSelectedHistoryGeo(e.target.value||null); setSelectedManager(null); }} style={{background:"#1a1d27",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none"}}>
+                <option value="">Все гео</option>
+                {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
               <select value={selectedManager||""} onChange={e=>setSelectedManager(e.target.value||null)} style={{background:"#1a1d27",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none"}}>
                 <option value="">Все менеджеры</option>
-                {managers.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                {(selectedHistoryGeo?managers.filter(m=>userGeos.filter(ug=>ug.geo_id===selectedHistoryGeo).map(ug=>ug.manager_id).includes(m.id)):managers).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
