@@ -322,7 +322,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         {rdArr.map((rd,i)=>{
                           const isInline=inlineEdit?.playerId===player.id&&inlineEdit?.rdNumber===i+1;
                           const isToday=rd&&!rd.isFact&&rd.date===today;
-                          const rdColor=isToday?"#f59e0b":rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
+                          const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
                           if (isInline&&!readonly) return (
                             <td key={i} style={S.rdTd}>
                               <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
@@ -339,7 +339,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Отметить выполненным"}>
-                              {rd?<div><div style={{ fontSize:11 }}>{rd.amount}€</div><div style={{ fontSize:9,color:isToday?"#f59e0b":T.muted,marginTop:1 }}>{formatDate(rd.date)}</div></div>:<span style={{ fontSize:16,opacity:.2 }}>+</span>}
+                              {rd?<div><div style={{ fontSize:11 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted,marginTop:1 }}>{formatDate(rd.date)}</div></div>:<span style={{ fontSize:16,opacity:.2 }}>+</span>}
                             </td>
                           );
                         })}
@@ -765,21 +765,29 @@ function ManagerPage({ manager, onLogout }) {
 
           {/* Platform panel */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center" }}>
+            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
               {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
                 const ps=platformStats.find(s=>s.id===plat.id)||plat;
                 const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
                 const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
+                // Запланированный СЧ с учётом плановых РД
+                const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
+                const plannedTotal=activePlayers.reduce((s,p)=>{
+                  const pRds=plannedRds.filter(r=>r&&r.player_id===p.id);
+                  return s+calcEffectiveTotal(p)+pRds.reduce((a,r)=>a+Number(r.amount),0);
+                },0);
+                const plannedAvg=activePlayers.length>0?plannedTotal/activePlayers.length:0;
                 return(
-                  <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:160 }}>
-                    <div style={{ fontSize:11,fontWeight:700,color:T.text,marginBottom:4 }}>{plat.name}</div>
-                    <div style={{ display:"flex",gap:10,alignItems:"center" }}>
-                      <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>СЧ {(ps.avgCheck||0).toFixed(1)}€</span>
+                  <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"10px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
+                    <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
+                    <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                      <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {(ps.avgCheck||0).toFixed(1)}€</span>
+                      <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                       <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
                     </div>
-                    {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b",marginTop:2 }}>↑ {ps.needMore.toFixed(0)}€</div>}
+                    {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {ps.needMore.toFixed(0)}€</div>}
                     {capPct!==null&&(
-                      <div style={{ marginTop:6 }}>
+                      <div style={{ marginTop:2 }}>
                         <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                           <span>Капа</span><span>{ps.totalCount||0}/{ps.cap}</span>
                         </div>
@@ -791,9 +799,9 @@ function ManagerPage({ manager, onLogout }) {
                   </div>
                 );
               })}
-              <div style={{ position:"relative" }}>
+              <div style={{ position:"relative",alignSelf:"flex-start" }}>
                 <button onClick={()=>setShowPlatformPicker(p=>!p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12 }}>
-                  {pinnedPlatforms.length>0?"⚙ Платформы":"+ Добавить платформы"}
+                  {pinnedPlatforms.length>0?"Платформы":"+ Платформы"}
                 </button>
                 {showPlatformPicker&&(
                   <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:200,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
@@ -836,30 +844,34 @@ function ManagerPage({ manager, onLogout }) {
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Задачи на сегодня</h2>
           {(()=>{
             const todayStr=new Date().toISOString().slice(0,10);
-            const tasks=players.filter(p=>p.status==="Да").map(p=>{
-              const planned=plannedRds.filter(r=>r&&r.player_id===p.id).sort((a,b)=>a.rd_number-b.rd_number);
-              const nextPlan=planned[0];
+            const tasks=players.filter(p=>p.status==="Да").flatMap(p=>{
               const factRds=redeposits.filter(r=>r&&r.player_id===p.id);
-              const nextRdNum=factRds.length+1;
-              const isToday=p.next_rd_date===todayStr||(nextPlan&&nextPlan.date===todayStr);
-              const isOverdue=p.next_rd_date&&p.next_rd_date<todayStr;
-              if(!isToday&&!isOverdue) return null;
+              const planned=plannedRds.filter(r=>r&&r.player_id===p.id).sort((a,b)=>a.rd_number-b.rd_number);
               const plat=platforms.find(pl=>pl.id===p.platform_id);
-              return{ player:p, plat, rdNum:nextRdNum, date:p.next_rd_date||nextPlan?.date, isOverdue };
-            }).filter(Boolean);
+              const results=[];
+              // Плановые РД на сегодня
+              planned.forEach(r=>{
+                if(r.date===todayStr) results.push({ player:p, plat, rdNum:r.rd_number, date:r.date, isOverdue:false });
+              });
+              // next_rd_date на сегодня или просрочен (без планового)
+              if(p.next_rd_date&&p.next_rd_date<=todayStr&&results.length===0){
+                results.push({ player:p, plat, rdNum:factRds.length+1, date:p.next_rd_date, isOverdue:p.next_rd_date<todayStr });
+              }
+              return results;
+            });
 
-            if(tasks.length===0) return <div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>На сегодня задач нет 🎉</div>;
+            if(tasks.length===0) return <div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>На сегодня задач нет</div>;
 
             return(
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {tasks.map(({player,plat,rdNum,date,isOverdue})=>(
-                  <div key={player.id} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
-                    <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#f59e0b",flexShrink:0 }}/>
+                {tasks.map(({player,plat,rdNum,date,isOverdue},idx)=>(
+                  <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                    <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#6366f1",flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</div>
                       <div style={{ fontSize:12,color:T.muted,marginTop:2 }}>{plat?.name} · РД{rdNum}</div>
                     </div>
-                    <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#fbbf24",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
+                    <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#a5b4fc",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
                   </div>
                 ))}
               </div>
