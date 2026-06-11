@@ -587,6 +587,15 @@ function ManagerPage({ manager, onLogout }) {
   const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
   const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
+  const filteredPlayers = players.filter(p=>{
+    const plat=platforms.find(pl=>pl.id===p.platform_id);
+    if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
+    if(filterPlatform&&p.platform_id!==filterPlatform) return false;
+    if(filterStatus&&p.status!==filterStatus) return false;
+    if(searchQuery){ const q=searchQuery.toLowerCase(); if(!p.name?.toLowerCase().includes(q)&&!p.sub18?.toLowerCase().includes(q)) return false; }
+    return true;
+  });
+
   const sortedPlayers = useMemo(()=>{
     if(!sortCol) return filteredPlayers;
     return [...filteredPlayers].sort((a,b)=>{
@@ -599,15 +608,6 @@ function ManagerPage({ manager, onLogout }) {
       return 0;
     });
   },[filteredPlayers,sortCol,sortDir]);
-
-  const filteredPlayers = players.filter(p=>{
-    const plat=platforms.find(pl=>pl.id===p.platform_id);
-    if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
-    if(filterPlatform&&p.platform_id!==filterPlatform) return false;
-    if(filterStatus&&p.status!==filterStatus) return false;
-    if(searchQuery){ const q=searchQuery.toLowerCase(); if(!p.name?.toLowerCase().includes(q)&&!p.sub18?.toLowerCase().includes(q)) return false; }
-    return true;
-  });
 
   const overdueRds=players.filter(p=>p.next_rd_date&&p.next_rd_date<today);
   const todayRds=players.filter(p=>p.next_rd_date&&p.next_rd_date<=today);
