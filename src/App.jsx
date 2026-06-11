@@ -827,11 +827,6 @@ function ManagerPage({ manager, onLogout }) {
               <option value="">Все статусы</option>
               {STATUSES.map(s=><option key={s}>{s}</option>)}
             </select>
-            {[['date','Дата'],['deposit','Деп'],['total','СЧ']].map(([col,label])=>(
-              <button key={col} onClick={()=>{ if(sortCol===col) setSortDir(d=>d==='asc'?'desc':'asc'); else{ setSortCol(col); setSortDir('desc'); }}} style={{ background:sortCol===col?"rgba(99,102,241,.2)":"transparent",border:`1px solid ${sortCol===col?"#6366f1":T.border}`,color:sortCol===col?"#a5b4fc":T.muted,padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>
-                {label} {sortCol===col?(sortDir==='asc'?'↑':'↓'):''}
-              </button>
-            ))}
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
           <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds} isPoland={myGeos.find(g=>g.id===activeGeo)?.code==='PL'}/>
