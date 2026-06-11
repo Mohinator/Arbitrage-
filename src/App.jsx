@@ -9,9 +9,9 @@ const ADMIN_PASSWORD = "admin2026";
 const STATUSES = ["Да", "Нет", "Отправил", "Кинул", "Вернул"];
 const LEAD_COLORS = [
   { key:"none", label:"Нет", dot:"#475569" },
-  { key:"hot", label:"Горячий", dot:"#ef4444", bg:"rgba(239,68,68,.06)" },
-  { key:"warm", label:"Тёплый", dot:"#f59e0b", bg:"rgba(245,158,11,.06)" },
-  { key:"cold", label:"Холодный", dot:"#6366f1", bg:"rgba(99,102,241,.06)" },
+  { key:"hot", label:"Кидок", dot:"#ef4444", bg:"rgba(239,68,68,.06)" },
+  { key:"warm", label:"Постоянник", dot:"#22c55e", bg:"rgba(34,197,94,.06)" },
+  { key:"cold", label:"Не активный", dot:"#6366f1", bg:"rgba(99,102,241,.06)" },
   { key:"problem", label:"Проблемный", dot:"#a855f7", bg:"rgba(168,85,247,.06)" },
 ];
 
@@ -169,7 +169,15 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
 
   const updateColor = async (playerId, color) => {
     if (readonly) return;
-    await supabase.from("players").update({color}).eq("id",playerId);
+    const player = (players||[]).find(p=>p.id===playerId);
+    if (player) {
+      // Обновляем цвет у всех лидов с тем же именем или SUB18
+      if (player.name) await supabase.from("players").update({color}).eq("name", player.name);
+      else if (player.sub18) await supabase.from("players").update({color}).eq("sub18", player.sub18);
+      else await supabase.from("players").update({color}).eq("id", playerId);
+    } else {
+      await supabase.from("players").update({color}).eq("id", playerId);
+    }
     setColorPopup(null); onReload();
   };
 
@@ -516,13 +524,14 @@ function ManagerPage({ manager, onLogout }) {
     if(!leadForm.platform_id||!leadForm.name||!leadForm.deposit){ showToast("Заполни все поля","error"); return; }
     const nextRd=leadForm.next_rd_date||new Date(new Date().setDate(new Date().getDate()+7)).toISOString().slice(0,10);
     const maxOrder=players.length>0?Math.max(...players.map(p=>p.sort_order||0))+1:0;
-    // Дублируем статус если лид уже есть в системе по имени или sub18
+    // Дублируем статус и цвет если лид уже есть в системе по имени или sub18
     let status=leadForm.status;
+    let color="none";
     if(leadForm.name||leadForm.sub18){
       const existing=allPlayers.find(p=>p&&((leadForm.name&&p.name===leadForm.name)||(leadForm.sub18&&p.sub18===leadForm.sub18)));
-      if(existing) status=existing.status;
+      if(existing){ status=existing.status; color=existing.color||"none"; }
     }
-    await supabase.from("players").insert({manager_id:manager.id,platform_id:leadForm.platform_id,date:leadForm.date,name:leadForm.name,sub18:leadForm.sub18,deposit:Number(leadForm.deposit),is_blik:leadForm.is_blik,status,next_rd_date:nextRd,sort_order:maxOrder});
+    await supabase.from("players").insert({manager_id:manager.id,platform_id:leadForm.platform_id,date:leadForm.date,name:leadForm.name,sub18:leadForm.sub18,deposit:Number(leadForm.deposit),is_blik:leadForm.is_blik,status,color,next_rd_date:nextRd,sort_order:maxOrder});
     showToast("Лид добавлен!"); setShowAddLead(false);
     setLeadForm({date:new Date().toISOString().slice(0,10),platform_id:"",name:"",sub18:"",deposit:"",is_blik:false,status:"Да",next_rd_date:""});
     load();
