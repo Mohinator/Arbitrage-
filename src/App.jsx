@@ -153,6 +153,14 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     setRdInputPopup(null); setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
   };
 
+  const revertRdToPlanned = async (playerId, rdNumber, amount, date) => {
+    if(readonly) return;
+    if(!confirm("Вернуть РД в плановый?")) return;
+    await supabase.from("redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
+    await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date});
+    showToast("РД возвращён в плановые"); onReload();
+  };
+
   const saveInlineRd = async () => {
     if (!inlineEdit||!inlineVal||readonly) { setInlineEdit(null); setInlineDate(""); return; }
     const { playerId, rdNumber } = inlineEdit;
@@ -276,20 +284,19 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       {colorPopup && <ColorPopup x={colorPopup.x} y={colorPopup.y} onSelect={c=>updateColor(colorPopup.playerId,c)} onClose={()=>setColorPopup(null)} dark={dark}/>}
 
       {rdInputPopup&&(()=>{
-        const openUp=rdInputPopup.y+160>window.innerHeight-20;
+        const openUp=rdInputPopup.y+100>window.innerHeight-20;
         const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
         return(
-          <div ref={rdInputRef} className="fade-in" style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-220),top:openUp?rdInputPopup.y-160:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:10,padding:12,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.5)",width:200 }}
+          <div ref={rdInputRef} className="fade-in" style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-160),top:openUp?rdInputPopup.y-90:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:8,padding:"8px 10px",zIndex:5000,boxShadow:"0 4px 20px rgba(0,0,0,.5)",width:150 }}
             onMouseDown={e=>e.stopPropagation()}>
-            <div style={{ fontSize:11,color:Tb.muted,marginBottom:8,fontWeight:700 }}>Ввести РД</div>
             <input autoFocus type="text" inputMode="numeric" placeholder="Сумма €" value={rdInputVal} onChange={e=>setRdInputVal(e.target.value)}
-              onKeyDown={e=>{ if(e.key==="Enter") saveRdPopup(); if(e.key==="Escape") setRdInputPopup(null); }}
-              style={{ background:"#0f1117",border:`1px solid ${Tb.border}`,color:Tb.text,padding:"6px 8px",borderRadius:6,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:6 }}/>
-            <input type="date" value={rdInputDate} onChange={e=>setRdInputDate(e.target.value)}
-              style={{ background:"#0f1117",border:`1px solid ${Tb.border}`,color:Tb.text,padding:"6px 8px",borderRadius:6,fontSize:12,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:8 }}/>
-            <div style={{ display:"flex",gap:6 }}>
-              <button onClick={saveRdPopup} style={{ flex:1,background:"linear-gradient(135deg,#6366f1,#818cf8)",color:"#fff",border:"none",borderRadius:6,padding:"6px 0",cursor:"pointer",fontSize:12,fontWeight:600 }}>Сохранить</button>
-              <button onClick={()=>setRdInputPopup(null)} style={{ flex:1,background:"transparent",color:Tb.muted,border:`1px solid ${Tb.border}`,borderRadius:6,padding:"6px 0",cursor:"pointer",fontSize:12 }}>Отмена</button>
+              onKeyDown={e=>{ if(e.key==="Enter"){ saveRdPopup(); } if(e.key==="Escape") setRdInputPopup(null); }}
+              onBlur={e=>{ if(!rdInputRef.current?.contains(e.relatedTarget)) saveRdPopup(); }}
+              style={{ background:"transparent",border:"none",borderBottom:`1px solid ${Tb.border}`,color:Tb.text,padding:"2px 0",fontSize:14,outline:"none",width:"100%",marginBottom:6,fontWeight:600 }}/>
+            <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+              <span style={{ fontSize:10,color:Tb.muted }}>📅</span>
+              <input type="date" value={rdInputDate} onChange={e=>setRdInputDate(e.target.value)}
+                style={{ background:"transparent",border:"none",color:Tb.muted,fontSize:11,outline:"none",flex:1,cursor:"pointer" }}/>
             </div>
           </div>
         );
@@ -323,6 +330,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
               <button onClick={()=>resetRd(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Сбросить</button>
               <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
             </div>
+            <button onClick={()=>{ revertRdToPlanned(showEditRd.playerId,showEditRd.rdNumber,showEditRd.amount,showEditRd.date); setShowEditRd(null); }} style={{ marginTop:10,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px",borderRadius:8,cursor:"pointer",fontSize:12 }}>↩ Вернуть в плановый</button>
           </div>
         </div>
       )}
@@ -406,7 +414,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                               onClick={e=>{
                                 if (readonly) return;
                                 if (!rd) { setRdInputPopup({playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}); setRdInputVal(""); setRdInputDate(today); return; }
-                                if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date});
+                                if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,canRevert:true});
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
