@@ -858,10 +858,19 @@ function ManagerPage({ manager, onLogout }) {
                 </div>
               );
             })}
-            <div style={{ position:"relative",alignSelf:"stretch" }}>
-              <div onClick={()=>setShowPlatformPicker(p=>!p)} style={{ background:T.surface,border:`1px dashed ${T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",gap:4 }}>
-                <span style={{ fontSize:28,color:T.muted,lineHeight:1,fontWeight:300 }}>+</span>
-                <span style={{ fontSize:11,color:T.muted }}>Платформы</span>
+            <div style={{ position:"relative" }}>
+              <div onClick={()=>setShowPlatformPicker(p=>!p)} style={{ background:T.surface,border:`1px dashed ${T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:4,boxSizing:"border-box" }}>
+                <div style={{ fontSize:11,fontWeight:700,color:"transparent" }}>placeholder</div>
+                <div style={{ display:"flex",gap:8,alignItems:"center" }}><span style={{ fontSize:11,color:"transparent" }}>placeholder</span></div>
+                <div style={{ fontSize:11,color:"transparent" }}>placeholder</div>
+                <div style={{ marginTop:2,width:"100%" }}>
+                  <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:2 }}><span style={{ color:"transparent" }}>x</span><span style={{ color:"transparent" }}>x</span></div>
+                  <div style={{ background:T.border,borderRadius:4,height:4 }}/>
+                </div>
+                <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",gap:4 }}>
+                  <span style={{ fontSize:28,color:T.muted,lineHeight:1,fontWeight:300 }}>+</span>
+                  <span style={{ fontSize:11,color:T.muted }}>Платформы</span>
+                </div>
               </div>
               {showPlatformPicker&&(
                 <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:300,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
