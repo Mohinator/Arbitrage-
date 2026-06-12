@@ -42,6 +42,7 @@ input[type=number]{-moz-appearance:textfield;}
 .progress-bar{transition:width .8s cubic-bezier(.4,0,.2,1);}
 .fade-in{animation:fadeIn .2s ease;}
 .slide-in{animation:slideIn .2s ease;}
+.row-hover:hover .del-btn{opacity:1!important;color:#ef4444!important;}
 .geo-tab{transition:all .15s;border-bottom:2px solid transparent;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;border:none;background:transparent;}
 .geo-tab.active{border-bottom-color:#6366f1;color:#6366f1;}
 `;
@@ -377,6 +378,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         <td style={S.td}><StatusBadge status={player.status} dark={dark} onClick={readonly?undefined:e=>setStatusPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})}/></td>
                         {isPoland&&<td style={S.td}>{player.is_blik&&<span style={{ background:dark?"linear-gradient(135deg,#451a03,#78350f)":"linear-gradient(135deg,#fef3c7,#fde68a)",color:dark?"#d97706":"#92400e",padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:700 }}>BLIK</span>}</td>}
                         <td style={{ ...S.td,maxWidth:140 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:4 }}>
                           {commentEdit===player.id&&!readonly?(
                             <input autoFocus value={commentVal} onChange={e=>setCommentVal(e.target.value)}
                               onBlur={()=>saveComment(player.id)} onKeyDown={e=>{ if(e.key==="Enter") saveComment(player.id); if(e.key==="Escape") setCommentEdit(null); }}
@@ -386,6 +388,8 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                               {player.comment||(readonly?"—":"+ заметка")}
                             </span>
                           )}
+                          {!readonly&&<button onClick={async()=>{ if(!confirm(`Удалить лида "${player.name}"?`)) return; await supabase.from("redeposits").delete().eq("player_id",player.id); await supabase.from("planned_redeposits").delete().eq("player_id",player.id); await supabase.from("players").delete().eq("id",player.id); onReload(); }} className="del-btn" style={{ marginLeft:"auto",background:"transparent",border:"none",color:"#7f1d1d",cursor:"pointer",fontSize:14,opacity:0,transition:"opacity .2s",padding:"2px 4px",borderRadius:4 }} title="Удалить лида">✕</button>}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -593,18 +597,21 @@ function ManagerPage({ manager, onLogout }) {
     setShowAutomation(false); setAutomationPreview([]); showToast("Автоматизация применена!"); load();
   };
 
+  const leadFormRef = useRef(leadForm);
+  useEffect(()=>{ leadFormRef.current=leadForm; },[leadForm]);
+
   const addLead = async () => {
-    if(!leadForm.platform_id||!leadForm.name||!leadForm.deposit){ showToast("Заполни все поля","error"); return; }
-    const nextRd=leadForm.next_rd_date||new Date(new Date().setDate(new Date().getDate()+7)).toISOString().slice(0,10);
+    const form = leadFormRef.current;
+    if(!form.platform_id||!form.name||!form.deposit){ showToast("Заполни все поля","error"); return; }
+    const nextRd=new Date(new Date().setDate(new Date().getDate()+3)).toISOString().slice(0,10);
     const maxOrder=players.length>0?Math.max(...players.map(p=>p.sort_order||0))+1:0;
-    // Дублируем статус и цвет если лид уже есть в системе по имени или sub18
-    let status=leadForm.status;
+    let status=form.status;
     let color="none";
-    if(leadForm.name||leadForm.sub18){
-      const existing=allPlayers.find(p=>p&&((leadForm.name&&p.name===leadForm.name)||(leadForm.sub18&&p.sub18===leadForm.sub18)));
+    if(form.name||form.sub18){
+      const existing=allPlayers.find(p=>p&&((form.name&&p.name===form.name)||(form.sub18&&p.sub18===form.sub18)));
       if(existing){ status=existing.status; color=existing.color||"none"; }
     }
-    await supabase.from("players").insert({manager_id:manager.id,platform_id:leadForm.platform_id,date:leadForm.date,name:leadForm.name,sub18:leadForm.sub18,deposit:Number(leadForm.deposit),is_blik:leadForm.is_blik,status,color,next_rd_date:nextRd,sort_order:maxOrder});
+    await supabase.from("players").insert({manager_id:manager.id,platform_id:form.platform_id,date:form.date,name:form.name,sub18:form.sub18,deposit:Number(form.deposit),is_blik:form.is_blik,status,color,next_rd_date:nextRd,sort_order:maxOrder});
     showToast("Лид добавлен!"); setShowAddLead(false);
     setLeadForm({date:new Date().toISOString().slice(0,10),platform_id:"",name:"",sub18:"",deposit:"",is_blik:false,status:"Да",next_rd_date:""});
     load();
@@ -701,7 +708,7 @@ function ManagerPage({ manager, onLogout }) {
           <div style={{ marginBottom:12 }}>
             <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>Статус</label>
             <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-              {STATUSES.map(st=><span key={st} onClick={()=>setLeadForm(f=>({...f,status:st}))} style={{ cursor:"pointer",outline:leadForm.status===st?"2px solid #6366f1":"none",borderRadius:20,outlineOffset:2 }}><StatusBadge status={st} dark={dark}/></span>)}
+              {STATUSES.map(st=><button key={st} type="button" onClick={e=>{ e.stopPropagation(); setLeadForm(f=>({...f,status:st})); }} style={{ cursor:"pointer",outline:leadForm.status===st?"2px solid #6366f1":"none",borderRadius:20,outlineOffset:2,background:"transparent",border:"none",padding:0 }}><StatusBadge status={st} dark={dark}/></button>)}
             </div>
           </div>
           <div style={{ display:"flex",gap:10 }}>
