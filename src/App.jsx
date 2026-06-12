@@ -1112,7 +1112,7 @@ function ManagerPage({ manager, onLogout }) {
                       }).filter(Boolean)}
                     </div>
                     <PlayersTable
-                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing)}
+                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id))}
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                       manager={manager} dark={dark}
                       readonly={!isTeamLead}
