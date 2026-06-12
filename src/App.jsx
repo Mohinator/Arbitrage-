@@ -1389,7 +1389,15 @@ function AdminPage({ onLogout }) {
 
   const platformStats=platforms.map(plat=>{ const active=players.filter(p=>p.platform_id===plat.id&&p.status==="Да"); const cnt=active.length,amt=active.reduce((s,p)=>s+calcEffectiveTotal(p),0),avg=cnt>0?amt/cnt:0,blik=active.filter(p=>p.is_blik).length,blikPct=cnt>0?Math.round((blik/cnt)*100):0; return{...plat,totalCount:cnt,totalAmount:amt,avgCheck:avg,blikCount:blik,blikPct,allCount:players.filter(p=>p.platform_id===plat.id).length}; });
   const managerStats=managers.map(m=>{ const mp=players.filter(p=>p.manager_id===m.id&&p.status==="Да"); const cnt=mp.length,amt=mp.reduce((s,p)=>s+calcEffectiveTotal(p),0); const byPlatform=platforms.map(plat=>{ const pp=mp.filter(p=>p.platform_id===plat.id),c=pp.length,a=pp.reduce((s,p)=>s+calcEffectiveTotal(p),0),blik=pp.filter(p=>p.is_blik).length,blikPct=c>0?Math.round((blik/c)*100):0; return{...plat,cnt:c,amt:a,avg:c>0?a/c:0,blik,blikPct}; }).filter(p=>p.cnt>0); const mGeos=userGeos.filter(ug=>ug.manager_id===m.id).map(ug=>geos.find(g=>g.id===ug.geo_id)).filter(Boolean); return{...m,totalCount:cnt,totalAmount:amt,byPlatform,geos:mGeos}; });
-  const filteredLog=selectedManager?activityLog.filter(l=>l.manager_id===selectedManager):activityLog;
+  const filteredLog=(()=>{
+    let log=activityLog;
+    if(selectedHistoryGeo){
+      const geoManagerIds=new Set(userGeos.filter(ug=>ug.geo_id===selectedHistoryGeo).map(ug=>ug.manager_id));
+      log=log.filter(l=>geoManagerIds.has(l.manager_id));
+    }
+    if(selectedManager) log=log.filter(l=>l.manager_id===selectedManager);
+    return log;
+  })();
   const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
 
   const S={th:{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:"1px solid #2d3148",background:"#151824"},td:{padding:"11px 12px",borderBottom:"1px solid #1a1d27"}};
@@ -1674,7 +1682,14 @@ function AdminPage({ onLogout }) {
               </select>
               <select value={selectedManager||""} onChange={e=>setSelectedManager(e.target.value||null)} style={{background:"#1a1d27",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none"}}>
                 <option value="">Все менеджеры</option>
-                {(selectedHistoryGeo?managers.filter(m=>userGeos.filter(ug=>ug.geo_id===selectedHistoryGeo).map(ug=>ug.manager_id).includes(m.id)):managers).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                {(()=>{
+                  if(!selectedHistoryGeo) return managers;
+                  // Берём менеджеров которые реально есть в истории этого гео
+                  const geoManagerIds=new Set(userGeos.filter(ug=>ug.geo_id===selectedHistoryGeo).map(ug=>ug.manager_id));
+                  // Плюс те кто есть в activityLog но может не быть в userGeos
+                  activityLog.forEach(l=>{ if(l.manager_id) geoManagerIds.add(l.manager_id); });
+                  return managers.filter(m=>geoManagerIds.has(m.id));
+                })().map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
