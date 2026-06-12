@@ -380,7 +380,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date});
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
-                              title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Отметить выполненным"}>
+                              title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
                               {rd?<div>
                                 <div style={{ fontSize:11 }}>{rd.amount}€</div>
                                 {rd.isFact
@@ -390,8 +390,9 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                         onBlur={async e=>{ await supabase.from("planned_redeposits").update({date:e.target.value}).eq("player_id",player.id).eq("rd_number",rd.rd_number); setRdDateEdit(null); onReload(); }}
                                         onKeyDown={e=>{ if(e.key==="Escape") setRdDateEdit(null); }}
                                         onClick={e=>e.stopPropagation()}/>
-                                    :<div style={{ fontSize:9,color:T.muted,marginTop:1,cursor:readonly?"default":"pointer",borderBottom:readonly?"none":`1px dashed ${T.border}` }}
-                                        onClick={e=>{ e.stopPropagation(); if(!readonly) setRdDateEdit({playerId:player.id,rdNumber:rd.rd_number}); }}>
+                                    :<div style={{ fontSize:9,color:"#6366f1",marginTop:1,cursor:readonly?"default":"pointer",borderBottom:readonly?"none":`1px dashed #6366f1` }}
+                                        onClick={e=>{ e.stopPropagation(); if(!readonly) setRdDateEdit({playerId:player.id,rdNumber:rd.rd_number}); }}
+                                        title="Изменить дату">
                                         {formatDate(rd.date)}
                                       </div>
                                 }
