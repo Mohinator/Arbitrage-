@@ -1297,12 +1297,19 @@ function ManagerPage({ manager, onLogout }) {
                 const overdue=mPlayers.filter(p=>p.next_rd_date&&p.next_rd_date<today);
                 const noPlanned=active.filter(p=>{
                   if(plannedRds.some(r=>r&&r.player_id===p.id)) return false;
-                  // Не считаем если капа платформы заполнена
                   const plat=platforms.find(pl=>pl.id===p.platform_id);
-                  if(plat?.cap){
+                  if(!plat) return true;
+                  // Не считаем если капа заполнена
+                  if(plat.cap){
                     const platActiveAll=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да").length;
                     if(platActiveAll>=plat.cap) return false;
                   }
+                  // Не считаем если плановый СЧ платформы уже достигает цели
+                  const platActive=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да");
+                  const factTotal=platActive.reduce((s,ap)=>s+calcEffectiveTotal(ap),0);
+                  const plannedExtra=platActive.reduce((s,ap)=>s+plannedRds.filter(r=>r&&r.player_id===ap.id).reduce((a,r)=>a+Number(r.amount),0),0);
+                  const plannedAvg=platActive.length>0?(factTotal+plannedExtra)/platActive.length:0;
+                  if(plannedAvg>=(plat.target_avg_check||0)) return false;
                   return true;
                 });
                 const total=active.reduce((s,p)=>s+calcEffectiveTotal(p),0);
