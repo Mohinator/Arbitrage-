@@ -130,7 +130,13 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text).then(()=>showToast("Скопировано!")); };
 
   const logAction = async (action, playerId=null, details={}) => {
-    if (manager) await supabase.from("activity_log").insert({ manager_id:manager.id, player_id:playerId, action, details });
+    // Логируем от имени владельца лида, а не текущего менеджера (тимлида)
+    let managerId = manager?.id;
+    if(playerId) {
+      const player = (players||[]).find(p=>p.id===playerId) || localPlayers?.find(p=>p.id===playerId);
+      if(player?.manager_id) managerId = player.manager_id;
+    }
+    if(managerId) await supabase.from("activity_log").insert({ manager_id:managerId, player_id:playerId, action, details });
   };
 
   const markPlannedAsDone = async (playerId, rdNumber, amount, date) => {
@@ -154,6 +160,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     const rdDate=dateVal||today;
     await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
     await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date:rdDate});
+    await logAction("rd_planned",playerId,{rd_number:rdNumber,amount,date:rdDate});
     setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован"); onReload();
   };
 
@@ -1488,7 +1495,7 @@ function AdminPage({ onLogout }) {
     if(selectedManager) log=log.filter(l=>l.manager_id===selectedManager);
     return log;
   })();
-  const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
+  const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_planned":"Запланировал РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
 
   const S={th:{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:"1px solid #2d3148",background:"#151824"},td:{padding:"11px 12px",borderBottom:"1px solid #1a1d27"}};
   const IS={background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 10px",borderRadius:7,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
