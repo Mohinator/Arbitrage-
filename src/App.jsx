@@ -831,7 +831,9 @@ function ManagerPage({ manager, onLogout }) {
             {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
               const ps=platformStats.find(s=>s.id===plat.id)||plat;
               const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
-              const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
+              const allPlatPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id);
+              const capCount=allPlatPlayers.length;
+              const capPct=plat.cap?Math.min(100,Math.round(capCount/plat.cap*100)):null;
               const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
               const factTotal=activePlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
               const plannedExtra=activePlayers.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
@@ -847,7 +849,7 @@ function ManagerPage({ manager, onLogout }) {
                   {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {ps.needMore.toFixed(0)}€</div>}
                   <div style={{ marginTop:2 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
-                      <span>Капа</span><span>{ps.totalCount||0}{ps.cap?`/${ps.cap}`:""}</span>
+                      <span>Капа</span><span>{capCount}{plat.cap?`/${plat.cap}`:""}</span>
                     </div>
                     <div style={{ background:T.border,borderRadius:4,height:4 }}>
                       {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>}
