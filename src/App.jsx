@@ -790,7 +790,7 @@ function ManagerPage({ manager, onLogout }) {
       )}
 
       {/* Header */}
-      <div style={{ background:T.hdrBg,borderBottom:`1px solid ${T.border}`,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+      <div style={{ position:"sticky",top:0,zIndex:300,background:T.hdrBg,borderBottom:`1px solid ${T.border}`,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
         <div style={{ display:"flex",alignItems:"center",gap:10 }}>
           <div style={{ width:8,height:8,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#818cf8)",boxShadow:"0 0 8px rgba(99,102,241,.6)" }}/>
           <span style={{ fontWeight:800,fontSize:15,color:T.text,letterSpacing:"0.05em" }}>АРБИТРАЖ</span>
@@ -807,7 +807,7 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Geo tabs */}
       {myGeos.length>1&&(
-        <div style={{ background:T.hdrBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex",gap:4 }}>
+        <div style={{ position:"sticky",top:57,zIndex:290,background:T.hdrBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex",gap:4 }}>
           {myGeos.map(g=>(
             <button key={g.id} onClick={()=>setActiveGeo(g.id)} className="geo-tab" style={{ color:activeGeo===g.id?"#6366f1":T.muted,borderBottomColor:activeGeo===g.id?"#6366f1":"transparent" }}>
               {g.name}
@@ -817,7 +817,7 @@ function ManagerPage({ manager, onLogout }) {
       )}
 
       {/* Nav */}
-      <div style={{ background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
+      <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
         {[["main","Мои лиды"],["todo","📋 Задачи"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
@@ -826,7 +826,7 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Sticky platform panel - shown always on main tab */}
       {tab==="main"&&(
-        <div style={{ position:"sticky",top:0,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"8px 20px" }}>
+        <div style={{ position:"sticky",top:myGeos.length>1?133:93,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"8px 20px" }}>
           <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
             {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
               const ps=platformStats.find(s=>s.id===plat.id)||plat;
