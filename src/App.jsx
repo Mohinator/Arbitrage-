@@ -824,6 +824,58 @@ function ManagerPage({ manager, onLogout }) {
         ))}
       </div>
 
+      {/* Sticky platform panel - shown always on main tab */}
+      {tab==="main"&&(
+        <div style={{ position:"sticky",top:0,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"8px 20px" }}>
+          <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
+            {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
+              const ps=platformStats.find(s=>s.id===plat.id)||plat;
+              const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
+              const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
+              const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
+              const factTotal=activePlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+              const plannedExtra=activePlayers.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
+              const plannedAvg=activePlayers.length>0?(factTotal+plannedExtra)/activePlayers.length:0;
+              return(
+                <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
+                  <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
+                  <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                    <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {(ps.avgCheck||0).toFixed(1)}€</span>
+                    <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                    <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
+                  </div>
+                  {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {ps.needMore.toFixed(0)}€</div>}
+                  <div style={{ marginTop:2 }}>
+                    <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
+                      <span>Капа</span><span>{ps.totalCount||0}{ps.cap?`/${ps.cap}`:""}</span>
+                    </div>
+                    <div style={{ background:T.border,borderRadius:4,height:4 }}>
+                      {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ position:"relative",alignSelf:"flex-start" }}>
+              <button onClick={()=>setShowPlatformPicker(p=>!p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12 }}>
+                Платформы
+              </button>
+              {showPlatformPicker&&(
+                <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:300,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
+                  {geoPlatforms.map(p=>(
+                    <label key={p.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer" }}>
+                      <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>updatePinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
+                      <span style={{ fontSize:13,color:T.text }}>{p.name}</span>
+                    </label>
+                  ))}
+                  <button onClick={()=>setShowPlatformPicker(false)} style={{ marginTop:8,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 0",cursor:"pointer",fontSize:12 }}>Закрыть</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MAIN */}
       {tab==="main"&&(
         <div style={{ padding:"16px 20px" }}>
@@ -834,56 +886,6 @@ function ManagerPage({ manager, onLogout }) {
               <span style={{ color:dark?"#fbbf24":"#92400e",fontSize:13 }}>{todayRds.map(p=>p.name).join(" · ")}</span>
             </div>
           )}
-
-          {/* Platform panel */}
-          <div style={{ position:"sticky",top:0,zIndex:100,background:T.bg,paddingBottom:10,marginBottom:4 }}>
-            <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
-              {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
-                const ps=platformStats.find(s=>s.id===plat.id)||plat;
-                const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
-                const capPct=ps.cap?Math.min(100,Math.round((ps.totalCount||0)/ps.cap*100)):null;
-                // Запланированный СЧ = фактический + плановые РД сверху
-                const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
-                const factTotal=activePlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-                const plannedExtra=activePlayers.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
-                const plannedAvg=activePlayers.length>0?(factTotal+plannedExtra)/activePlayers.length:0;
-                return(
-                  <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"10px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
-                    <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
-                    <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
-                      <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {(ps.avgCheck||0).toFixed(1)}€</span>
-                      <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
-                      <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
-                    </div>
-                    <div style={{ marginTop:2 }}>
-                      <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
-                        <span>Капа</span><span>{ps.totalCount||0}{ps.cap?`/${ps.cap}`:""}</span>
-                      </div>
-                      <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                        {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div style={{ position:"relative",alignSelf:"flex-start" }}>
-                <button onClick={()=>setShowPlatformPicker(p=>!p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12 }}>
-                  {pinnedPlatforms.length>0?"Платформы":"+ Платформы"}
-                </button>
-                {showPlatformPicker&&(
-                  <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:200,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
-                    {geoPlatforms.map(p=>(
-                      <label key={p.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer" }}>
-                        <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>updatePinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
-                        <span style={{ fontSize:13,color:T.text }}>{p.name}</span>
-                      </label>
-                    ))}
-                    <button onClick={()=>setShowPlatformPicker(false)} style={{ marginTop:8,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 0",cursor:"pointer",fontSize:12 }}>Закрыть</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
             <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
             <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
