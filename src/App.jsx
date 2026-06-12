@@ -536,8 +536,8 @@ function ManagerPage({ manager, onLogout }) {
   const [pinnedPlatforms, setPinnedPlatforms] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(`pinned_${manager.id}`)||"[]"); }catch{ return []; } });
   const updatePinnedPlatforms = (fn) => { setPinnedPlatforms(prev=>{ const next=typeof fn==='function'?fn(prev):fn; localStorage.setItem(`pinned_${manager.id}`,JSON.stringify(next)); return next; }); };
   const [showPlatformPicker, setShowPlatformPicker] = useState(false);
-  const [sortCol, setSortCol] = useState(null);
-  const [sortDir, setSortDir] = useState('desc');
+  const [todoPlatFilter, setTodoPlatFilter] = useState("");
+  const [todoMgrFilter, setTodoMgrFilter] = useState("");
   const [toast, setToast] = useState(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddRd, setShowAddRd] = useState(null);
@@ -967,7 +967,19 @@ function ManagerPage({ manager, onLogout }) {
       {/* TODO */}
       {tab==="todo"&&(
         <div style={{ padding:"16px 20px" }}>
-          <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Задачи на сегодня</h2>
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
+            <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи на сегодня</h2>
+            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+              <option value="">Все платформы</option>
+              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {isTeamLead&&(
+              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+                <option value="">Все менеджеры</option>
+                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            )}
+          </div>
           {(()=>{
             const todayStr=new Date().toISOString().slice(0,10);
             // Тимлид видит задачи всей команды своего гео
@@ -991,9 +1003,16 @@ function ManagerPage({ manager, onLogout }) {
 
             if(tasks.length===0) return <div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>На сегодня задач нет</div>;
 
+            const filtered=tasks.filter(t=>{
+              if(todoPlatFilter&&t.plat?.id!==todoPlatFilter) return false;
+              if(todoMgrFilter&&t.player?.manager_id!==todoMgrFilter) return false;
+              return true;
+            });
+
             return(
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {tasks.map(({player,plat,mgr,rdNum,date,isOverdue},idx)=>(
+                {filtered.length===0&&<div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>Нет задач по фильтру</div>}
+                {filtered.map(({player,plat,mgr,rdNum,date,isOverdue},idx)=>(
                   <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#6366f1",flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
