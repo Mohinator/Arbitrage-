@@ -120,7 +120,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
   const getPlayerPlanned = (pid) => (plannedRds||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
   const calcTotal = (player) => { const rds=getPlayerRds(player.id); return Number(player.deposit)+rds.reduce((s,r)=>s+Number(r.amount),0); };
-  const formatDate = (d) => { if(!d) return "—"; return d.slice(5).replace("-","."); };
+  const formatDate = (d) => { if(!d) return "—"; const [y,m,day]=d.split("-"); return `${day}.${m}.${y}`; };
   const getMonthKey = (date) => date?date.slice(0,7):"";
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text).then(()=>showToast("Скопировано!")); };
 
@@ -342,7 +342,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         <td style={{ ...S.td,color:T.muted,fontSize:11,cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:()=>setDateEdit(player.id)}>
                           {dateEdit===player.id&&!readonly
                             ?<input autoFocus type="date" defaultValue={player.date} onBlur={async e=>{ await supabase.from("players").update({date:e.target.value}).eq("id",player.id); setDateEdit(null); onReload(); }} onKeyDown={e=>{ if(e.key==="Escape") setDateEdit(null); }} style={{ ...IS,fontSize:11,padding:"2px 4px",width:120 }}/>
-                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.date}</span>}
+                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.date?(([y,m,d])=>`${d}.${m}.${y}`)(player.date.split("-")):"—"}</span>}
                         </td>
                         <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:e=>setPlatformPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} title={readonly?"":plat?.name}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,fontSize:12,fontWeight:500 }}>
@@ -728,7 +728,7 @@ function ManagerPage({ manager, onLogout }) {
       getPlayerRds(p.id).forEach(rd=>{ const dd=rd.date||d; if(!byDay[dd]) byDay[dd]={total:0,cnt:0}; byDay[dd].total+=Number(rd.amount); });
     });
     let rt=0,rc=0;
-    return Object.keys(byDay).sort().map(date=>{ rt+=byDay[date].total; rc+=byDay[date].cnt||0; return{date:date.slice(5).replace("-","."),sch:rc>0?Math.round((rt/rc)*10)/10:0}; });
+    return Object.keys(byDay).sort().map(date=>{ rt+=byDay[date].total; rc+=byDay[date].cnt||0; const [y,m,d]=date.split("-"); return{date:`${d}.${m}`,sch:rc>0?Math.round((rt/rc)*10)/10:0}; });
   })();
 
   const T = dark ? { bg:"#0f1117",surface:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b",sub:"#94a3b8",navBg:"#151824",hdrBg:"#1a1d27",inputBg:"#0f1117",alertBg:"#1c160a",alertBorder:"#d97706",thBg:"#151824",rowBorder:"#1e2235" }
@@ -771,7 +771,7 @@ function ManagerPage({ manager, onLogout }) {
                         <tr key={item.player.id}>
                           <td style={{ padding:"7px 8px",color:T.text,fontSize:12,fontWeight:500,borderBottom:`1px solid ${T.rowBorder}` }}>{item.player.name}</td>
                           <td style={{ padding:"7px 8px",color:T.sub,fontSize:11,borderBottom:`1px solid ${T.rowBorder}` }}>{item.plat.name}</td>
-                          {rdArr.map((rd,i)=><td key={i} style={{ padding:"5px 4px",textAlign:"center",fontSize:11,borderBottom:`1px solid ${T.rowBorder}`,color:rd?"#818cf8":T.border }}>{rd?<div><div style={{ fontWeight:600 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted }}>{rd.date?.slice(5).replace("-",".")}</div></div>:"—"}</td>)}
+                          {rdArr.map((rd,i)=><td key={i} style={{ padding:"5px 4px",textAlign:"center",fontSize:11,borderBottom:`1px solid ${T.rowBorder}`,color:rd?"#818cf8":T.border }}>{rd?<div><div style={{ fontWeight:600 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted }}>{rd.date?(([y,m,d])=>`${d}.${m}`)(rd.date.split("-")):"—"}</div></div>:"—"}</td>)}
                           <td style={{ padding:"7px 8px",borderBottom:`1px solid ${T.rowBorder}` }}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 7px",borderRadius:5,fontWeight:700,fontSize:11 }}>{newSch.toFixed(1)}€</span></td>
                         </tr>
                       );
@@ -1023,7 +1023,7 @@ function ManagerPage({ manager, onLogout }) {
                         <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
                         <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
-                        <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {player.next_rd_date?.slice(5).replace("-",".")}</span></td>
+                        <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {player.next_rd_date?(([y,m,d])=>`${d}.${m}.${y}`)(player.next_rd_date.split("-")):"—"}</span></td>
                         <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
                         <td style={S.td}><StatusBadge status={player.status} dark={dark} onClick={e=>{ /* handled in PlayersTable */ }}/></td>
                       </tr>
