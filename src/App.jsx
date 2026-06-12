@@ -106,6 +106,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [showEditRd, setShowEditRd] = useState(null);
   const [inlineEdit, setInlineEdit] = useState(null);
   const [inlineVal, setInlineVal] = useState("");
+  const [inlineDate, setInlineDate] = useState("");
   const [commentEdit, setCommentEdit] = useState(null);
   const [commentVal, setCommentVal] = useState("");
   const [hiddenMonths, setHiddenMonths] = useState(new Set());
@@ -137,14 +138,14 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   };
 
   const saveInlineRd = async () => {
-    if (!inlineEdit||!inlineVal||readonly) { setInlineEdit(null); return; }
+    if (!inlineEdit||!inlineVal||readonly) { setInlineEdit(null); setInlineDate(""); return; }
     const { playerId, rdNumber } = inlineEdit;
     const amount = parseFloat(inlineVal);
-    if (!amount||amount<=0) { setInlineEdit(null); setInlineVal(""); return; }
-    // Сохраняем как плановый — станет фактическим по клику
+    if (!amount||amount<=0) { setInlineEdit(null); setInlineVal(""); setInlineDate(""); return; }
+    const rdDate = inlineDate || today;
     await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
-    await supabase.from("planned_redeposits").insert({ player_id:playerId, rd_number:rdNumber, amount, date:today });
-    setInlineEdit(null); setInlineVal(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
+    await supabase.from("planned_redeposits").insert({ player_id:playerId, rd_number:rdNumber, amount, date:rdDate });
+    setInlineEdit(null); setInlineVal(""); setInlineDate(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
   };
 
   const confirmPlannedRd = async (playerId, rdNumber, amount) => {
@@ -360,9 +361,14 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                           const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
                           if (isInline&&!readonly) return (
                             <td key={i} style={S.rdTd}>
-                              <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
-                                onKeyDown={e=>{ if(e.key==="Enter") saveInlineRd(); if(e.key==="Escape"){ setInlineEdit(null); setInlineVal(""); }}}
-                                onBlur={saveInlineRd}/>
+                              <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
+                                <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" placeholder="сумма" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
+                                  onKeyDown={e=>{ if(e.key==="Enter") saveInlineRd(); if(e.key==="Escape"){ setInlineEdit(null); setInlineVal(""); setInlineDate(""); }}}
+                                  onBlur={e=>{ if(!e.relatedTarget||!e.currentTarget.parentNode.contains(e.relatedTarget)) saveInlineRd(); }}
+                                  style={{ width:60,fontSize:11 }}/>
+                                <input type="date" value={inlineDate||today} onChange={e=>setInlineDate(e.target.value)}
+                                  style={{ ...IS,fontSize:9,padding:"2px 4px",width:60 }}/>
+                              </div>
                             </td>
                           );
                           return (
@@ -421,7 +427,7 @@ function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, myGeos,
             <div key={k} style={{ gridColumn:k==="name"?"1/-1":undefined }}>
               <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
               {t==="select"
-                ?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">Выбери платформу</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                ?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">— Без платформы</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
                 :<input type={t==="number"?"text":t} inputMode={t==="number"?"numeric":undefined} value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}/>}
             </div>
           ))}
@@ -645,7 +651,7 @@ function ManagerPage({ manager, onLogout }) {
 
   const addLead = async () => {
     const form = leadFormRef.current;
-    if(!form.platform_id||!form.name||!form.deposit){ showToast("Заполни все поля","error"); return; }
+    if(!form.name||!form.deposit){ showToast("Заполни имя и депозит","error"); return; }
     const nextRd=new Date(new Date().setDate(new Date().getDate()+3)).toISOString().slice(0,10);
     const maxOrder=players.length>0?Math.max(...players.map(p=>p.sort_order||0))+1:0;
     const status=form.status; // всегда берём статус из формы
