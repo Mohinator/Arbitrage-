@@ -107,6 +107,10 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [inlineEdit, setInlineEdit] = useState(null);
   const [inlineVal, setInlineVal] = useState("");
   const [inlineDate, setInlineDate] = useState("");
+  const [rdInputPopup, setRdInputPopup] = useState(null); // {playerId, rdNumber, x, y}
+  const [rdInputVal, setRdInputVal] = useState("");
+  const [rdInputDate, setRdInputDate] = useState("");
+  const rdInputRef = useRef();
   const [rdDateEdit, setRdDateEdit] = useState(null); // {playerId, rdNumber}
   const [commentEdit, setCommentEdit] = useState(null);
   const [commentVal, setCommentVal] = useState("");
@@ -136,6 +140,17 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     await supabase.from("players").update({ next_rd_date:nextRd }).eq("id",playerId);
     await logAction("rd_marked_done",playerId,{rd_number:rdNumber,amount,date});
     showToast("РД выполнен!"); onReload();
+  };
+
+  const saveRdPopup = async () => {
+    if(!rdInputPopup||!rdInputVal||readonly) { setRdInputPopup(null); return; }
+    const {playerId,rdNumber}=rdInputPopup;
+    const amount=parseFloat(rdInputVal);
+    if(!amount||amount<=0){ setRdInputPopup(null); setRdInputVal(""); setRdInputDate(""); return; }
+    const rdDate=rdInputDate||today;
+    await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
+    await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date:rdDate});
+    setRdInputPopup(null); setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
   };
 
   const saveInlineRd = async () => {
@@ -210,6 +225,13 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   };
 
   useEffect(() => {
+    if(!rdInputPopup) return;
+    const h=(e)=>{ if(rdInputRef.current&&!rdInputRef.current.contains(e.target)) setRdInputPopup(null); };
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[rdInputPopup]);
+
+  useEffect(() => {
     if(!platformPopup) return;
     const h=()=>setPlatformPopup(null);
     document.addEventListener("mousedown",h);
@@ -252,6 +274,26 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     <>
       {statusPopup && <StatusPopup x={statusPopup.x} y={statusPopup.y} onSelect={st=>updateStatus(statusPopup.playerId,st)} onClose={()=>setStatusPopup(null)} dark={dark}/>}
       {colorPopup && <ColorPopup x={colorPopup.x} y={colorPopup.y} onSelect={c=>updateColor(colorPopup.playerId,c)} onClose={()=>setColorPopup(null)} dark={dark}/>}
+
+      {rdInputPopup&&(()=>{
+        const openUp=rdInputPopup.y+160>window.innerHeight-20;
+        const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
+        return(
+          <div ref={rdInputRef} className="fade-in" style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-220),top:openUp?rdInputPopup.y-160:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:10,padding:12,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.5)",width:200 }}
+            onMouseDown={e=>e.stopPropagation()}>
+            <div style={{ fontSize:11,color:Tb.muted,marginBottom:8,fontWeight:700 }}>Ввести РД</div>
+            <input autoFocus type="text" inputMode="numeric" placeholder="Сумма €" value={rdInputVal} onChange={e=>setRdInputVal(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter") saveRdPopup(); if(e.key==="Escape") setRdInputPopup(null); }}
+              style={{ background:"#0f1117",border:`1px solid ${Tb.border}`,color:Tb.text,padding:"6px 8px",borderRadius:6,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:6 }}/>
+            <input type="date" value={rdInputDate} onChange={e=>setRdInputDate(e.target.value)}
+              style={{ background:"#0f1117",border:`1px solid ${Tb.border}`,color:Tb.text,padding:"6px 8px",borderRadius:6,fontSize:12,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:8 }}/>
+            <div style={{ display:"flex",gap:6 }}>
+              <button onClick={saveRdPopup} style={{ flex:1,background:"linear-gradient(135deg,#6366f1,#818cf8)",color:"#fff",border:"none",borderRadius:6,padding:"6px 0",cursor:"pointer",fontSize:12,fontWeight:600 }}>Сохранить</button>
+              <button onClick={()=>setRdInputPopup(null)} style={{ flex:1,background:"transparent",color:Tb.muted,border:`1px solid ${Tb.border}`,borderRadius:6,padding:"6px 0",cursor:"pointer",fontSize:12 }}>Отмена</button>
+            </div>
+          </div>
+        );
+      })()}
       {platformPopup && (()=>{
         const popupH=platforms.length*32+16;
         const openUp=platformPopup.y+popupH>window.innerHeight-20;
@@ -357,26 +399,13 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         </td>
                         <td style={{ ...S.td,color:T.text,fontWeight:600 }}>{player.deposit}€</td>
                         {rdArr.map((rd,i)=>{
-                          const isInline=inlineEdit?.playerId===player.id&&inlineEdit?.rdNumber===i+1;
                           const isToday=rd&&!rd.isFact&&rd.date===today;
                           const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
-                          if (isInline&&!readonly) return (
-                            <td key={i} style={S.rdTd}>
-                              <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
-                                <input autoFocus className="rd-input" type="text" inputMode="numeric" pattern="[0-9]*" placeholder="сумма" value={inlineVal} onChange={e=>setInlineVal(e.target.value)}
-                                  onKeyDown={e=>{ if(e.key==="Enter") saveInlineRd(); if(e.key==="Escape"){ setInlineEdit(null); setInlineVal(""); setInlineDate(""); }}}
-                                  onBlur={e=>{ if(!e.relatedTarget||!e.currentTarget.parentNode.contains(e.relatedTarget)) saveInlineRd(); }}
-                                  style={{ width:60,fontSize:11 }}/>
-                                <input type="date" value={inlineDate||today} onChange={e=>setInlineDate(e.target.value)}
-                                  style={{ ...IS,fontSize:9,padding:"2px 4px",width:60 }}/>
-                              </div>
-                            </td>
-                          );
                           return (
                             <td key={i} className="rd-cell" style={{ ...S.rdTd,color:rdColor,fontWeight:rd?.isFact?700:400,lineHeight:1.3 }}
-                              onClick={()=>{
+                              onClick={e=>{
                                 if (readonly) return;
-                                if (!rd) { setInlineEdit({playerId:player.id,rdNumber:i+1}); setInlineVal(""); return; }
+                                if (!rd) { setRdInputPopup({playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}); setRdInputVal(""); setRdInputDate(today); return; }
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date});
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
