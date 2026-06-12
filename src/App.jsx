@@ -1021,9 +1021,10 @@ function ManagerPage({ manager, onLogout }) {
                 </div>
                 <div style={{ display:"flex",gap:10,flexWrap:"wrap",marginBottom:16 }}>
                   {geoManagers2.map(m=>{
-                    const mPlayers=allPlayers.filter(p=>p&&p.id&&p.manager_id===m.id&&p.status==="Да");
-                    const total=mPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-                    const avg=mPlayers.length>0?total/mPlayers.length:0;
+                    const mPlayers=allPlayers.filter(p=>p&&p.id&&p.manager_id===m.id);
+                    const mActive=mPlayers.filter(p=>p.status==="Да");
+                    const total=mActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                    const avg=mActive.length>0?total/mActive.length:0;
                     const isViewing=viewing===m.id;
                     return(
                       <div key={m.id} onClick={()=>setViewingManager(prev=>({...prev,[geo.id]:isViewing?null:m.id}))} style={{ background:isViewing?`linear-gradient(135deg,${dark?"#1e3a5f":"#dbeafe"},${dark?"#1e2235":"#eff6ff"})`:T.surface,border:`1px solid ${isViewing?"#6366f1":T.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",transition:"all .2s",minWidth:160 }}>
@@ -1033,6 +1034,7 @@ function ManagerPage({ manager, onLogout }) {
                           {m.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:9,padding:"1px 5px",borderRadius:4,fontWeight:700 }}>ТЛ</span>}
                         </div>
                         <div style={{ fontSize:11,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
+                        <div style={{ fontSize:11,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mActive.length}</strong></div>
                         <div style={{ fontSize:11,color:T.muted }}>СЧ: <strong style={{ color:avg>0?(avg>=platforms[0]?.target_avg_check?"#86efac":"#fca5a5"):T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
                       </div>
                     );
