@@ -836,7 +836,7 @@ function ManagerPage({ manager, onLogout }) {
           )}
 
           {/* Platform panel */}
-          <div style={{ marginBottom:14 }}>
+          <div style={{ position:"sticky",top:0,zIndex:100,background:T.bg,paddingBottom:10,marginBottom:4 }}>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
               {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
                 const ps=platformStats.find(s=>s.id===plat.id)||plat;
