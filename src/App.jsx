@@ -649,11 +649,11 @@ function ManagerPage({ manager, onLogout }) {
     if(!form.platform_id||!form.name||!form.deposit){ showToast("Заполни все поля","error"); return; }
     const nextRd=new Date(new Date().setDate(new Date().getDate()+3)).toISOString().slice(0,10);
     const maxOrder=players.length>0?Math.max(...players.map(p=>p.sort_order||0))+1:0;
-    let status=form.status;
+    const status=form.status; // всегда берём статус из формы
     let color="none";
     if(form.name||form.sub18){
       const existing=allPlayers.find(p=>p&&((form.name&&p.name===form.name)||(form.sub18&&p.sub18===form.sub18)));
-      if(existing){ status=existing.status; color=existing.color||"none"; }
+      if(existing){ color=existing.color||"none"; } // только цвет берём из существующего
     }
     await supabase.from("players").insert({manager_id:manager.id,platform_id:form.platform_id,date:form.date,name:form.name,sub18:form.sub18,deposit:Number(form.deposit),is_blik:form.is_blik,status,color,next_rd_date:nextRd,sort_order:maxOrder});
     showToast("Лид добавлен!"); setShowAddLead(false);
