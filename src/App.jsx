@@ -831,7 +831,7 @@ function ManagerPage({ manager, onLogout }) {
             {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
               const ps=platformStats.find(s=>s.id===plat.id)||plat;
               const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
-              const allPlatPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id);
+              const allPlatPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
               const capCount=allPlatPlayers.length;
               const capPct=plat.cap?Math.min(100,Math.round(capCount/plat.cap*100)):null;
               const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
