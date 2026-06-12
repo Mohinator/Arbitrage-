@@ -1298,7 +1298,44 @@ function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка</h2>
 
-          {/* Manager summary */}
+          {/* Platform summary - admin style */}
+          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>Общий СЧ по платформам</h3>
+          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
+            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+              <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <tbody>
+                {geoPlatforms.map(plat=>{
+                  const platPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
+                  if(platPlayers.length===0) return null;
+                  const total=platPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                  const avg=platPlayers.length>0?total/platPlayers.length:0;
+                  const need=Math.max(0,plat.target_avg_check*platPlayers.length-total);
+                  const ok=avg>=plat.target_avg_check;
+                  const capPct=plat.cap?Math.min(100,Math.round(platPlayers.length/plat.cap*100)):null;
+                  return(
+                    <tr key={plat.id} className="row-hover">
+                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{plat.name}</td>
+                      <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{platPlayers.length}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{total.toFixed(0)}€</td>
+                      <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{avg.toFixed(1)}€</span></td>
+                      <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
+                      <td style={S.td}>
+                        {capPct!==null
+                          ?<div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                              <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4 }}/></div>
+                              <span style={{ fontSize:11,color:T.muted }}>{platPlayers.length}/{plat.cap}</span>
+                            </div>
+                          :<span style={{ color:T.muted }}>—</span>}
+                      </td>
+                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"✓"}</td>
+                    </tr>
+                  );
+                }).filter(Boolean)}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Manager summary - detailed admin style */}
           <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>По менеджерам</h3>
           <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:28 }}>
             {(()=>{
@@ -1306,18 +1343,13 @@ function ManagerPage({ manager, onLogout }) {
               const geoMgrs=allManagers.filter(m=>m&&geoManagerIds.includes(m.id));
               return geoMgrs.map(mgr=>{
                 const mPlayers=allPlayers.filter(p=>p&&p.manager_id===mgr.id);
-                const active=mPlayers.filter(p=>p.status==="Да");
-                const overdue=mPlayers.filter(p=>p.next_rd_date&&p.next_rd_date<today);
+                const active=mPlayers.filter(p=>p.status==="Да"&&geoPlatforms.some(pl=>pl.id===p.platform_id));
+                const overdue=active.filter(p=>p.next_rd_date&&p.next_rd_date<today);
                 const noPlanned=active.filter(p=>{
                   if(plannedRds.some(r=>r&&r.player_id===p.id)) return false;
                   const plat=platforms.find(pl=>pl.id===p.platform_id);
                   if(!plat) return true;
-                  // Не считаем если капа заполнена
-                  if(plat.cap){
-                    const platActiveAll=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да").length;
-                    if(platActiveAll>=plat.cap) return false;
-                  }
-                  // Не считаем если плановый СЧ этого менеджера по платформе уже достигает цели
+                  if(plat.cap){ const platActiveAll=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да").length; if(platActiveAll>=plat.cap) return false; }
                   const mgrPlatActive=active.filter(ap=>ap.platform_id===plat.id);
                   const mgrFactTotal=mgrPlatActive.reduce((s,ap)=>s+calcEffectiveTotal(ap),0);
                   const mgrPlannedExtra=mgrPlatActive.reduce((s,ap)=>s+plannedRds.filter(r=>r&&r.player_id===ap.id).reduce((a,r)=>a+Number(r.amount),0),0);
@@ -1327,56 +1359,48 @@ function ManagerPage({ manager, onLogout }) {
                 });
                 const total=active.reduce((s,p)=>s+calcEffectiveTotal(p),0);
                 const avg=active.length>0?total/active.length:0;
+                const mgrGeos=userGeos.filter(ug=>ug.manager_id===mgr.id).map(ug=>geos.find(g=>g.id===ug.geo_id)).filter(Boolean);
                 return(
-                  <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
-                      <div style={{ width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1" }}/>
+                  <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
+                    <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:active.length>0?`1px solid ${T.border}`:"none" }}>
+                      <div style={{ width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1",flexShrink:0 }}/>
                       <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{mgr.name}</span>
-                      {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4 }}>ТЛ</span>}
+                      {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700 }}>Тим лид</span>}
+                      {mgrGeos.map(g=><span key={g.id} style={{ background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:10,padding:"1px 6px",borderRadius:4 }}>{g.name}</span>)}
+                      <div style={{ flex:1 }}/>
+                      <span style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></span>
+                      <span style={{ fontSize:12,color:T.muted }}>Сумма: <strong style={{ color:T.text }}>{total.toFixed(0)}€</strong></span>
+                      {overdue.length>0&&<span style={{ fontSize:12,color:"#fca5a5" }}>⚠ Просроч: <strong>{overdue.length}</strong></span>}
+                      {noPlanned.length>0&&<span style={{ fontSize:12,color:"#f59e0b" }}>📋 Без план РД: <strong>{noPlanned.length}</strong></span>}
                     </div>
-                    <div style={{ display:"flex",gap:20,flexWrap:"wrap" }}>
-                      <div style={{ fontSize:12,color:T.muted }}>Лидов (Да): <strong style={{ color:T.text }}>{active.length}</strong></div>
-                      <div style={{ fontSize:12,color:T.muted }}>СЧ: <strong style={{ color:avg>0?"#86efac":T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
-                      {overdue.length>0&&<div style={{ fontSize:12,color:"#fca5a5" }}>⚠ Просрочено РД: <strong>{overdue.length}</strong></div>}
-                      {noPlanned.length>0&&<div style={{ fontSize:12,color:"#f59e0b" }}>📋 Без плановых РД: <strong>{noPlanned.length}</strong></div>}
-                    </div>
-                    {overdue.length>0&&(
-                      <div style={{ marginTop:8,fontSize:11,color:T.muted }}>
-                        Просрочены: {overdue.map(p=><span key={p.id} style={{ background:"rgba(239,68,68,.1)",color:"#fca5a5",padding:"1px 6px",borderRadius:4,marginRight:4 }}>{p.name}</span>)}
-                      </div>
+                    {active.length>0&&(
+                      <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                        <thead><tr>{["Платформа","Лидов","Сумма","СЧ цель","СЧ факт"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
+                        <tbody>
+                          {geoPlatforms.map(plat=>{
+                            const pp=active.filter(p=>p.platform_id===plat.id);
+                            if(!pp.length) return null;
+                            const pt=pp.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                            const pa=pt/pp.length;
+                            const ok=pa>=plat.target_avg_check;
+                            return(
+                              <tr key={plat.id} className="row-hover">
+                                <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat.name}</td>
+                                <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{pp.length}</td>
+                                <td style={{ ...S.td,color:T.sub }}>{pt.toFixed(0)}€</td>
+                                <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
+                                <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{pa.toFixed(1)}€</span></td>
+                              </tr>
+                            );
+                          }).filter(Boolean)}
+                        </tbody>
+                      </table>
                     )}
+                    {active.length===0&&<div style={{ padding:"10px 16px",color:T.muted,fontSize:12 }}>Нет данных</div>}
                   </div>
                 );
               });
             })()}
-          </div>
-
-          {/* Platform stats */}
-          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>По платформам</h3>
-          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-            <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-              <tbody>
-                {geoPlatforms.map(plat=>{
-                  const platPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
-                  if(platPlayers.length===0) return null;
-                  const total=platPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-                  const avg=platPlayers.length>0?total/platPlayers.length:0;
-                  const need=Math.max(0,plat.target_avg_check*platPlayers.length-total);
-                  const ok=avg>=plat.target_avg_check;
-                  return(
-                    <tr key={plat.id} className="row-hover">
-                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{plat.name}</td>
-                      <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{platPlayers.length}</td>
-                      <td style={{ ...S.td,color:T.sub }}>{total.toFixed(0)}€</td>
-                      <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{avg.toFixed(1)}€</span></td>
-                      <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
-                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"✓"}</td>
-                    </tr>
-                  );
-                }).filter(Boolean)}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
