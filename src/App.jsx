@@ -98,6 +98,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [_localExcluded, _setLocalExcluded] = useState(new Set());
   const excludedIds = _excludedIds || _localExcluded;
   const setExcludedIds = _setExcludedIds || _setLocalExcluded;
+  const [platformPopup, setPlatformPopup] = useState(null); // {playerId, x, y}
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
@@ -193,11 +194,24 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     setColorPopup(null); onReload();
   };
 
+  const updatePlatform = async (playerId, platformId) => {
+    if(readonly) return;
+    await supabase.from("players").update({platform_id:platformId}).eq("id",playerId);
+    setPlatformPopup(null); onReload();
+  };
+
   const saveComment = async (playerId) => {
     if (readonly) return;
     await supabase.from("players").update({ comment:commentVal }).eq("id",playerId);
     setCommentEdit(null); onReload();
   };
+
+  useEffect(() => {
+    if(!platformPopup) return;
+    const h=()=>setPlatformPopup(null);
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[platformPopup]);
 
   const handleDragStart = (idx) => { if (readonly) return; setDragIdx(idx); };
   const handleDragOver = (e, idx) => {
@@ -235,6 +249,18 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     <>
       {statusPopup && <StatusPopup x={statusPopup.x} y={statusPopup.y} onSelect={st=>updateStatus(statusPopup.playerId,st)} onClose={()=>setStatusPopup(null)} dark={dark}/>}
       {colorPopup && <ColorPopup x={colorPopup.x} y={colorPopup.y} onSelect={c=>updateColor(colorPopup.playerId,c)} onClose={()=>setColorPopup(null)} dark={dark}/>}
+      {platformPopup && (()=>{
+        const popupH=platforms.length*32+16;
+        const openUp=platformPopup.y+popupH>window.innerHeight-20;
+        const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
+        return(
+          <div className="fade-in" style={{ position:"fixed",left:platformPopup.x,top:openUp?platformPopup.y-popupH:platformPopup.y,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:10,padding:6,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:180,maxHeight:280,overflowY:"auto" }}
+            onMouseDown={e=>e.stopPropagation()}>
+            <div style={{ fontSize:10,color:Tb.muted,padding:"4px 10px 6px",fontWeight:700,textTransform:"uppercase" }}>Сменить платформу</div>
+            {platforms.map(p=><div key={p.id} onClick={()=>updatePlatform(platformPopup.playerId,p.id)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",fontSize:12,color:Tb.text,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{p.name}</div>)}
+          </div>
+        );
+      })()}
 
       {showEditRd && !readonly && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setShowEditRd(null)}>
@@ -311,7 +337,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                           <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
                         </td>}
                         <td style={{ ...S.td,color:T.muted,fontSize:11 }}>{player.date}</td>
-                        <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis" }}>{plat?.name||"—"}</td>
+                        <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:e=>setPlatformPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} title={readonly?"":plat?.name}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,fontSize:12,fontWeight:500 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                             {!readonly && <div onClick={e=>setColorPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} style={{ width:8,height:8,borderRadius:"50%",background:colorInfo.dot,cursor:"pointer",flexShrink:0 }} title="Цвет"/>}
