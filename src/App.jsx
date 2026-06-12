@@ -1706,6 +1706,7 @@ function AdminPage({ onLogout }) {
                 ?managers.filter(m=>m.id===adminViewManager)
                 :managers.filter(m=>userGeos.some(ug=>ug.geo_id===adminViewGeo&&ug.manager_id===m.id));
               const geoPlatforms=platforms.filter(p=>p.geo_id===adminViewGeo);
+              const geoPlatformIds=new Set(geoPlatforms.map(p=>p.id));
               const isPoland=geos.find(g=>g.id===adminViewGeo)?.code==='PL';
               return geoManagers.map(mgr=>(
                 <div key={mgr.id} style={{marginBottom:32}}>
@@ -1715,8 +1716,8 @@ function AdminPage({ onLogout }) {
                     {mgr.role==="team_lead"&&<span style={{background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
                   </div>
                   <PlayersTable
-                    players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id)}
-                    redeposits={redeposits} plannedRds={plannedRds} platforms={geoPlatforms}
+                    players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id&&(!geoPlatformIds.size||geoPlatformIds.has(p.platform_id)||!p.platform_id))}
+                    redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                     manager={mgr} dark={true} readonly={false}
                     onReload={load} showToast={showToast} isPoland={isPoland}
                   />
