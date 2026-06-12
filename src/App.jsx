@@ -1322,9 +1322,8 @@ function ManagerPage({ manager, onLogout }) {
                       {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4 }}>ТЛ</span>}
                     </div>
                     <div style={{ display:"flex",gap:20,flexWrap:"wrap" }}>
-                      <div style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></div>
+                      <div style={{ fontSize:12,color:T.muted }}>Лидов (Да): <strong style={{ color:T.text }}>{active.length}</strong></div>
                       <div style={{ fontSize:12,color:T.muted }}>СЧ: <strong style={{ color:avg>0?"#86efac":T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
-                      <div style={{ fontSize:12,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
                       {overdue.length>0&&<div style={{ fontSize:12,color:"#fca5a5" }}>⚠ Просрочено РД: <strong>{overdue.length}</strong></div>}
                       {noPlanned.length>0&&<div style={{ fontSize:12,color:"#f59e0b" }}>📋 Без плановых РД: <strong>{noPlanned.length}</strong></div>}
                     </div>
