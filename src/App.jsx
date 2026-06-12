@@ -1323,21 +1323,25 @@ function AdminPage({ onLogout }) {
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
   const [selectedManager, setSelectedManager] = useState(null);
   const [selectedHistoryGeo, setSelectedHistoryGeo] = useState(null);
+  const [adminViewGeo, setAdminViewGeo] = useState(null);
+  const [adminViewManager, setAdminViewManager] = useState(null);
+  const [plannedRds, setPlannedRds] = useState([]);
   const [assigningManager, setAssigningManager] = useState(null); // manager id for geo assignment
 
   const showToast = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
 
   const load = async () => {
-    const [{ data:m },{ data:p },{ data:pl },{ data:rd },{ data:g },{ data:ug },{ data:log }] = await Promise.all([
+    const [{ data:m },{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:g },{ data:ug },{ data:log }] = await Promise.all([
       supabase.from("managers").select("*").order("created_at"),
       supabase.from("platforms").select("*").order("sort_order").order("name"),
       supabase.from("players").select("*"),
       supabase.from("redeposits").select("*"),
+      supabase.from("planned_redeposits").select("*"),
       supabase.from("geos").select("*").order("name"),
       supabase.from("user_geos").select("*"),
       supabase.from("activity_log").select("*, managers(name), players(name)").order("created_at",{ascending:false}).limit(200),
     ]);
-    setManagers(m||[]); setPlatforms(p||[]); setPlayers(pl||[]); setRedeposits(rd||[]);
+    setManagers(m||[]); setPlatforms(p||[]); setPlayers(pl||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
     setGeos(g||[]); setUserGeos(ug||[]); setActivityLog(log||[]);
   };
   useEffect(()=>{ load(); },[]);
@@ -1439,7 +1443,7 @@ function AdminPage({ onLogout }) {
       </div>
 
       <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"0 24px",display:"flex"}}>
-        {[["overview","Сводка"],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["history","История"]].map(([key,label])=>(
+        {[["overview","Сводка"],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["history","История"],["leads","Лиды"]].map(([key,label])=>(
           <button key={key} onClick={()=>setTab(key)} className="nb" style={{background:"transparent",border:"none",color:tab===key?"#6366f1":"#64748b",padding:"12px 18px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent"}}>{label}</button>
         ))}
       </div>
@@ -1679,6 +1683,46 @@ function AdminPage({ onLogout }) {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {tab==="leads"&&(
+          <div>
+            <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Лиды менеджеров</h2>
+            <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+              <select value={adminViewGeo||""} onChange={e=>{ setAdminViewGeo(e.target.value||null); setAdminViewManager(null); }} style={{...IS,width:"auto",minWidth:160}}>
+                <option value="">Выбери гео</option>
+                {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+              {adminViewGeo&&(
+                <select value={adminViewManager||""} onChange={e=>setAdminViewManager(e.target.value||null)} style={{...IS,width:"auto",minWidth:160}}>
+                  <option value="">Все менеджеры</option>
+                  {managers.filter(m=>userGeos.some(ug=>ug.geo_id===adminViewGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              )}
+            </div>
+            {adminViewGeo&&(()=>{
+              const geoManagers=adminViewManager
+                ?managers.filter(m=>m.id===adminViewManager)
+                :managers.filter(m=>userGeos.some(ug=>ug.geo_id===adminViewGeo&&ug.manager_id===m.id));
+              const geoPlatforms=platforms.filter(p=>p.geo_id===adminViewGeo);
+              const isPoland=geos.find(g=>g.id===adminViewGeo)?.code==='PL';
+              return geoManagers.map(mgr=>(
+                <div key={mgr.id} style={{marginBottom:32}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                    <div style={{width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1"}}/>
+                    <span style={{color:"#fff",fontWeight:700,fontSize:15}}>{mgr.name}</span>
+                    {mgr.role==="team_lead"&&<span style={{background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
+                  </div>
+                  <PlayersTable
+                    players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id)}
+                    redeposits={redeposits} plannedRds={plannedRds} platforms={geoPlatforms}
+                    manager={mgr} dark={true} readonly={false}
+                    onReload={load} showToast={showToast} isPoland={isPoland}
+                  />
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
