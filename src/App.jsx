@@ -970,18 +970,21 @@ function ManagerPage({ manager, onLogout }) {
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Задачи на сегодня</h2>
           {(()=>{
             const todayStr=new Date().toISOString().slice(0,10);
-            const tasks=players.filter(p=>p.status==="Да").flatMap(p=>{
+            // Тимлид видит задачи всей команды своего гео
+            const sourcePlayers=isTeamLead
+              ? allPlayers.filter(p=>p&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
+              : players.filter(p=>p.status==="Да");
+            const tasks=sourcePlayers.flatMap(p=>{
               const factRds=redeposits.filter(r=>r&&r.player_id===p.id);
               const planned=plannedRds.filter(r=>r&&r.player_id===p.id).sort((a,b)=>a.rd_number-b.rd_number);
               const plat=platforms.find(pl=>pl.id===p.platform_id);
+              const mgr=allManagers.find(m=>m.id===p.manager_id);
               const results=[];
-              // Плановые РД на сегодня
               planned.forEach(r=>{
-                if(r.date===todayStr) results.push({ player:p, plat, rdNum:r.rd_number, date:r.date, isOverdue:false });
+                if(r.date===todayStr) results.push({ player:p, plat, mgr, rdNum:r.rd_number, date:r.date, isOverdue:false });
               });
-              // next_rd_date на сегодня или просрочен (без планового)
               if(p.next_rd_date&&p.next_rd_date<=todayStr&&results.length===0){
-                results.push({ player:p, plat, rdNum:factRds.length+1, date:p.next_rd_date, isOverdue:p.next_rd_date<todayStr });
+                results.push({ player:p, plat, mgr, rdNum:factRds.length+1, date:p.next_rd_date, isOverdue:p.next_rd_date<todayStr });
               }
               return results;
             });
@@ -997,6 +1000,7 @@ function ManagerPage({ manager, onLogout }) {
                       <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:3 }}>
                         <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
                         {player.sub18&&<span onClick={()=>{ navigator.clipboard.writeText(player.sub18); showToast("SUB18 скопирован"); }} style={{ color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer",borderBottom:`1px dashed ${T.border}` }} title="Скопировать SUB18">{player.sub18}</span>}
+                        {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
                       </div>
                       <div style={{ fontSize:12,color:T.muted }}>{plat?.name} · РД{rdNum}</div>
                     </div>
