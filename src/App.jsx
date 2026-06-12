@@ -99,7 +99,8 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [_localExcluded, _setLocalExcluded] = useState(new Set());
   const excludedIds = _excludedIds || _localExcluded;
   const setExcludedIds = _setExcludedIds || _setLocalExcluded;
-  const [platformPopup, setPlatformPopup] = useState(null); // {playerId, x, y}
+  const [platformPopup, setPlatformPopup] = useState(null);
+  const [dateEdit, setDateEdit] = useState(null);
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
@@ -337,7 +338,11 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
                           <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
                         </td>}
-                        <td style={{ ...S.td,color:T.muted,fontSize:11 }}>{player.date}</td>
+                        <td style={{ ...S.td,color:T.muted,fontSize:11,cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:()=>setDateEdit(player.id)}>
+                          {dateEdit===player.id&&!readonly
+                            ?<input autoFocus type="date" defaultValue={player.date} onBlur={async e=>{ await supabase.from("players").update({date:e.target.value}).eq("id",player.id); setDateEdit(null); onReload(); }} onKeyDown={e=>{ if(e.key==="Escape") setDateEdit(null); }} style={{ ...IS,fontSize:11,padding:"2px 4px",width:120 }}/>
+                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.date}</span>}
+                        </td>
                         <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:e=>setPlatformPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} title={readonly?"":plat?.name}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,fontSize:12,fontWeight:500 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:6 }}>
