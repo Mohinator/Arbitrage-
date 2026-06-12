@@ -1004,6 +1004,38 @@ function ManagerPage({ manager, onLogout }) {
                       <span style={{ color:T.text,fontWeight:600,fontSize:14 }}>{allManagers.find(m=>m.id===viewing)?.name}</span>
                       <span style={{ color:T.muted,fontSize:12 }}>— {isTeamLead?"редактирование":"только просмотр"}</span>
                     </div>
+                    {/* Platform widgets for viewed manager */}
+                    <div style={{ display:"flex",gap:8,flexWrap:"wrap",marginBottom:12 }}>
+                      {geoPlatforms.map(plat=>{
+                        const mActive=allPlayers.filter(p=>p&&p.manager_id===viewing&&p.platform_id===plat.id&&p.status==="Да");
+                        if(mActive.length===0) return null;
+                        const factTotal=mActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+                        const avg=mActive.length>0?factTotal/mActive.length:0;
+                        const ok=avg>=plat.target_avg_check;
+                        const plannedExtra=mActive.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
+                        const plannedAvg=mActive.length>0?(factTotal+plannedExtra)/mActive.length:0;
+                        const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да").length;
+                        const capPct=plat.cap?Math.min(100,Math.round(allActive/plat.cap*100)):null;
+                        return(
+                          <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
+                            <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
+                            <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                              <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avg.toFixed(1)}€</span>
+                              <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                              <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
+                            </div>
+                            <div style={{ marginTop:2 }}>
+                              <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
+                                <span>Капа</span><span>{allActive}{plat.cap?`/${plat.cap}`:""}</span>
+                              </div>
+                              <div style={{ background:T.border,borderRadius:4,height:4 }}>
+                                {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4 }}/>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }).filter(Boolean)}
+                    </div>
                     <PlayersTable
                       players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing)}
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
