@@ -1351,13 +1351,14 @@ function ManagerPage({ manager, onLogout }) {
               <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
                 {geoPlatforms.map(plat=>{
-                  const platPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
+                  const platPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да"&&geoPlatforms.some(gp=>gp.id===p.platform_id));
                   if(platPlayers.length===0) return null;
                   const total=platPlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
                   const avg=platPlayers.length>0?total/platPlayers.length:0;
                   const need=Math.max(0,plat.target_avg_check*platPlayers.length-total);
                   const ok=avg>=plat.target_avg_check;
-                  const capPct=plat.cap?Math.min(100,Math.round(platPlayers.length/plat.cap*100)):null;
+                  const capCount=platPlayers.length;
+                  const capPct=plat.cap?Math.min(100,Math.round(capCount/plat.cap*100)):null;
                   return(
                     <tr key={plat.id} className="row-hover">
                       <td style={{ ...S.td,fontWeight:600,color:T.text }}>{plat.name}</td>
@@ -1369,7 +1370,7 @@ function ManagerPage({ manager, onLogout }) {
                         {capPct!==null
                           ?<div style={{ display:"flex",alignItems:"center",gap:6 }}>
                               <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4 }}/></div>
-                              <span style={{ fontSize:11,color:T.muted }}>{platPlayers.length}/{plat.cap}</span>
+                              <span style={{ fontSize:11,color:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":T.muted }}>{capCount}/{plat.cap}</span>
                             </div>
                           :<span style={{ color:T.muted }}>—</span>}
                       </td>
