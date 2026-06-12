@@ -61,8 +61,10 @@ function StatusPopup({ x, y, onSelect, onClose, dark }) {
   const ref = useRef();
   useEffect(() => { const h=e=>{ if(ref.current&&!ref.current.contains(e.target)) onClose(); }; document.addEventListener("mousedown",h); return ()=>document.removeEventListener("mousedown",h); }, []);
   const T = dark?{bg:"#1a1d27",border:"#2d3148"}:{bg:"#f1f5f9",border:"#cbd5e1"};
+  const popupH = STATUSES.length * 36 + 12;
+  const openUp = y + popupH > window.innerHeight - 20;
   return (
-    <div ref={ref} className="fade-in" style={{ position:"fixed",left:x,top:y,background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:6,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:130 }}>
+    <div ref={ref} className="fade-in" style={{ position:"fixed",left:x,top:openUp?y-popupH:y,background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:6,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:130 }}>
       {STATUSES.map(st=><div key={st} onClick={()=>onSelect(st)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><StatusBadge status={st} dark={dark}/></div>)}
     </div>
   );
@@ -72,8 +74,10 @@ function ColorPopup({ x, y, onSelect, onClose, dark }) {
   const ref = useRef();
   useEffect(() => { const h=e=>{ if(ref.current&&!ref.current.contains(e.target)) onClose(); }; document.addEventListener("mousedown",h); return ()=>document.removeEventListener("mousedown",h); }, []);
   const T = dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b"};
+  const popupH = LEAD_COLORS.length * 34 + 16;
+  const openUp = y + popupH > window.innerHeight - 20;
   return (
-    <div ref={ref} className="fade-in" style={{ position:"fixed",left:x,top:y,background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:8,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:140 }}>
+    <div ref={ref} className="fade-in" style={{ position:"fixed",left:x,top:openUp?y-popupH:y,background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:8,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:140 }}>
       {LEAD_COLORS.map(c=><div key={c.key} onClick={()=>onSelect(c.key)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",gap:8,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><div style={{ width:10,height:10,borderRadius:"50%",background:c.dot,flexShrink:0 }}/><span style={{ fontSize:12,color:T.text }}>{c.label}</span></div>)}
     </div>
   );
