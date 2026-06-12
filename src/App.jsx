@@ -1716,7 +1716,7 @@ function AdminPage({ onLogout }) {
                     {mgr.role==="team_lead"&&<span style={{background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
                   </div>
                   <PlayersTable
-                    players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id&&(!geoPlatformIds.size||geoPlatformIds.has(p.platform_id)||!p.platform_id))}
+                    players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id&&(geoPlatformIds.has(p.platform_id)||!p.platform_id))}
                     redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                     manager={mgr} dark={true} readonly={false}
                     onReload={load} showToast={showToast} isPoland={isPoland}
