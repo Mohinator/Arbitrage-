@@ -993,7 +993,7 @@ function ManagerPage({ manager, onLogout }) {
 
             return(
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {tasks.map(({player,plat,rdNum,date,isOverdue},idx)=>(
+                {tasks.map(({player,plat,mgr,rdNum,date,isOverdue},idx)=>(
                   <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#6366f1",flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
