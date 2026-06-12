@@ -111,6 +111,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [rdInputVal, setRdInputVal] = useState("");
   const [rdInputDate, setRdInputDate] = useState("");
   const rdInputRef = useRef();
+  const rdInputPopupRef = useRef(null);
   const [rdDateEdit, setRdDateEdit] = useState(null); // {playerId, rdNumber}
   const [commentEdit, setCommentEdit] = useState(null);
   const [commentVal, setCommentVal] = useState("");
@@ -143,14 +144,17 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   };
 
   const saveRdPopup = async () => {
-    if(!rdInputPopup||!rdInputVal||readonly) { setRdInputPopup(null); return; }
-    const {playerId,rdNumber}=rdInputPopup;
-    const amount=parseFloat(rdInputVal);
-    if(!amount||amount<=0){ setRdInputPopup(null); setRdInputVal(""); setRdInputDate(""); return; }
-    const rdDate=rdInputDate||today;
+    const popup=rdInputPopupRef.current;
+    const val=rdInputRef.current?.querySelector('input[type="text"]')?.value||rdInputVal;
+    const dateVal=rdInputRef.current?.querySelector('input[type="date"]')?.value||rdInputDate;
+    if(!popup||!val||readonly) { setRdInputPopup(null); rdInputPopupRef.current=null; return; }
+    const {playerId,rdNumber}=popup;
+    const amount=parseFloat(val);
+    if(!amount||amount<=0){ setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); return; }
+    const rdDate=dateVal||today;
     await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
     await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date:rdDate});
-    setRdInputPopup(null); setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован — нажми чтобы подтвердить"); onReload();
+    setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован"); onReload();
   };
 
   const revertRdToPlanned = async (playerId, rdNumber, amount, date) => {
@@ -291,7 +295,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
             onMouseDown={e=>e.stopPropagation()}>
             <input autoFocus type="text" inputMode="numeric" placeholder="Сумма €" value={rdInputVal} onChange={e=>setRdInputVal(e.target.value)}
               onKeyDown={e=>{ if(e.key==="Enter"){ saveRdPopup(); } if(e.key==="Escape") setRdInputPopup(null); }}
-              onBlur={e=>{ if(!rdInputRef.current?.contains(e.relatedTarget)) saveRdPopup(); }}
+              onBlur={()=>{ setTimeout(()=>{ if(!rdInputRef.current?.contains(document.activeElement)) saveRdPopup(); },150); }}
               style={{ background:"transparent",border:"none",borderBottom:`1px solid ${Tb.border}`,color:Tb.text,padding:"2px 0",fontSize:14,outline:"none",width:"100%",marginBottom:6,fontWeight:600 }}/>
             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
               <span style={{ fontSize:10,color:Tb.muted }}>📅</span>
@@ -413,7 +417,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                             <td key={i} className="rd-cell" style={{ ...S.rdTd,color:rdColor,fontWeight:rd?.isFact?700:400,lineHeight:1.3 }}
                               onClick={e=>{
                                 if (readonly) return;
-                                if (!rd) { setRdInputPopup({playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}); setRdInputVal(""); setRdInputDate(today); return; }
+                                if (!rd) { const popup={playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}; rdInputPopupRef.current=popup; setRdInputPopup(popup); setRdInputVal(""); setRdInputDate(today); return; }
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,canRevert:true});
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
