@@ -1306,12 +1306,12 @@ function ManagerPage({ manager, onLogout }) {
                     const platActiveAll=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да").length;
                     if(platActiveAll>=plat.cap) return false;
                   }
-                  // Не считаем если плановый СЧ платформы уже достигает цели
-                  const platActive=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да");
-                  const factTotal=platActive.reduce((s,ap)=>s+calcEffectiveTotal(ap),0);
-                  const plannedExtra=platActive.reduce((s,ap)=>s+plannedRds.filter(r=>r&&r.player_id===ap.id).reduce((a,r)=>a+Number(r.amount),0),0);
-                  const plannedAvg=platActive.length>0?(factTotal+plannedExtra)/platActive.length:0;
-                  if(plannedAvg>=(plat.target_avg_check||0)) return false;
+                  // Не считаем если плановый СЧ этого менеджера по платформе уже достигает цели
+                  const mgrPlatActive=active.filter(ap=>ap.platform_id===plat.id);
+                  const mgrFactTotal=mgrPlatActive.reduce((s,ap)=>s+calcEffectiveTotal(ap),0);
+                  const mgrPlannedExtra=mgrPlatActive.reduce((s,ap)=>s+plannedRds.filter(r=>r&&r.player_id===ap.id).reduce((a,r)=>a+Number(r.amount),0),0);
+                  const mgrPlannedAvg=mgrPlatActive.length>0?(mgrFactTotal+mgrPlannedExtra)/mgrPlatActive.length:0;
+                  if(mgrPlannedAvg>=(plat.target_avg_check||0)) return false;
                   return true;
                 });
                 const total=active.reduce((s,p)=>s+calcEffectiveTotal(p),0);
