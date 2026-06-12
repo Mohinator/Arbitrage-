@@ -829,24 +829,26 @@ function ManagerPage({ manager, onLogout }) {
         <div style={{ position:"sticky",top:myGeos.length>1?133:93,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"8px 20px" }}>
           <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
             {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
-              const ps=platformStats.find(s=>s.id===plat.id)||plat;
-              const ok=(ps.avgCheck||0)>=(ps.target_avg_check||0);
-              const allPlatPlayers=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
-              const capCount=allPlatPlayers.length;
+              const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
+              const capCount=allActive.length;
               const capPct=plat.cap?Math.min(100,Math.round(capCount/plat.cap*100)):null;
-              const activePlayers=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
-              const factTotal=activePlayers.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-              const plannedExtra=activePlayers.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
-              const plannedAvg=activePlayers.length>0?(factTotal+plannedExtra)/activePlayers.length:0;
+              const factTotal=allActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+              const avgFact=allActive.length>0?factTotal/allActive.length:0;
+              const ok=avgFact>=(plat.target_avg_check||0);
+              const myActive=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
+              const myFactTotal=myActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+              const myPlannedExtra=myActive.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
+              const plannedAvg=myActive.length>0?(myFactTotal+myPlannedExtra)/myActive.length:0;
+              const needMore=Math.max(0,(plat.target_avg_check||0)*capCount-factTotal);
               return(
                 <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
                   <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
                   <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
-                    <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {(ps.avgCheck||0).toFixed(1)}€</span>
+                    <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avgFact.toFixed(1)}€</span>
                     <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
-                    <span style={{ fontSize:11,color:T.muted }}>/ {ps.target_avg_check}€</span>
+                    <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                   </div>
-                  {ps.needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {ps.needMore.toFixed(0)}€</div>}
+                  {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
                   <div style={{ marginTop:2 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                       <span>Капа</span><span>{capCount}{plat.cap?`/${plat.cap}`:""}</span>
