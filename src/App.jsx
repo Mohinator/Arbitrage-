@@ -107,6 +107,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [inlineEdit, setInlineEdit] = useState(null);
   const [inlineVal, setInlineVal] = useState("");
   const [inlineDate, setInlineDate] = useState("");
+  const [rdDateEdit, setRdDateEdit] = useState(null); // {playerId, rdNumber}
   const [commentEdit, setCommentEdit] = useState(null);
   const [commentVal, setCommentVal] = useState("");
   const [hiddenMonths, setHiddenMonths] = useState(new Set());
@@ -380,7 +381,21 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                 else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Отметить выполненным"}>
-                              {rd?<div><div style={{ fontSize:11 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted,marginTop:1 }}>{formatDate(rd.date)}</div></div>:<span style={{ fontSize:16,opacity:.2 }}>+</span>}
+                              {rd?<div>
+                                <div style={{ fontSize:11 }}>{rd.amount}€</div>
+                                {rd.isFact
+                                  ?<div style={{ fontSize:9,color:T.muted,marginTop:1 }}>{formatDate(rd.date)}</div>
+                                  :(rdDateEdit?.playerId===player.id&&rdDateEdit?.rdNumber===rd.rd_number&&!readonly)
+                                    ?<input autoFocus type="date" defaultValue={rd.date} style={{ fontSize:9,padding:"1px 2px",width:90,background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:3 }}
+                                        onBlur={async e=>{ await supabase.from("planned_redeposits").update({date:e.target.value}).eq("player_id",player.id).eq("rd_number",rd.rd_number); setRdDateEdit(null); onReload(); }}
+                                        onKeyDown={e=>{ if(e.key==="Escape") setRdDateEdit(null); }}
+                                        onClick={e=>e.stopPropagation()}/>
+                                    :<div style={{ fontSize:9,color:T.muted,marginTop:1,cursor:readonly?"default":"pointer",borderBottom:readonly?"none":`1px dashed ${T.border}` }}
+                                        onClick={e=>{ e.stopPropagation(); if(!readonly) setRdDateEdit({playerId:player.id,rdNumber:rd.rd_number}); }}>
+                                        {formatDate(rd.date)}
+                                      </div>
+                                }
+                              </div>:<span style={{ fontSize:16,opacity:.2 }}>+</span>}
                             </td>
                           );
                         })}
