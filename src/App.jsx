@@ -1129,33 +1129,58 @@ function ManagerPage({ manager, onLogout }) {
       {/* OVERDUE */}
       {tab==="overdue"&&(
         <div style={{ padding:"16px 20px" }}>
-          <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Просроченные РД</h2>
-          {overdueRds.length===0?<div style={{ textAlign:"center",padding:40,color:T.muted }}>✅ Нет просроченных РД</div>:(
-            <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-              <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                <thead><tr>{["Лид","Платформа","SUB18","Последний РД","Просроченная дата","Дней просрочено","Статус"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {overdueRds.map(player=>{
-                    const plat=platforms.find(p=>p.id===player.platform_id);
-                    const daysDiff=Math.floor((new Date(today)-new Date(player.next_rd_date))/(1000*60*60*24));
-                    const rds=getPlayerRds(player.id);
-                    const lastRd=rds[rds.length-1];
-                    return(
-                      <tr key={player.id} className="row-hover" style={{ background:dark?"rgba(239,68,68,.04)":"rgba(239,68,68,.03)" }}>
-                        <td style={{ ...S.td,fontWeight:600,color:T.text }}>{player.name}</td>
-                        <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat?.name||"—"}</td>
-                        <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
-                        <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
-                        <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {player.next_rd_date?(([y,m,d])=>`${d}.${m}.${y}`)(player.next_rd_date.split("-")):"—"}</span></td>
-                        <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
-                        <td style={S.td}><StatusBadge status={player.status} dark={dark} onClick={e=>{ /* handled in PlayersTable */ }}/></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
+            <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Просроченные РД</h2>
+            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+              <option value="">Все платформы</option>
+              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {isTeamLead&&(
+              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+                <option value="">Все менеджеры</option>
+                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            )}
+          </div>
+          {(()=>{
+            const sourceOverdue=isTeamLead
+              ? allPlayers.filter(p=>p&&p.next_rd_date&&p.next_rd_date<today&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
+              : overdueRds;
+            const filtered=sourceOverdue.filter(p=>{
+              if(todoPlatFilter&&p.platform_id!==todoPlatFilter) return false;
+              if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
+              return true;
+            }).sort((a,b)=>new Date(a.next_rd_date)-new Date(b.next_rd_date));
+            if(filtered.length===0) return <div style={{ textAlign:"center",padding:40,color:T.muted }}>✅ Нет просроченных РД</div>;
+            return(
+              <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
+                <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                  <thead><tr>{["Лид","Платформа",...(isTeamLead?["Менеджер"]:[]),"SUB18","Последний РД","Просроченная дата","Дней","Статус"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {filtered.map(player=>{
+                      const plat=platforms.find(p=>p.id===player.platform_id);
+                      const mgr=allManagers.find(m=>m.id===player.manager_id);
+                      const daysDiff=Math.floor((new Date(today)-new Date(player.next_rd_date))/(1000*60*60*24));
+                      const rds=getPlayerRds(player.id);
+                      const lastRd=rds[rds.length-1];
+                      return(
+                        <tr key={player.id} className="row-hover" style={{ background:dark?"rgba(239,68,68,.04)":"rgba(239,68,68,.03)" }}>
+                          <td style={{ ...S.td,fontWeight:600,color:T.text }}>{player.name}</td>
+                          <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat?.name||"—"}</td>
+                          {isTeamLead&&<td style={{ ...S.td,color:"#a5b4fc",fontSize:12 }}>{mgr?.name||"—"}</td>}
+                          <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
+                          <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
+                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {player.next_rd_date?(([y,m,d])=>`${d}.${m}.${y}`)(player.next_rd_date.split("-")):"—"}</span></td>
+                          <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
+                          <td style={S.td}><StatusBadge status={player.status} dark={dark}/></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </div>
       )}
 
