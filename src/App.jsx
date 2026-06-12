@@ -1222,7 +1222,16 @@ function ManagerPage({ manager, onLogout }) {
                 const mPlayers=allPlayers.filter(p=>p&&p.manager_id===mgr.id);
                 const active=mPlayers.filter(p=>p.status==="Да");
                 const overdue=mPlayers.filter(p=>p.next_rd_date&&p.next_rd_date<today);
-                const noPlanned=active.filter(p=>!plannedRds.some(r=>r&&r.player_id===p.id));
+                const noPlanned=active.filter(p=>{
+                  if(plannedRds.some(r=>r&&r.player_id===p.id)) return false;
+                  // Не считаем если капа платформы заполнена
+                  const plat=platforms.find(pl=>pl.id===p.platform_id);
+                  if(plat?.cap){
+                    const platActiveAll=allPlayers.filter(ap=>ap&&ap.platform_id===plat.id&&ap.status==="Да").length;
+                    if(platActiveAll>=plat.cap) return false;
+                  }
+                  return true;
+                });
                 const total=active.reduce((s,p)=>s+calcEffectiveTotal(p),0);
                 const avg=active.length>0?total/active.length:0;
                 return(
