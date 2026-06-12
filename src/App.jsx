@@ -184,12 +184,11 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
 
   const updateColor = async (playerId, color) => {
     if (readonly) return;
-    const player = (players||[]).find(p=>p.id===playerId);
-    if (player) {
-      // Обновляем цвет у всех лидов с тем же именем или SUB18
-      if (player.name) await supabase.from("players").update({color}).eq("name", player.name);
-      else if (player.sub18) await supabase.from("players").update({color}).eq("sub18", player.sub18);
-      else await supabase.from("players").update({color}).eq("id", playerId);
+    const player = (players||[]).find(p=>p&&p.id===playerId);
+    if (player?.sub18) {
+      await supabase.from("players").update({color}).eq("sub18", player.sub18);
+    } else if (player?.name) {
+      await supabase.from("players").update({color}).eq("name", player.name);
     } else {
       await supabase.from("players").update({color}).eq("id", playerId);
     }
