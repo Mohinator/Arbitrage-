@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 const SUPABASE_URL = "https://hbmmbjwnnsralaehdamq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_vFYq1gSco_1HRtTca4xqpw_agIuIL5T";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const ADMIN_PASSWORD = "admin2026";
+const ADMIN_PASSWORD = "pwxUohct3a5Ra8GW";
 const STATUSES = ["Да", "Нет", "Отправил", "Кинул", "Вернул"];
 const LEAD_COLORS = [
   { key:"none", label:"Нет", dot:"#475569" },
