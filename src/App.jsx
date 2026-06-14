@@ -767,7 +767,9 @@ function ManagerPage({ manager, onLogout }) {
     });
   },[filteredPlayers,sortCol,sortDir]);
 
-  const overdueRds=players.filter(p=>p.next_rd_date&&p.next_rd_date<today);
+  const overdueDatesByPlayer={};
+  (plannedRds||[]).forEach(r=>{ if(r&&r.date&&r.date<today&&(!overdueDatesByPlayer[r.player_id]||r.date<overdueDatesByPlayer[r.player_id])) overdueDatesByPlayer[r.player_id]=r.date; });
+  const overdueRds=players.filter(p=>p&&overdueDatesByPlayer[p.id]);
   const todayRds=players.filter(p=>p.next_rd_date&&p.next_rd_date<=today);
 
   const chartData=(()=>{
@@ -1144,13 +1146,13 @@ function ManagerPage({ manager, onLogout }) {
           </div>
           {(()=>{
             const sourceOverdue=isTeamLead
-              ? allPlayers.filter(p=>p&&p.next_rd_date&&p.next_rd_date<today&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
+              ? allPlayers.filter(p=>p&&overdueDatesByPlayer[p.id]&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
               : overdueRds;
             const filtered=sourceOverdue.filter(p=>{
               if(todoPlatFilter&&p.platform_id!==todoPlatFilter) return false;
               if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
               return true;
-            }).sort((a,b)=>new Date(a.next_rd_date)-new Date(b.next_rd_date));
+            }).sort((a,b)=>new Date(overdueDatesByPlayer[a.id])-new Date(overdueDatesByPlayer[b.id]));
             if(filtered.length===0) return <div style={{ textAlign:"center",padding:40,color:T.muted }}>✅ Нет просроченных РД</div>;
             return(
               <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
@@ -1160,7 +1162,8 @@ function ManagerPage({ manager, onLogout }) {
                     {filtered.map(player=>{
                       const plat=platforms.find(p=>p.id===player.platform_id);
                       const mgr=allManagers.find(m=>m.id===player.manager_id);
-                      const daysDiff=Math.floor((new Date(today)-new Date(player.next_rd_date))/(1000*60*60*24));
+                      const overdueDate=overdueDatesByPlayer[player.id];
+                      const daysDiff=Math.floor((new Date(today)-new Date(overdueDate))/(1000*60*60*24));
                       const rds=getPlayerRds(player.id);
                       const lastRd=rds[rds.length-1];
                       return(
@@ -1170,7 +1173,7 @@ function ManagerPage({ manager, onLogout }) {
                           {isTeamLead&&<td style={{ ...S.td,color:"#a5b4fc",fontSize:12 }}>{mgr?.name||"—"}</td>}
                           <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
                           <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
-                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {player.next_rd_date?(([y,m,d])=>`${d}.${m}.${y}`)(player.next_rd_date.split("-")):"—"}</span></td>
+                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {overdueDate?(([y,m,d])=>`${d}.${m}.${y}`)(overdueDate.split("-")):"—"}</span></td>
                           <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
                           <td style={S.td}><StatusBadge status={player.status} dark={dark}/></td>
                         </tr>
