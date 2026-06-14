@@ -1619,6 +1619,7 @@ function AdminPage({ onLogout }) {
   const showToast = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
 
   const [highlightId, setHighlightId] = useState(null);
+  const [taskGeo, setTaskGeo] = useState(""); const [taskPlat, setTaskPlat] = useState(""); const [taskMgr, setTaskMgr] = useState("");
   const goToLead = (player) => {
     if(!player) return;
     const plat=platforms.find(p=>p.id===player.platform_id);
@@ -2006,12 +2007,29 @@ function AdminPage({ onLogout }) {
           const today=new Date().toISOString().slice(0,10);
           const odd={};
           (plannedRds||[]).forEach(r=>{ if(r&&r.date&&r.date<today&&(!odd[r.player_id]||r.date<odd[r.player_id])) odd[r.player_id]=r.date; });
-          const tasks=(plannedRds||[]).filter(r=>r&&r.date===today).map(r=>{ const player=players.find(p=>p.id===r.player_id); return player?{ player, plat:platforms.find(pl=>pl.id===player.platform_id), mgr:managers.find(m=>m.id===player.manager_id), rdNum:r.rd_number, amount:r.amount }:null; }).filter(Boolean);
-          const overdue=players.filter(p=>p&&odd[p.id]).sort((a,b)=>new Date(odd[a.id])-new Date(odd[b.id]));
+          const platGeo=(pid)=>platforms.find(pl=>pl.id===pid)?.geo_id;
+          const pGeo=(p)=>platGeo(p.platform_id)||userGeos.find(u=>u.manager_id===p.manager_id)?.geo_id;
+          const pass=(p)=>{ if(taskGeo&&pGeo(p)!==taskGeo) return false; if(taskPlat&&p.platform_id!==taskPlat) return false; if(taskMgr&&p.manager_id!==taskMgr) return false; return true; };
+          const tasks=(plannedRds||[]).filter(r=>r&&r.date===today).map(r=>{ const player=players.find(p=>p.id===r.player_id); return player?{ player, plat:platforms.find(pl=>pl.id===player.platform_id), mgr:managers.find(m=>m.id===player.manager_id), rdNum:r.rd_number, amount:r.amount }:null; }).filter(Boolean).filter(t=>pass(t.player));
+          const overdue=players.filter(p=>p&&odd[p.id]&&pass(p)).sort((a,b)=>new Date(odd[a.id])-new Date(odd[b.id]));
           const card={ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" };
           return(
             <div>
-              <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Задачи и просрочки</h2>
+              <h2 style={{color:"#fff",marginBottom:16,fontSize:18}}>Задачи и просрочки</h2>
+              <div style={{ display:"flex",gap:10,marginBottom:16,flexWrap:"wrap" }}>
+                <select value={taskGeo} onChange={e=>{ setTaskGeo(e.target.value); setTaskPlat(""); setTaskMgr(""); }} style={{...IS,width:"auto",minWidth:140}}>
+                  <option value="">Все гео</option>
+                  {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                <select value={taskPlat} onChange={e=>setTaskPlat(e.target.value)} style={{...IS,width:"auto",minWidth:140}}>
+                  <option value="">Все платформы</option>
+                  {platforms.filter(p=>!taskGeo||p.geo_id===taskGeo).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <select value={taskMgr} onChange={e=>setTaskMgr(e.target.value)} style={{...IS,width:"auto",minWidth:140}}>
+                  <option value="">Все менеджеры</option>
+                  {managers.filter(m=>!taskGeo||userGeos.some(ug=>ug.geo_id===taskGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
               <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
                   <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
