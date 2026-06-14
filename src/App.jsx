@@ -104,7 +104,6 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
-  const [confirmRd, setConfirmRd] = useState(null);
   const [inlineEdit, setInlineEdit] = useState(null);
   const [inlineVal, setInlineVal] = useState("");
   const [inlineDate, setInlineDate] = useState("");
@@ -210,6 +209,18 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     await supabase.from("redeposits").delete().eq("id",rd.id);
     showToast("РД сброшен","ok",async()=>{ await supabase.from("redeposits").insert(prev); showToast("Восстановлено"); onReload(); });
     setShowEditRd(null); onReload();
+  };
+
+  const savePlannedEdit = async () => {
+    if (!showEditRd||!showEditRd.amount||readonly) return;
+    await supabase.from("planned_redeposits").update({ amount:Number(showEditRd.amount), date:showEditRd.date }).eq("player_id",showEditRd.playerId).eq("rd_number",showEditRd.rdNumber);
+    setShowEditRd(null); showToast("План обновлён"); onReload();
+  };
+
+  const resetPlanned = async (playerId, rdNumber) => {
+    if (readonly) return;
+    await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
+    setShowEditRd(null); showToast("Плановый РД удалён"); onReload();
   };
 
   const updateStatus = async (playerId, status) => {
@@ -326,29 +337,10 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
         );
       })()}
 
-      {confirmRd && !readonly && (
-        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setConfirmRd(null)}>
-          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.6)" }}>
-            <h3 style={{ color:T.text,marginBottom:6,fontSize:15,fontWeight:700 }}>Подтверждение РД{confirmRd.rdNumber}</h3>
-            <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>{localPlayers.find(p=>p.id===confirmRd.playerId)?.name}</p>
-            {[["Сумма (€)","amount","number"],["Дата","date","date"]].map(([l,k,t])=>(
-              <div key={k} style={{ marginBottom:14 }}>
-                <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:5,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
-                <input type={t} value={confirmRd[k]} onChange={e=>setConfirmRd(prev=>({...prev,[k]:e.target.value}))} style={IS}/>
-              </div>
-            ))}
-            <div style={{ display:"flex",gap:10 }}>
-              <button onClick={async()=>{ const c=confirmRd; setConfirmRd(null); await markPlannedAsDone(c.playerId,c.rdNumber,c.amount,c.date||today); }} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>✓ Подтвердить</button>
-              <button onClick={()=>setConfirmRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showEditRd && !readonly && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setShowEditRd(null)}>
           <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.6)" }}>
-            <h3 style={{ color:T.text,marginBottom:6,fontSize:15,fontWeight:700 }}>РД{showEditRd.rdNumber}</h3>
+            <h3 style={{ color:T.text,marginBottom:6,fontSize:15,fontWeight:700 }}>{showEditRd.isPlanned?"Подтверждение РД":"РД"}{showEditRd.rdNumber}</h3>
             <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>{localPlayers.find(p=>p.id===showEditRd.playerId)?.name}</p>
             {[["Сумма (€)","amount","number"],["Дата","date","date"]].map(([l,k,t])=>(
               <div key={k} style={{ marginBottom:14 }}>
@@ -356,12 +348,25 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                 <input type={t} value={showEditRd[k]} onChange={e=>setShowEditRd(prev=>({...prev,[k]:e.target.value}))} style={IS}/>
               </div>
             ))}
-            <div style={{ display:"flex",gap:10 }}>
-              <button onClick={editRd} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Сохранить</button>
-              <button onClick={()=>resetRd(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Сбросить</button>
-              <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
-            </div>
-            <button onClick={()=>{ revertRdToPlanned(showEditRd.playerId,showEditRd.rdNumber,showEditRd.amount,showEditRd.date); setShowEditRd(null); }} style={{ marginTop:10,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px",borderRadius:8,cursor:"pointer",fontSize:12 }}>↩ Вернуть в плановый</button>
+            {showEditRd.isPlanned?(
+              <>
+                <button onClick={async()=>{ const c=showEditRd; setShowEditRd(null); await markPlannedAsDone(c.playerId,c.rdNumber,c.amount,c.date||today); }} className="btn-p" style={{ width:"100%",padding:"11px",fontSize:14,marginBottom:10 }}>✓ Подтвердить</button>
+                <div style={{ display:"flex",gap:10 }}>
+                  <button onClick={savePlannedEdit} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Сохранить план</button>
+                  <button onClick={()=>resetPlanned(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Удалить</button>
+                  <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
+                </div>
+              </>
+            ):(
+              <>
+                <div style={{ display:"flex",gap:10 }}>
+                  <button onClick={editRd} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Сохранить</button>
+                  <button onClick={()=>resetRd(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Сбросить</button>
+                  <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
+                </div>
+                <button onClick={()=>{ revertRdToPlanned(showEditRd.playerId,showEditRd.rdNumber,showEditRd.amount,showEditRd.date); setShowEditRd(null); }} style={{ marginTop:10,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px",borderRadius:8,cursor:"pointer",fontSize:12 }}>↩ Вернуть в плановый</button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -447,7 +452,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                 if (readonly) return;
                                 if (!rd) { const popup={playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}; rdInputPopupRef.current=popup; setRdInputPopup(popup); setRdInputVal(""); setRdInputDate(today); return; }
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,canRevert:true});
-                                else setConfirmRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date});
+                                else setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,isPlanned:true});
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
                               {rd?<div>
