@@ -110,6 +110,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [rdInputPopup, setRdInputPopup] = useState(null); // {playerId, rdNumber, x, y}
   const [rdInputVal, setRdInputVal] = useState("");
   const [rdInputDate, setRdInputDate] = useState("");
+  const [rdShow, setRdShow] = useState(false);
   const rdInputRef = useRef();
   const rdInputPopupRef = useRef(null);
   const [rdDateEdit, setRdDateEdit] = useState(null); // {playerId, rdNumber}
@@ -149,24 +150,29 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     showToast("РД выполнен!"); onReload();
   };
 
-  const saveRdPopup = async () => {
+  const doSaveRd = async () => {
     const popup=rdInputPopupRef.current;
     const val=rdInputRef.current?.querySelector('input[type="text"]')?.value||rdInputVal;
     const dateVal=rdInputRef.current?.querySelector('input[type="date"]')?.value||rdInputDate;
-    if(!popup||!val||readonly) { setRdInputPopup(null); rdInputPopupRef.current=null; return; }
-    const {playerId,rdNumber}=popup;
+    if(!popup||readonly) return;
     const amount=parseFloat(val);
-    if(!amount||amount<=0){ setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); return; }
+    if(!amount||amount<=0) return;
+    const {playerId,rdNumber}=popup;
     const rdDate=dateVal||today;
     await supabase.from("planned_redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
     await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date:rdDate});
     await logAction("rd_planned",playerId,{rd_number:rdNumber,amount,date:rdDate});
-    setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); showToast("РД запланирован"); onReload();
+    showToast("РД запланирован"); onReload();
+  };
+  const closeRdPopup = (save) => {
+    if(save) doSaveRd();
+    setRdShow(false);
+    const closing=rdInputPopupRef.current;
+    setTimeout(()=>{ if(rdInputPopupRef.current===closing){ setRdInputPopup(null); rdInputPopupRef.current=null; setRdInputVal(""); setRdInputDate(""); } }, 110);
   };
 
   const revertRdToPlanned = async (playerId, rdNumber, amount, date) => {
     if(readonly) return;
-    if(!confirm("Вернуть РД в плановый?")) return;
     await supabase.from("redeposits").delete().eq("player_id",playerId).eq("rd_number",rdNumber);
     await supabase.from("planned_redeposits").insert({player_id:playerId,rd_number:rdNumber,amount,date});
     showToast("РД возвращён в плановые"); onReload();
@@ -256,10 +262,11 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   };
 
   useEffect(() => {
-    if(!rdInputPopup) return;
-    const h=(e)=>{ if(rdInputRef.current&&!rdInputRef.current.contains(e.target)) setRdInputPopup(null); };
+    if(!rdInputPopup){ setRdShow(false); return; }
+    const id=requestAnimationFrame(()=>setRdShow(true));
+    const h=(e)=>{ if(rdInputRef.current&&!rdInputRef.current.contains(e.target)) closeRdPopup(true); };
     document.addEventListener("mousedown",h);
-    return ()=>document.removeEventListener("mousedown",h);
+    return ()=>{ cancelAnimationFrame(id); document.removeEventListener("mousedown",h); };
   },[rdInputPopup]);
 
   useEffect(() => {
@@ -310,11 +317,10 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
         const openUp=rdInputPopup.y+100>window.innerHeight-20;
         const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
         return(
-          <div ref={rdInputRef} className="fade-in" style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-160),top:openUp?rdInputPopup.y-90:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:8,padding:"8px 10px",zIndex:5000,boxShadow:"0 4px 20px rgba(0,0,0,.5)",width:150 }}
+          <div ref={rdInputRef} style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-160),top:openUp?rdInputPopup.y-90:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:8,padding:"8px 10px",zIndex:5000,boxShadow:"0 4px 20px rgba(0,0,0,.5)",width:150,opacity:rdShow?1:0,transform:rdShow?"scale(1)":"scale(.96)",transformOrigin:openUp?"bottom left":"top left",transition:"opacity .09s ease,transform .09s ease" }}
             onMouseDown={e=>e.stopPropagation()}>
             <input autoFocus type="text" inputMode="numeric" placeholder="Сумма €" value={rdInputVal} onChange={e=>setRdInputVal(e.target.value)}
-              onKeyDown={e=>{ if(e.key==="Enter"){ saveRdPopup(); } if(e.key==="Escape") setRdInputPopup(null); }}
-              onBlur={()=>{ setTimeout(()=>{ if(!rdInputRef.current?.contains(document.activeElement)) saveRdPopup(); },150); }}
+              onKeyDown={e=>{ if(e.key==="Enter") closeRdPopup(true); if(e.key==="Escape") closeRdPopup(false); }}
               style={{ background:"transparent",border:"none",borderBottom:`1px solid ${Tb.border}`,color:Tb.text,padding:"2px 0",fontSize:14,outline:"none",width:"100%",marginBottom:6,fontWeight:600 }}/>
             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
               <span style={{ fontSize:10,color:Tb.muted }}>📅</span>
