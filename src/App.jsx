@@ -95,7 +95,7 @@ function Toast({ msg, type, onUndo }) {
 }
 
 // ── Players Table (shared between manager/team_lead views) ───────────────────
-function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds, isPoland=true }) {
+function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds, isPoland=true, highlightId=null }) {
   const [_localExcluded, _setLocalExcluded] = useState(new Set());
   const excludedIds = _excludedIds || _localExcluded;
   const setExcludedIds = _setExcludedIds || _setLocalExcluded;
@@ -394,8 +394,9 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                     const globalIdx=localPlayers.indexOf(player);
                     return (
                       <tr key={player.id} className="row-hover"
+                        ref={el=>{ if(el&&highlightId===player.id) el.scrollIntoView({behavior:"smooth",block:"center"}); }}
                         draggable={!readonly} onDragStart={()=>handleDragStart(globalIdx)} onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
-                        style={{ background:colorInfo.bg||"transparent" }}>
+                        style={{ background:highlightId===player.id?(dark?"rgba(99,102,241,.35)":"rgba(99,102,241,.22)"):(colorInfo.bg||"transparent"),boxShadow:highlightId===player.id?"inset 0 0 0 2px #6366f1":"none",transition:"background .4s,box-shadow .4s" }}>
                         {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи">⠿</span></td>}
                         {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
                           <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
@@ -585,6 +586,15 @@ function ManagerPage({ manager, onLogout }) {
 
   const today = new Date().toISOString().slice(0,10);
   const isTeamLead = manager.role === "team_lead";
+
+  const [highlightId, setHighlightId] = useState(null);
+  const goToLead = (player) => {
+    if(!player) return;
+    setHighlightId(player.id);
+    if(player.manager_id===manager.id){ setTab("main"); }
+    else { setViewingManager(prev=>({...(prev||{}),[activeGeo]:player.manager_id})); setTab("team"); }
+    setTimeout(()=>setHighlightId(null),3000);
+  };
 
   // Managers in active geo
   const geoManagers = activeGeo ? (() => {
@@ -870,7 +880,7 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["todo","📋 Задачи"],["team","Команда"+(myGeos.length>0?"":" ")],["overdue","Просроченные"+(overdueRds.length>0?` (${overdueRds.length})`:"")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
+        {[["main","Мои лиды"],["tasks","📋 Задачи"+(overdueRds.length>0?` ⚠${overdueRds.length}`:"")],["team","Команда"+(myGeos.length>0?"":" ")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -964,12 +974,104 @@ function ManagerPage({ manager, onLogout }) {
             </select>
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
-          <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds} isPoland={myGeos.find(g=>g.id===activeGeo)?.code==='PL'}/>
+          <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds} isPoland={myGeos.find(g=>g.id===activeGeo)?.code==='PL'} highlightId={highlightId}/>
         </div>
       )}
 
-      {/* TODO */}
-      {tab==="todo"&&(
+      {/* TASKS + OVERDUE (объединённая вкладка) */}
+      {tab==="tasks"&&(
+        <div style={{ padding:"16px 20px" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
+            <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи и просрочки</h2>
+            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+              <option value="">Все платформы</option>
+              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {isTeamLead&&(
+              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+                <option value="">Все менеджеры</option>
+                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            )}
+            <span style={{ color:T.muted,fontSize:11 }}>Клик по лиду → переход к таблице</span>
+          </div>
+          <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
+            {/* ЛЕВО: задачи на сегодня */}
+            <div style={{ flex:"1 1 360px",minWidth:300 }}>
+              <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
+              {(()=>{
+                const sourcePlayers=isTeamLead
+                  ? allPlayers.filter(p=>p&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
+                  : players.filter(p=>p.status==="Да");
+                const tasks=sourcePlayers.flatMap(p=>{
+                  const plat=platforms.find(pl=>pl.id===p.platform_id);
+                  const mgr=allManagers.find(m=>m.id===p.manager_id);
+                  return plannedRds.filter(r=>r&&r.player_id===p.id&&r.date===today).map(r=>({ player:p, plat, mgr, rdNum:r.rd_number, amount:r.amount }));
+                }).filter(t=>{
+                  if(todoPlatFilter&&t.plat?.id!==todoPlatFilter) return false;
+                  if(todoMgrFilter&&t.player?.manager_id!==todoMgrFilter) return false;
+                  return true;
+                });
+                if(tasks.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>На сегодня задач нет</div>;
+                return tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
+                  <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
+                    <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
+                        {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
+                      </div>
+                      <div style={{ fontSize:12,color:T.muted }}>{plat?.name||"—"} · РД{rdNum}</div>
+                    </div>
+                    {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc" }}>{amount}€</div>}
+                  </div>
+                ));
+              })()}
+            </div>
+            {/* ПРАВО: просроченные */}
+            <div style={{ flex:"1 1 360px",minWidth:300 }}>
+              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
+              {(()=>{
+                const source=isTeamLead
+                  ? allPlayers.filter(p=>p&&overdueDatesByPlayer[p.id]&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
+                  : overdueRds;
+                const filtered=source.filter(p=>{
+                  if(todoPlatFilter&&p.platform_id!==todoPlatFilter) return false;
+                  if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
+                  return true;
+                }).sort((a,b)=>new Date(overdueDatesByPlayer[a.id])-new Date(overdueDatesByPlayer[b.id]));
+                if(filtered.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>;
+                return filtered.map(player=>{
+                  const plat=platforms.find(p=>p.id===player.platform_id);
+                  const mgr=allManagers.find(m=>m.id===player.manager_id);
+                  const od=overdueDatesByPlayer[player.id];
+                  const days=Math.floor((new Date(today)-new Date(od))/(1000*60*60*24));
+                  const planned=plannedRds.filter(r=>r&&r.player_id===player.id&&r.date<today).sort((a,b)=>a.rd_number-b.rd_number)[0];
+                  return(
+                    <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:dark?"rgba(239,68,68,.06)":"rgba(239,68,68,.04)",border:"1px solid #7f1d1d",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
+                      <div style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                          <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
+                          {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
+                        </div>
+                        <div style={{ fontSize:12,color:T.muted }}>{plat?.name||"—"}{planned?` · РД${planned.rd_number}`:""} · {od?(([y,m,d])=>`${d}.${m}`)(od.split("-")):""}</div>
+                      </div>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2 }}>
+                        {planned&&<span style={{ fontSize:13,fontWeight:700,color:"#fca5a5" }}>{planned.amount}€</span>}
+                        <span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TODO (legacy, unused) */}
+      {false&&(
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи на сегодня</h2>
@@ -1118,7 +1220,7 @@ function ManagerPage({ manager, onLogout }) {
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                       manager={manager} dark={dark}
                       readonly={!isTeamLead}
-                      onReload={load} showToast={showToast}
+                      onReload={load} showToast={showToast} highlightId={highlightId}
                     />
                   </div>
                 )}
@@ -1129,7 +1231,7 @@ function ManagerPage({ manager, onLogout }) {
       )}
 
       {/* OVERDUE */}
-      {tab==="overdue"&&(
+      {false&&( /* overdue legacy */
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Просроченные РД</h2>
@@ -1516,6 +1618,19 @@ function AdminPage({ onLogout }) {
 
   const showToast = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
 
+  const [highlightId, setHighlightId] = useState(null);
+  const goToLead = (player) => {
+    if(!player) return;
+    const plat=platforms.find(p=>p.id===player.platform_id);
+    let geoId=plat?.geo_id;
+    if(!geoId){ const ug=userGeos.find(u=>u.manager_id===player.manager_id); geoId=ug?.geo_id; }
+    if(geoId) setAdminViewGeo(geoId);
+    setAdminViewManager(player.manager_id);
+    setHighlightId(player.id);
+    setTab("leads");
+    setTimeout(()=>setHighlightId(null),3000);
+  };
+
   const load = async () => {
     const [{ data:m },{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:g },{ data:ug },{ data:log }] = await Promise.all([
       supabase.from("managers").select("*").order("created_at"),
@@ -1637,7 +1752,7 @@ function AdminPage({ onLogout }) {
       </div>
 
       <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"0 24px",display:"flex"}}>
-        {[["overview","Сводка"],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["history","История"],["leads","Лиды"]].map(([key,label])=>(
+        {[["overview","Сводка"],["tasks","📋 Задачи"],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["history","История"],["leads","Лиды"]].map(([key,label])=>(
           <button key={key} onClick={()=>setTab(key)} className="nb" style={{background:"transparent",border:"none",color:tab===key?"#6366f1":"#64748b",padding:"12px 18px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent"}}>{label}</button>
         ))}
       </div>
@@ -1887,6 +2002,59 @@ function AdminPage({ onLogout }) {
           </div>
         )}
 
+        {tab==="tasks"&&(()=>{
+          const today=new Date().toISOString().slice(0,10);
+          const odd={};
+          (plannedRds||[]).forEach(r=>{ if(r&&r.date&&r.date<today&&(!odd[r.player_id]||r.date<odd[r.player_id])) odd[r.player_id]=r.date; });
+          const tasks=(plannedRds||[]).filter(r=>r&&r.date===today).map(r=>{ const player=players.find(p=>p.id===r.player_id); return player?{ player, plat:platforms.find(pl=>pl.id===player.platform_id), mgr:managers.find(m=>m.id===player.manager_id), rdNum:r.rd_number, amount:r.amount }:null; }).filter(Boolean);
+          const overdue=players.filter(p=>p&&odd[p.id]).sort((a,b)=>new Date(odd[a.id])-new Date(odd[b.id]));
+          const card={ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" };
+          return(
+            <div>
+              <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Задачи и просрочки</h2>
+              <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
+                <div style={{ flex:"1 1 360px",minWidth:300 }}>
+                  <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
+                  {tasks.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>На сегодня задач нет</div>}
+                  {tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
+                    <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={card}>
+                      <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
+                        <div style={{ fontSize:12,color:"#7b8290" }}>{plat?.name||"—"} · РД{rdNum}</div>
+                      </div>
+                      {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc" }}>{amount}€</div>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ flex:"1 1 360px",minWidth:300 }}>
+                  <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
+                  {overdue.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>}
+                  {overdue.map(player=>{
+                    const plat=platforms.find(p=>p.id===player.platform_id);
+                    const mgr=managers.find(m=>m.id===player.manager_id);
+                    const od=odd[player.id];
+                    const days=Math.floor((new Date(today)-new Date(od))/(1000*60*60*24));
+                    const planned=plannedRds.filter(r=>r&&r.player_id===player.id&&r.date<today).sort((a,b)=>a.rd_number-b.rd_number)[0];
+                    return(
+                      <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ ...card,background:"rgba(239,68,68,.07)",border:"1px solid #7f1d1d" }}>
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }}/>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
+                          <div style={{ fontSize:12,color:"#7b8290" }}>{plat?.name||"—"}{planned?` · РД${planned.rd_number}`:""} · {od?(([y,m,d])=>`${d}.${m}`)(od.split("-")):""}</div>
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2 }}>
+                          {planned&&<span style={{ fontSize:13,fontWeight:700,color:"#fca5a5" }}>{planned.amount}€</span>}
+                          <span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         {tab==="leads"&&(
           <div>
             <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Лиды менеджеров</h2>
@@ -1920,7 +2088,7 @@ function AdminPage({ onLogout }) {
                     players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id&&(geoPlatformIds.has(p.platform_id)||!p.platform_id))}
                     redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                     manager={mgr} dark={true} readonly={false}
-                    onReload={load} showToast={showToast} isPoland={isPoland}
+                    onReload={load} showToast={showToast} isPoland={isPoland} highlightId={highlightId}
                   />
                 </div>
               ));
