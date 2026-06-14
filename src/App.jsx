@@ -104,6 +104,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
+  const [confirmRd, setConfirmRd] = useState(null);
   const [inlineEdit, setInlineEdit] = useState(null);
   const [inlineVal, setInlineVal] = useState("");
   const [inlineDate, setInlineDate] = useState("");
@@ -325,6 +326,25 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
         );
       })()}
 
+      {confirmRd && !readonly && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setConfirmRd(null)}>
+          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.6)" }}>
+            <h3 style={{ color:T.text,marginBottom:6,fontSize:15,fontWeight:700 }}>Подтверждение РД{confirmRd.rdNumber}</h3>
+            <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>{localPlayers.find(p=>p.id===confirmRd.playerId)?.name}</p>
+            {[["Сумма (€)","amount","number"],["Дата","date","date"]].map(([l,k,t])=>(
+              <div key={k} style={{ marginBottom:14 }}>
+                <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:5,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
+                <input type={t} value={confirmRd[k]} onChange={e=>setConfirmRd(prev=>({...prev,[k]:e.target.value}))} style={IS}/>
+              </div>
+            ))}
+            <div style={{ display:"flex",gap:10 }}>
+              <button onClick={async()=>{ const c=confirmRd; setConfirmRd(null); await markPlannedAsDone(c.playerId,c.rdNumber,c.amount,c.date||today); }} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>✓ Подтвердить</button>
+              <button onClick={()=>setConfirmRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEditRd && !readonly && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setShowEditRd(null)}>
           <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.6)" }}>
@@ -427,7 +447,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                                 if (readonly) return;
                                 if (!rd) { const popup={playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}; rdInputPopupRef.current=popup; setRdInputPopup(popup); setRdInputVal(""); setRdInputDate(today); return; }
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,canRevert:true});
-                                else markPlannedAsDone(player.id,rd.rd_number,rd.amount,rd.date);
+                                else setConfirmRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date});
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
                               {rd?<div>
