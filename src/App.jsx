@@ -625,34 +625,38 @@ function HistoryView({ logs, managers, geos, userGeos, dark }) {
 
 function ReportView({ players, redeposits, platforms, managers, geos, userGeos, dark }) {
   const todayS=new Date().toISOString().slice(0,10);
+  const [fDate, setFDate] = useState(todayS);
   const [fGeo, setFGeo] = useState("");
   const [fMgr, setFMgr] = useState("");
-  const [fFrom, setFFrom] = useState(todayS);
-  const [fTo, setFTo] = useState(todayS);
   const T = dark
     ? { border:"#2d3148",text:"#e2e8f0",sub:"#94a3b8",muted:"#64748b",thBg:"#151824",rowB:"#1a1d27",inputBg:"#0f1117",card:"#151824" }
     : { border:"#dde1ea",text:"#1e293b",sub:"#64748b",muted:"#94a3b8",thBg:"#e8eaf0",rowB:"#e2e6ef",inputBg:"#e8eaf0",card:"#f5f6fa" };
   const sel={ background:T.inputBg,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" };
   const platGeo=(pid)=>platforms.find(p=>p.id===pid)?.geo_id;
   const pGeo=(p)=>platGeo(p.platform_id)||userGeos.find(u=>u.manager_id===p.manager_id)?.geo_id;
-  const inRange=(d)=> d && d>=fFrom && d<=fTo;
-  const passP=(p)=>{ if(fGeo&&pGeo(p)!==fGeo) return false; if(fMgr&&p.manager_id!==fMgr) return false; return true; };
+  const passGeo=(p)=> !fGeo || pGeo(p)===fGeo;
+  const passMgr=(p)=> !fMgr || p.manager_id===fMgr;
   const playerById=(id)=>players.find(p=>p.id===id);
-  const depPlayers=(players||[]).filter(p=>p&&inRange(p.date)&&passP(p));
-  const rdsInRange=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&inRange(r.date)&&passP(p); });
-  const rows=(platforms||[]).filter(pl=>!fGeo||pl.geo_id===fGeo).map(pl=>{
-    const dp=depPlayers.filter(p=>p.platform_id===pl.id);
-    return { id:pl.id, platform:pl.name,
-      deposits:dp.length,
-      redeps:rdsInRange.filter(r=>playerById(r.player_id)?.platform_id===pl.id).length,
-      neotbiv:dp.filter(p=>p.status==="Нет").length,
-      kidki:dp.filter(p=>p.status==="Кинул").length };
-  }).filter(r=>r.deposits>0||r.redeps>0);
+  const dayPlayers=(players||[]).filter(p=>p&&p.date===fDate&&passGeo(p)&&passMgr(p));
+  const dayRds=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&r.date===fDate&&passGeo(p)&&passMgr(p); });
+  const mgrIds=[...new Set([...dayPlayers.map(p=>p.manager_id), ...dayRds.map(r=>playerById(r.player_id)?.manager_id)].filter(Boolean))];
+  const rows=mgrIds.map(mid=>{
+    const mp=dayPlayers.filter(p=>p.manager_id===mid);
+    return { id:mid, name:managers.find(x=>x.id===mid)?.name||"—",
+      deposits:mp.filter(p=>p.status==="Да").length,
+      redeps:dayRds.filter(r=>playerById(r.player_id)?.manager_id===mid).length,
+      neotbiv:mp.filter(p=>p.status==="Нет").length,
+      kidki:mp.filter(p=>p.status==="Кинул").length };
+  }).sort((a,b)=>b.deposits-a.deposits);
   const totals=rows.reduce((a,r)=>({deposits:a.deposits+r.deposits,redeps:a.redeps+r.redeps,neotbiv:a.neotbiv+r.neotbiv,kidki:a.kidki+r.kidki}),{deposits:0,redeps:0,neotbiv:0,kidki:0});
   const mgrOptions=(fGeo? managers.filter(m=>userGeos.some(ug=>ug.geo_id===fGeo&&ug.manager_id===m.id)) : managers);
-  const TH={ padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:`1px solid ${T.border}`,background:T.thBg,whiteSpace:"nowrap" };
-  const TD={ padding:"11px 12px",borderBottom:`1px solid ${T.rowB}`,fontSize:13 };
   const cards=[["Депозиты",totals.deposits,"#a5b4fc"],["Редепозиты",totals.redeps,"#6ee7b7"],["Неотбивы (Нет)",totals.neotbiv,"#94a3b8"],["Кидки",totals.kidki,"#fca5a5"]];
+  const metric=(label,val,color)=>(
+    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",minWidth:56 }}>
+      <span style={{ fontSize:18,fontWeight:800,color }}>{val}</span>
+      <span style={{ fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:"0.04em" }}>{label}</span>
+    </div>
+  );
   return (
     <div>
       <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap" }}>
@@ -667,10 +671,7 @@ function ReportView({ players, redeposits, platforms, managers, geos, userGeos, 
           <option value="">Все менеджеры</option>
           {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <label style={{ color:T.muted,fontSize:12 }}>с</label>
-        <input type="date" value={fFrom} onChange={e=>setFFrom(e.target.value)} style={sel}/>
-        <label style={{ color:T.muted,fontSize:12 }}>по</label>
-        <input type="date" value={fTo} onChange={e=>setFTo(e.target.value)} style={sel}/>
+        <input type="date" value={fDate} onChange={e=>setFDate(e.target.value)} style={sel}/>
       </div>
       <div style={{ display:"flex",gap:12,flexWrap:"wrap",marginBottom:18 }}>
         {cards.map(([l,v,c])=>(
@@ -680,32 +681,20 @@ function ReportView({ players, redeposits, platforms, managers, geos, userGeos, 
           </div>
         ))}
       </div>
-      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>По платформам</h3>
-      <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto" }}>
-        <table style={{ width:"100%",borderCollapse:"collapse" }}>
-          <thead><tr>{["Платформа","Депозиты","Редепозиты","Неотбивы","Кидки"].map(h=><th key={h} style={TH}>{h}</th>)}</tr></thead>
-          <tbody>
-            {rows.map(r=>(
-              <tr key={r.id} className="row-hover">
-                <td style={{...TD,color:T.text,fontWeight:600}}>{r.platform}</td>
-                <td style={{...TD,color:"#a5b4fc",fontWeight:700}}>{r.deposits}</td>
-                <td style={{...TD,color:"#6ee7b7",fontWeight:700}}>{r.redeps}</td>
-                <td style={{...TD,color:T.sub}}>{r.neotbiv}</td>
-                <td style={{...TD,color:"#fca5a5"}}>{r.kidki}</td>
-              </tr>
-            ))}
-            {rows.length===0&&<tr><td colSpan={5} style={{padding:24,textAlign:"center",color:T.muted}}>Нет данных за период</td></tr>}
-            {rows.length>0&&(
-              <tr style={{ background:T.thBg }}>
-                <td style={{...TD,color:T.text,fontWeight:800}}>Итого</td>
-                <td style={{...TD,color:"#a5b4fc",fontWeight:800}}>{totals.deposits}</td>
-                <td style={{...TD,color:"#6ee7b7",fontWeight:800}}>{totals.redeps}</td>
-                <td style={{...TD,color:T.sub,fontWeight:800}}>{totals.neotbiv}</td>
-                <td style={{...TD,color:"#fca5a5",fontWeight:800}}>{totals.kidki}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>Менеджеры за {(([y,m,d])=>`${d}.${m}.${y}`)(fDate.split("-"))}</h3>
+      <div style={{ border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
+        {rows.length===0&&<div style={{ padding:24,textAlign:"center",color:T.muted,fontSize:13 }}>В этот день никто не работал</div>}
+        {rows.map((r,i)=>(
+          <div key={r.id} className="row-hover" style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,padding:"14px 18px",borderBottom:i<rows.length-1?`1px solid ${T.rowB}`:"none",flexWrap:"wrap" }}>
+            <span style={{ color:T.text,fontWeight:700,fontSize:15 }}>{r.name}</span>
+            <div style={{ display:"flex",gap:18,alignItems:"center" }}>
+              {metric("Депозиты",r.deposits,"#a5b4fc")}
+              {metric("Редеп",r.redeps,"#6ee7b7")}
+              {metric("Нет",r.neotbiv,T.sub)}
+              {metric("Кинул",r.kidki,"#fca5a5")}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
