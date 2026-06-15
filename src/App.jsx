@@ -442,7 +442,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                           <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                             {!readonly && <div onClick={e=>setColorPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} style={{ width:8,height:8,borderRadius:"50%",background:colorInfo.dot,cursor:"pointer",flexShrink:0 }} title="Цвет"/>}
                             {readonly && <div style={{ width:8,height:8,borderRadius:"50%",background:colorInfo.dot,flexShrink:0 }}/>}
-                            <span style={{ color:T.text }}>{player.name}</span>
+                            <span onClick={e=>{ const r=document.createRange(); r.selectNodeContents(e.currentTarget); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }} onMouseDown={e=>e.stopPropagation()} style={{ color:T.text,userSelect:"text",cursor:"text" }}>{player.name}</span>
                           </div>
                         </td>
                         <td style={{ ...S.td,color:T.muted,fontSize:10,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&copyToClipboard(player.sub18)} title="Скопировать">
@@ -551,6 +551,76 @@ function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, myGeos,
   );
 }
 
+function HistoryView({ logs, managers, geos, userGeos, dark }) {
+  const [fGeo, setFGeo] = useState("");
+  const [fMgr, setFMgr] = useState("");
+  const [fAction, setFAction] = useState("");
+  const [fFrom, setFFrom] = useState("");
+  const [fTo, setFTo] = useState("");
+  const [fSearch, setFSearch] = useState("");
+  const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_planned":"Запланировал РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
+  const T = dark
+    ? { border:"#2d3148",text:"#e2e8f0",sub:"#94a3b8",muted:"#64748b",thBg:"#151824",rowB:"#1a1d27",inputBg:"#0f1117" }
+    : { border:"#dde1ea",text:"#1e293b",sub:"#64748b",muted:"#94a3b8",thBg:"#e8eaf0",rowB:"#e2e6ef",inputBg:"#e8eaf0" };
+  const sel={ background:T.inputBg,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" };
+  const filtered=(logs||[]).filter(l=>{
+    if(fGeo){ const ids=new Set(userGeos.filter(ug=>ug.geo_id===fGeo).map(ug=>ug.manager_id)); if(!ids.has(l.manager_id)) return false; }
+    if(fMgr && l.manager_id!==fMgr) return false;
+    if(fAction && l.action!==fAction) return false;
+    if(fFrom && new Date(l.created_at) < new Date(fFrom+"T00:00:00")) return false;
+    if(fTo && new Date(l.created_at) > new Date(fTo+"T23:59:59")) return false;
+    if(fSearch){ const q=fSearch.toLowerCase(); if(!`${l.managers?.name||""} ${l.players?.name||""}`.toLowerCase().includes(q)) return false; }
+    return true;
+  });
+  const actions=[...new Set((logs||[]).map(l=>l.action))];
+  const mgrOptions=(fGeo? managers.filter(m=>userGeos.some(ug=>ug.geo_id===fGeo&&ug.manager_id===m.id)) : managers);
+  const TH={ padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:`1px solid ${T.border}`,background:T.thBg,whiteSpace:"nowrap" };
+  const TD={ padding:"11px 12px",borderBottom:`1px solid ${T.rowB}` };
+  return (
+    <div>
+      <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap" }}>
+        <h2 style={{ color:T.text,fontSize:18,margin:0 }}>История действий</h2>
+        {geos&&geos.length>1&&(
+          <select value={fGeo} onChange={e=>{ setFGeo(e.target.value); setFMgr(""); }} style={sel}>
+            <option value="">Все гео</option>
+            {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        )}
+        <select value={fMgr} onChange={e=>setFMgr(e.target.value)} style={sel}>
+          <option value="">Все менеджеры</option>
+          {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        <select value={fAction} onChange={e=>setFAction(e.target.value)} style={sel}>
+          <option value="">Все действия</option>
+          {actions.map(a=><option key={a} value={a}>{actionLabels[a]||a}</option>)}
+        </select>
+        <input type="date" value={fFrom} onChange={e=>setFFrom(e.target.value)} style={sel} title="С даты"/>
+        <input type="date" value={fTo} onChange={e=>setFTo(e.target.value)} style={sel} title="По дату"/>
+        <input type="text" placeholder="Поиск: лид / менеджер" value={fSearch} onChange={e=>setFSearch(e.target.value)} style={{...sel,minWidth:180}}/>
+        {(fGeo||fMgr||fAction||fFrom||fTo||fSearch)&&<button onClick={()=>{ setFGeo("");setFMgr("");setFAction("");setFFrom("");setFTo("");setFSearch(""); }} style={{...sel,cursor:"pointer",color:"#f87171"}}>Сбросить</button>}
+        <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>{filtered.length}</span>
+      </div>
+      <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto" }}>
+        <table style={{ width:"100%",borderCollapse:"collapse" }}>
+          <thead><tr>{["Время","Менеджер","Действие","Лид","Детали"].map(h=><th key={h} style={TH}>{h}</th>)}</tr></thead>
+          <tbody>
+            {filtered.map(log=>(
+              <tr key={log.id} className="row-hover">
+                <td style={{...TD,color:T.muted,fontSize:11,whiteSpace:"nowrap"}}>{new Date(log.created_at).toLocaleString("ru",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
+                <td style={{...TD,color:T.text,fontWeight:500}}>{log.managers?.name||"—"}</td>
+                <td style={TD}><span style={{ background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600 }}>{actionLabels[log.action]||log.action}</span></td>
+                <td style={{...TD,color:T.sub,fontSize:12}}>{log.players?.name||"—"}</td>
+                <td style={{...TD,color:T.muted,fontSize:11}}>{log.details&&Object.keys(log.details).length>0?Object.entries(log.details).map(([k,v])=>`${k}: ${v}`).join(", "):"—"}</td>
+              </tr>
+            ))}
+            {filtered.length===0&&<tr><td colSpan={5} style={{padding:24,textAlign:"center",color:T.muted}}>История пуста</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ManagerPage({ manager, onLogout }) {
   const [dark, setDark] = useState(true);
   const [platforms, setPlatforms] = useState([]);
@@ -562,6 +632,7 @@ function ManagerPage({ manager, onLogout }) {
   const [allPlayers, setAllPlayers] = useState([]); // all players in my geos
   const [redeposits, setRedeposits] = useState([]);
   const [plannedRds, setPlannedRds] = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
   const [tab, setTab] = useState("main");
   const [activeGeo, setActiveGeo] = useState(null);
   const [viewingManager, setViewingManager] = useState(() => ({})); // { geoId: managerId }
@@ -593,7 +664,7 @@ function ManagerPage({ manager, onLogout }) {
   const showToast = (msg, type="ok", onUndo=null) => { setToast({msg,type,onUndo}); setTimeout(()=>setToast(null),4000); };
 
   const load = async () => {
-    const [{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:ug },{ data:g },{ data:am },{ data:allUg }] = await Promise.all([
+    const [{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:ug },{ data:g },{ data:am },{ data:allUg },{ data:al }] = await Promise.all([
       supabase.from("platforms").select("*").eq("is_active",true).order("sort_order").order("name"),
       supabase.from("players").select("*").order("sort_order",{ascending:true,nullsFirst:false}).order("date",{ascending:false}),
       supabase.from("redeposits").select("*"),
@@ -602,9 +673,10 @@ function ManagerPage({ manager, onLogout }) {
       supabase.from("geos").select("*").eq("is_active",true),
       supabase.from("managers").select("*").eq("is_active",true),
       supabase.from("user_geos").select("*"),
+      supabase.from("activity_log").select("*, managers(name), players(name)").order("created_at",{ascending:false}).limit(200),
     ]);
     setPlatforms(p||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
-    setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]);
+    setGeos(g||[]); setAllManagers(am||[]); setUserGeos(allUg||[]); setActivityLog(al||[]);
     const myGeoList=(ug||[]).map(u=>u&&u.geos).filter(g=>g&&g.id);
     setMyGeos(myGeoList);
     const firstGeo=myGeoList.length>0?myGeoList[0].id:null;
@@ -911,7 +983,7 @@ function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["stats","Статистика"],["platforms","Платформы"],...(isTeamLead?[["overview","Сводка"]]:[])]
+        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["stats","Статистика"],["platforms","Платформы"],["history","История"],...(isTeamLead?[["overview","Сводка"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -1316,6 +1388,19 @@ function ManagerPage({ manager, onLogout }) {
                 </table>
               </div>
             );
+          })()}
+        </div>
+      )}
+
+      {/* HISTORY */}
+      {tab==="history"&&(
+        <div style={{ padding:"16px 20px" }}>
+          {(()=>{
+            const myGeoIds=new Set(myGeos.map(g=>g.id));
+            const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
+            const scopedLogs=activityLog.filter(l=>accessibleMgrIds.has(l.manager_id));
+            const scopedMgrs=allManagers.filter(m=>accessibleMgrIds.has(m.id));
+            return <HistoryView logs={scopedLogs} managers={scopedMgrs} geos={myGeos} userGeos={userGeos} dark={dark}/>;
           })()}
         </div>
       )}
@@ -1995,43 +2080,7 @@ function AdminPage({ onLogout }) {
         )}
 
         {tab==="history"&&(
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
-              <h2 style={{color:"#fff",fontSize:18,margin:0}}>История действий</h2>
-              <select value={selectedHistoryGeo||""} onChange={e=>{ setSelectedHistoryGeo(e.target.value||null); setSelectedManager(null); }} style={{background:"#1a1d27",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none"}}>
-                <option value="">Все гео</option>
-                {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
-              <select value={selectedManager||""} onChange={e=>setSelectedManager(e.target.value||null)} style={{background:"#1a1d27",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none"}}>
-                <option value="">Все менеджеры</option>
-                {(()=>{
-                  if(!selectedHistoryGeo) return managers;
-                  // Берём менеджеров которые реально есть в истории этого гео
-                  const geoManagerIds=new Set(userGeos.filter(ug=>ug.geo_id===selectedHistoryGeo).map(ug=>ug.manager_id));
-                  // Плюс те кто есть в activityLog но может не быть в userGeos
-                  activityLog.forEach(l=>{ if(l.manager_id) geoManagerIds.add(l.manager_id); });
-                  return managers.filter(m=>geoManagerIds.has(m.id));
-                })().map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
-              <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead><tr>{["Время","Менеджер","Действие","Лид","Детали"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {filteredLog.map(log=>(
-                    <tr key={log.id} className="row-hover">
-                      <td style={{...S.td,color:"#64748b",fontSize:11,whiteSpace:"nowrap"}}>{new Date(log.created_at).toLocaleString("ru",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
-                      <td style={{...S.td,color:"#e2e8f0",fontWeight:500}}>{log.managers?.name||"—"}</td>
-                      <td style={S.td}><span style={{background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600}}>{actionLabels[log.action]||log.action}</span></td>
-                      <td style={{...S.td,color:"#94a3b8",fontSize:12}}>{log.players?.name||"—"}</td>
-                      <td style={{...S.td,color:"#64748b",fontSize:11}}>{log.details&&Object.keys(log.details).length>0?Object.entries(log.details).map(([k,v])=>`${k}: ${v}`).join(", "):"—"}</td>
-                    </tr>
-                  ))}
-                  {filteredLog.length===0&&<tr><td colSpan={5} style={{padding:24,textAlign:"center",color:"#475569"}}>История пуста</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <HistoryView logs={activityLog} managers={managers} geos={geos} userGeos={userGeos} dark={true}/>
         )}
 
         {tab==="tasks"&&(()=>{
