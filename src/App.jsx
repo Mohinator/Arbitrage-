@@ -380,8 +380,9 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
       <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
-            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+17+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
+            <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+18+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>
+              <th style={{ ...S.th,width:28,textAlign:"center" }}>#</th>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
               <th style={S.th}>Дата</th>
@@ -405,7 +406,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
               return (
                 <>
                   <tr key={`m-${mk}`}>
-                    <td colSpan={(readonly?0:2)+17+(isPoland?1:0)} style={{ padding:"7px 12px",background:T.monthHdr,borderBottom:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}` }}>
+                    <td colSpan={(readonly?0:2)+18+(isPoland?1:0)} style={{ padding:"7px 12px",background:T.monthHdr,borderBottom:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}` }}>
                       <div style={{ display:"flex",alignItems:"center",gap:10 }}>
                         <button onClick={()=>toggleMonth(mk)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"2px 10px",borderRadius:6,cursor:"pointer",fontSize:11 }}>
                           {isHidden?"▶ Показать":"▼ Скрыть"}
@@ -428,6 +429,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                         ref={el=>{ if(el&&highlightId===player.id) el.scrollIntoView({behavior:"smooth",block:"center"}); }}
                         draggable={!readonly} onDragStart={()=>handleDragStart(globalIdx)} onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
                         style={{ background:highlightId===player.id?(dark?"rgba(99,102,241,.35)":"rgba(99,102,241,.22)"):(colorInfo.bg||"transparent"),boxShadow:highlightId===player.id?"inset 0 0 0 2px #6366f1":"none",transition:"background .4s,box-shadow .4s" }}>
+                        <td style={{ ...S.td,color:T.muted,fontSize:10,textAlign:"center" }}>{globalIdx+1}</td>
                         {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи">⠿</span></td>}
                         {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
                           <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
@@ -503,7 +505,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
                 </>
               );
             })}
-            {localPlayers.length===0&&<tr><td colSpan={(readonly?0:2)+17+(isPoland?1:0)} style={{ padding:24,textAlign:"center",color:T.muted }}>Нет лидов</td></tr>}
+            {localPlayers.length===0&&<tr><td colSpan={(readonly?0:2)+18+(isPoland?1:0)} style={{ padding:24,textAlign:"center",color:T.muted }}>Нет лидов</td></tr>}
           </tbody>
         </table>
       </div>
