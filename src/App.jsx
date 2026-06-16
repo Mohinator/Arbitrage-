@@ -567,7 +567,7 @@ function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, myGeos,
   );
 }
 
-function HistoryView({ logs, managers, geos, userGeos, dark }) {
+function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick }) {
   const [fGeo, setFGeo] = useState("");
   const [fMgr, setFMgr] = useState("");
   const [fAction, setFAction] = useState("");
@@ -625,7 +625,7 @@ function HistoryView({ logs, managers, geos, userGeos, dark }) {
                 <td style={{...TD,color:T.muted,fontSize:11,whiteSpace:"nowrap"}}>{new Date(log.created_at).toLocaleString("ru",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
                 <td style={{...TD,color:T.text,fontWeight:500}}>{log.managers?.name||"—"}</td>
                 <td style={TD}><span style={{ background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600 }}>{actionLabels[log.action]||log.action}</span></td>
-                <td style={{...TD,color:T.sub,fontSize:12}}>{log.players?.name||"—"}</td>
+                <td style={{...TD,fontSize:12}}>{log.player_id&&onLeadClick? <span onClick={()=>onLeadClick(log.player_id)} className="row-hover" style={{ color:"#a5b4fc",cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2 }}>{log.players?.name||"—"}</span> : <span style={{ color:T.sub }}>{log.players?.name||"—"}</span>}</td>
                 <td style={{...TD,color:T.muted,fontSize:11}}>{log.details&&Object.keys(log.details).length>0?Object.entries(log.details).map(([k,v])=>`${k}: ${v}`).join(", "):"—"}</td>
               </tr>
             ))}
@@ -1053,19 +1053,19 @@ function ManagerPage({ manager, onLogout }) {
           const sub=(p.sub18||"").trim().toLowerCase();
           // деп этого sub есть на ДРУГОЙ платформе, и под ту платформу лида в трекере нет → перепутана платформа
           const others=(allGeoConvBySub.get(sub)||[]).filter(o=>o.platId!==p.platform_id && !allGeoLeadPairs.has(sub+"|"+o.platId));
-          return { name:p.name, sub18:p.sub18, platId:p.platform_id, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id), hint: others.length? others.map(o=>o.platName).join(", ") : null };
+          return { name:p.name, sub18:p.sub18, platId:p.platform_id, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id), pid:p.id, mgrId:p.manager_id, hint: others.length? others.map(o=>o.platName).join(", ") : null };
         })
         .filter(p=>notIgn("check_sub",p.sub18,p.platId));
       const wrongMgr = [];
       for (const c of ktPairs.values()) {
         if (!c.convMgrId) continue;
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
-        if (lead && lead.manager_id !== c.convMgrId && notIgn("wrong_mgr",c.sub18,c.platId)) wrongMgr.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId) });
+        if (lead && lead.manager_id !== c.convMgrId && notIgn("wrong_mgr",c.sub18,c.platId)) wrongMgr.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId), pid:lead.id, mgrId:lead.manager_id });
       }
       const statusMismatch = [];
       for (const c of ktPairs.values()) {
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
-        if (lead && lead.status !== "Да" && notIgn("status_mismatch",c.sub18,c.platId)) statusMismatch.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id) });
+        if (lead && lead.status !== "Да" && notIgn("status_mismatch",c.sub18,c.platId)) statusMismatch.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id), pid:lead.id, mgrId:lead.manager_id });
       }
       setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:isTL?"гео":"свои", isTL });
     } catch(e) {
@@ -1089,6 +1089,11 @@ function ManagerPage({ manager, onLogout }) {
     q = row.platform_id ? q.eq("platform_id",row.platform_id) : q.is("platform_id",null);
     await q;
     runSverka();
+  };
+  const sverkaGoToLead = (pid, mgrId) => {
+    if(!pid) return;
+    setShowSverka(false);
+    goToLead({ id:pid, manager_id:mgrId });
   };
 
   const filteredPlayers = players.filter(p=>{
@@ -1175,11 +1180,11 @@ function ManagerPage({ manager, onLogout }) {
                     <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>Лиды со статусом «Да», по которым нет депозита в Keitaro</div>
                     {sverkaData.checkSub.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все «Да» подтверждены в Keitaro ✅</div>}
                     {sverkaData.checkSub.map((p,i)=>(
-                      <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                      <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
                         <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#fcd34d",fontWeight:400 }}>· {p.mgr}</span></span>
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
                         <span style={{ color:T.muted }}>{p.platName}</span>
-                        {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("check_sub",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
+                        {sverkaData.isTL&&<button onClick={e=>{ e.stopPropagation(); ignoreSverkaItem("check_sub",p.sub18,p.platId); }} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                         {p.hint&&<span style={{ flexBasis:"100%",color:"#fca5a5",fontSize:11,marginTop:2 }}>⚠ возможно, перепутана платформа — в Keitaro деп на: <b>{p.hint}</b></span>}
                       </div>
                     ))}
@@ -1189,11 +1194,11 @@ function ManagerPage({ manager, onLogout }) {
                       <div style={{ padding:"10px 14px",background:"rgba(168,85,247,.1)",color:"#c4b5fd",fontWeight:700,fontSize:13 }}>↪ Лид не на том менеджере ({sverkaData.wrongMgr.length})</div>
                       <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>sub18 и платформа сошлись, но в Keitaro деп на другого менеджера</div>
                       {sverkaData.wrongMgr.map((p,i)=>(
-                        <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                        <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
                           <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{color:T.muted,fontWeight:400,fontFamily:"monospace"}}>{p.sub18}</span></span>
                           <span style={{ color:T.muted }}>{p.platName}</span>
                           <span style={{ color:T.sub }}>трекер: <b style={{color:T.text}}>{p.trackerMgr}</b> · Keitaro: <b style={{color:"#c4b5fd"}}>{p.keitaroMgr}</b></span>
-                          {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("wrong_mgr",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
+                          {sverkaData.isTL&&<button onClick={e=>{ e.stopPropagation(); ignoreSverkaItem("wrong_mgr",p.sub18,p.platId); }} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                         </div>
                       ))}
                     </div>
@@ -1203,11 +1208,11 @@ function ManagerPage({ manager, onLogout }) {
                       <div style={{ padding:"10px 14px",background:"rgba(34,197,94,.1)",color:"#86efac",fontWeight:700,fontSize:13 }}>✔ Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
                       <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>В Keitaro деп подтверждён, а в трекере статус другой — обнови</div>
                       {sverkaData.statusMismatch.map((p,i)=>(
-                        <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                        <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
                           <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#86efac",fontWeight:400 }}>· {p.mgr}</span></span>
                           <span style={{ color:T.muted }}>{p.platName}</span>
                           <span style={{ color:T.sub }}>статус: <b style={{color:"#fca5a5"}}>{p.status}</b></span>
-                          {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("status_mismatch",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
+                          {sverkaData.isTL&&<button onClick={e=>{ e.stopPropagation(); ignoreSverkaItem("status_mismatch",p.sub18,p.platId); }} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                         </div>
                       ))}
                     </div>
@@ -1764,7 +1769,7 @@ function ManagerPage({ manager, onLogout }) {
             const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
             const scopedLogs=activityLog.filter(l=>accessibleMgrIds.has(l.manager_id));
             const scopedMgrs=allManagers.filter(m=>accessibleMgrIds.has(m.id));
-            return <HistoryView logs={scopedLogs} managers={scopedMgrs} geos={myGeos} userGeos={userGeos} dark={dark}/>;
+            return <HistoryView logs={scopedLogs} managers={scopedMgrs} geos={myGeos} userGeos={userGeos} dark={dark} onLeadClick={(pid)=>{ const pl=allPlayers.find(x=>x.id===pid); if(pl) goToLead(pl); }}/>;
           })()}
         </div>
       )}
@@ -2448,7 +2453,7 @@ function AdminPage({ onLogout }) {
           <ReportView players={players} redeposits={redeposits} platforms={platforms} managers={managers} geos={geos} userGeos={userGeos} dark={true}/>
         )}
         {tab==="history"&&(
-          <HistoryView logs={activityLog} managers={managers} geos={geos} userGeos={userGeos} dark={true}/>
+          <HistoryView logs={activityLog} managers={managers} geos={geos} userGeos={userGeos} dark={true} onLeadClick={(pid)=>{ const pl=players.find(x=>x.id===pid); if(pl){ setTab("leads"); goToLead(pl); } }}/>
         )}
 
         {tab==="tasks"&&(()=>{
