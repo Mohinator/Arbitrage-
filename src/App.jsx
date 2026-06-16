@@ -1027,6 +1027,18 @@ function ManagerPage({ manager, onLogout }) {
       const leadByPair = new Map();
       geoLeads.forEach(p=>leadByPair.set((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id, p));
       const ktKeys = new Set(ktPairs.keys());
+      // все конверсии гео (без фильтра по менеджеру) — для подсказки про перепутанную платформу
+      const allGeoConvBySub = new Map();
+      for (const c of convs) {
+        const camp = c.campaign||"";
+        const plat = platSorted.find(p=>p.name && camp.startsWith(p.name));
+        if (!plat || !geoPlatIds.has(plat.id)) continue;
+        const sub = (c.sub18||"").trim().toLowerCase();
+        if (!allGeoConvBySub.has(sub)) allGeoConvBySub.set(sub, []);
+        const arr = allGeoConvBySub.get(sub);
+        if (!arr.some(x=>x.platId===plat.id)) arr.push({ platId:plat.id, platName:plat.name });
+      }
+      const allGeoLeadPairs = new Set(allPlayers.filter(p=>p&&p.platform_id&&geoPlatIds.has(p.platform_id)).map(p=>(p.sub18||"").trim().toLowerCase()+"|"+p.platform_id));
       // загруженные исключения
       const { data: ign } = await supabase.from("sverka_ignored").select("*");
       const ignored = ign||[];
@@ -1034,7 +1046,12 @@ function ManagerPage({ manager, onLogout }) {
       const notIgn = (lt,sub,platId)=>!ignSet.has(`${lt}|${(sub||"").toLowerCase()}|${platId||""}`);
       const notInTracker = [...ktPairs.values()].filter(c=>!leadByPair.has(c.sub18+"|"+c.platId)).filter(c=>notIgn("not_in_tracker",c.sub18,c.platId));
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
-        .map(p=>({ name:p.name, sub18:p.sub18, platId:p.platform_id, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id) }))
+        .map(p=>{
+          const sub=(p.sub18||"").trim().toLowerCase();
+          // деп этого sub есть на ДРУГОЙ платформе, и под ту платформу лида в трекере нет → перепутана платформа
+          const others=(allGeoConvBySub.get(sub)||[]).filter(o=>o.platId!==p.platform_id && !allGeoLeadPairs.has(sub+"|"+o.platId));
+          return { name:p.name, sub18:p.sub18, platId:p.platform_id, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id), hint: others.length? others.map(o=>o.platName).join(", ") : null };
+        })
         .filter(p=>notIgn("check_sub",p.sub18,p.platId));
       const wrongMgr = [];
       for (const c of ktPairs.values()) {
@@ -1159,6 +1176,7 @@ function ManagerPage({ manager, onLogout }) {
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
                         <span style={{ color:T.muted }}>{p.platName}</span>
                         {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("check_sub",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
+                        {p.hint&&<span style={{ flexBasis:"100%",color:"#fca5a5",fontSize:11,marginTop:2 }}>⚠ возможно, перепутана платформа — в Keitaro деп на: <b>{p.hint}</b></span>}
                       </div>
                     ))}
                   </div>
