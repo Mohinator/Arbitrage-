@@ -1116,7 +1116,8 @@ function ManagerPage({ manager, onLogout }) {
   const overdueDatesByPlayer={};
   (plannedRds||[]).forEach(r=>{ if(r&&r.date&&r.date<today&&(!overdueDatesByPlayer[r.player_id]||r.date<overdueDatesByPlayer[r.player_id])) overdueDatesByPlayer[r.player_id]=r.date; });
   const overdueRds=players.filter(p=>p&&overdueDatesByPlayer[p.id]);
-  const todayRds=players.filter(p=>p.next_rd_date&&p.next_rd_date<=today);
+  const todayRdPlayerIds=new Set((plannedRds||[]).filter(r=>r&&r.date===today).map(r=>r.player_id));
+  const todayRds=players.filter(p=>p&&todayRdPlayerIds.has(p.id));
 
   const chartData=(()=>{
     const byDay={};
