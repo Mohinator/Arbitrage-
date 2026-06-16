@@ -987,24 +987,41 @@ function ManagerPage({ manager, onLogout }) {
       if (error) throw new Error(error.message||"Не удалось вызвать функцию");
       if (!data?.ok) throw new Error(data?.error||"Функция вернула ошибку");
       const convs = data.conversions||[];
+      const isTL = manager.role==="team_lead";
       const geoPlatIds = new Set(geoPlatforms.map(p=>p.id));
       const platSorted = [...platforms].sort((a,b)=>(b.name||"").length-(a.name||"").length);
+      // keitaro-имя -> id менеджера
+      const nameToMgr = [];
+      for (const m of allManagers) (m.keitaro_names||"").split(",").map(s=>s.trim().toLowerCase()).filter(Boolean).forEach(nm=>nameToMgr.push([nm, m.id]));
+      const tailToMgr = (tail) => { const t=(tail||"").trim().toLowerCase(); if(!t) return null; const h=nameToMgr.find(([nm])=>nm===t); return h?h[1]:null; };
+      const mgrName = (id) => allManagers.find(m=>m.id===id)?.name || "—";
       const ktPairs = new Map();
       for (const c of convs) {
         const camp = c.campaign||"";
         const plat = platSorted.find(p=>p.name && camp.startsWith(p.name));
         if (!plat || !geoPlatIds.has(plat.id)) continue;
+        const tail = camp.slice(plat.name.length).trim();
+        const convMgr = tailToMgr(tail);
+        if (!isTL && convMgr !== manager.id) continue; // менеджер видит только свои конверсии
         const sub = (c.sub18||"").trim().toLowerCase();
         const key = sub+"|"+plat.id;
-        if (!ktPairs.has(key)) ktPairs.set(key, { sub18:sub, platId:plat.id, platName:plat.name, manager:(camp.slice(plat.name.length).trim()||"—"), revenue:c.revenue, datetime:c.datetime, source:c.source });
+        if (!ktPairs.has(key)) ktPairs.set(key, { sub18:sub, platId:plat.id, platName:plat.name, manager:tail||"—", convMgrId:convMgr, revenue:c.revenue, datetime:c.datetime, source:c.source });
       }
-      const geoLeads = allPlayers.filter(p=>p&&p.platform_id&&geoPlatIds.has(p.platform_id));
-      const leadPairs = new Set(geoLeads.map(p=>(p.sub18||"").trim().toLowerCase()+"|"+p.platform_id));
+      let geoLeads = allPlayers.filter(p=>p&&p.platform_id&&geoPlatIds.has(p.platform_id));
+      if (!isTL) geoLeads = geoLeads.filter(p=>p.manager_id===manager.id);
+      const leadByPair = new Map();
+      geoLeads.forEach(p=>leadByPair.set((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id, p));
       const ktKeys = new Set(ktPairs.keys());
-      const notInTracker = [...ktPairs.values()].filter(c=>!leadPairs.has(c.sub18+"|"+c.platId));
+      const notInTracker = [...ktPairs.values()].filter(c=>!leadByPair.has(c.sub18+"|"+c.platId));
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
         .map(p=>({ name:p.name, sub18:p.sub18, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—" }));
-      setSverkaData({ notInTracker, checkSub, total:convs.length });
+      const wrongMgr = [];
+      for (const c of ktPairs.values()) {
+        if (!c.convMgrId) continue;
+        const lead = leadByPair.get(c.sub18+"|"+c.platId);
+        if (lead && lead.manager_id !== c.convMgrId) wrongMgr.push({ name:lead.name, sub18:c.sub18, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId) });
+      }
+      setSverkaData({ notInTracker, checkSub, wrongMgr, total:convs.length, scope:isTL?"гео":"свои" });
     } catch(e) {
       setSverkaData({ error:String(e?.message||e) });
     }
@@ -1069,7 +1086,7 @@ function ManagerPage({ manager, onLogout }) {
                 <button onClick={()=>setShowSverka(false)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Закрыть</button>
               </div>
             </div>
-            <p style={{ color:T.muted,fontSize:12,margin:"0 0 16px" }}>Гео: {myGeos.find(g=>g.id===activeGeo)?.name||"—"} · за текущий месяц · только депозиты (Sale)</p>
+            <p style={{ color:T.muted,fontSize:12,margin:"0 0 16px" }}>Гео: {myGeos.find(g=>g.id===activeGeo)?.name||"—"} · за текущий месяц · только депозиты (Sale){sverkaData&&!sverkaData.error?` · ${sverkaData.scope==="свои"?"мои лиды":"всё гео"}`:""}</p>
             {sverkaLoading&&<div style={{ color:T.muted,fontSize:13,padding:"24px 0",textAlign:"center" }}>Запрашиваю Keitaro…</div>}
             {!sverkaLoading&&sverkaData?.error&&<div style={{ color:"#fca5a5",fontSize:13,padding:"16px",background:"rgba(239,68,68,.08)",border:"1px solid #7f1d1d",borderRadius:8 }}>Ошибка: {sverkaData.error}</div>}
             {!sverkaLoading&&sverkaData&&!sverkaData.error&&(()=>{
@@ -1100,6 +1117,19 @@ function ManagerPage({ manager, onLogout }) {
                       </div>
                     ))}
                   </div>
+                  {sverkaData.wrongMgr&&sverkaData.wrongMgr.length>0&&(
+                    <div style={card}>
+                      <div style={{ padding:"10px 14px",background:"rgba(168,85,247,.1)",color:"#c4b5fd",fontWeight:700,fontSize:13 }}>↪ Лид не на том менеджере ({sverkaData.wrongMgr.length})</div>
+                      <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>sub18 и платформа сошлись, но в Keitaro деп на другого менеджера</div>
+                      {sverkaData.wrongMgr.map((p,i)=>(
+                        <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                          <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{color:T.muted,fontWeight:400,fontFamily:"monospace"}}>{p.sub18}</span></span>
+                          <span style={{ color:T.muted }}>{p.platName}</span>
+                          <span style={{ color:T.sub }}>трекер: <b style={{color:T.text}}>{p.trackerMgr}</b> · Keitaro: <b style={{color:"#c4b5fd"}}>{p.keitaroMgr}</b></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -2173,7 +2203,7 @@ function AdminPage({ onLogout }) {
             </div>
             <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead><tr>{["Имя","Токен","Роль","Гео","Статус","Лидов","Действия"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Имя","Токен","Роль","Keitaro","Гео","Статус","Лидов","Действия"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {managers.map(m=>{
                     const mGeos=userGeos.filter(ug=>ug.manager_id===m.id).map(ug=>geos.find(g=>g.id===ug.geo_id)).filter(Boolean);
@@ -2184,6 +2214,7 @@ function AdminPage({ onLogout }) {
                           <td style={{...S.td,fontWeight:600,color:"#e2e8f0"}}>{m.name}</td>
                           <td style={S.td}><code style={{background:"#0f1117",border:"1px solid #2d3148",padding:"3px 8px",borderRadius:5,fontSize:12,color:"#a5b4fc",letterSpacing:"0.1em"}}>{m.token}</code></td>
                           <td style={S.td}><span onClick={()=>toggleManagerRole(m)} style={{background:m.role==="team_lead"?"linear-gradient(135deg,#0f766e,#14b8a6)":"rgba(99,102,241,.15)",color:m.role==="team_lead"?"#fff":"#a5b4fc",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",userSelect:"none"}} title="Нажми для смены роли">{m.role==="team_lead"?"Тим лид":"Менеджер"}</span></td>
+                          <td style={S.td}><input defaultValue={m.keitaro_names||""} onBlur={async e=>{ const v=e.target.value.trim(); if(v!==(m.keitaro_names||"")){ await supabase.from("managers").update({keitaro_names:v}).eq("id",m.id); showToast("Имена Keitaro сохранены"); load(); } }} placeholder="Viktor, Vik" title="Имена менеджера в кампаниях Keitaro, через запятую" style={{background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"4px 8px",borderRadius:6,fontSize:12,outline:"none",width:130}}/></td>
                           <td style={S.td}>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                               {mGeos.map(g=><span key={g.id} style={{background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:11,padding:"1px 7px",borderRadius:5,fontWeight:600}}>{g.name}</span>)}
@@ -2199,7 +2230,7 @@ function AdminPage({ onLogout }) {
                         </tr>
                         {isAssigning&&(
                           <tr key={`assign-${m.id}`}>
-                            <td colSpan={7} style={{padding:"10px 18px",background:"#151824",borderBottom:"1px solid #2d3148"}}>
+                            <td colSpan={8} style={{padding:"10px 18px",background:"#151824",borderBottom:"1px solid #2d3148"}}>
                               <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                 <span style={{color:"#64748b",fontSize:12}}>Назначить гео:</span>
                                 {geos.map(g=>{
