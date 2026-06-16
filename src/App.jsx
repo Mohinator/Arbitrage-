@@ -131,6 +131,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
     setLocalPlayers(sorted); setDateSortDir(dir);
     await Promise.all(sorted.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
     showToast(dir==="asc"?"Отсортировано: старые сверху":"Отсортировано: новые сверху");
+    onReload && onReload();
   };
 
   useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
