@@ -1014,7 +1014,7 @@ function ManagerPage({ manager, onLogout }) {
       const ktKeys = new Set(ktPairs.keys());
       const notInTracker = [...ktPairs.values()].filter(c=>!leadByPair.has(c.sub18+"|"+c.platId));
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
-        .map(p=>({ name:p.name, sub18:p.sub18, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—" }));
+        .map(p=>({ name:p.name, sub18:p.sub18, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id) }));
       const wrongMgr = [];
       for (const c of ktPairs.values()) {
         if (!c.convMgrId) continue;
@@ -1111,7 +1111,7 @@ function ManagerPage({ manager, onLogout }) {
                     {sverkaData.checkSub.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все «Да» подтверждены в Keitaro ✅</div>}
                     {sverkaData.checkSub.map((p,i)=>(
                       <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
-                        <span style={{ color:T.text,fontWeight:600 }}>{p.name}</span>
+                        <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#fcd34d",fontWeight:400 }}>· {p.mgr}</span></span>
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
                         <span style={{ color:T.muted }}>{p.platName}</span>
                       </div>
