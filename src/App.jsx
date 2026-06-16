@@ -119,6 +119,19 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
   const [hiddenMonths, setHiddenMonths] = useState(new Set());
   const [localPlayers, setLocalPlayers] = useState(players);
   const [dragIdx, setDragIdx] = useState(null);
+  const [dateSortDir, setDateSortDir] = useState(null);
+  const sortByDate = async () => {
+    if (readonly) return;
+    const dir = dateSortDir==="asc" ? "desc" : "asc";
+    const sorted = [...localPlayers].filter(p=>p&&p.id).sort((a,b)=>{
+      const da=a.date||"", db=b.date||"";
+      if (da===db) return 0;
+      return dir==="asc" ? (da<db?-1:1) : (da<db?1:-1);
+    });
+    setLocalPlayers(sorted); setDateSortDir(dir);
+    await Promise.all(sorted.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
+    showToast(dir==="asc"?"Отсортировано: старые сверху":"Отсортировано: новые сверху");
+  };
 
   useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
 
@@ -385,7 +398,7 @@ function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dar
               <th style={{ ...S.th,width:28,textAlign:"center" }}>#</th>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
-              <th style={S.th}>Дата</th>
+              <th style={{ ...S.th, cursor:readonly?"default":"pointer", userSelect:"none" }} onClick={sortByDate} title={readonly?"":"Сортировать по дате"}>Дата {!readonly && <span style={{ opacity:0.6,fontSize:9 }}>{dateSortDir==="asc"?"▲":dateSortDir==="desc"?"▼":"⇅"}</span>}</th>
               <th style={S.th}>Продукт</th>
               <th style={S.th}>Имя</th>
               <th style={S.th}>SUB18</th>
