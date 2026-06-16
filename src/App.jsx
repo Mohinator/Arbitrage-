@@ -766,6 +766,9 @@ function ManagerPage({ manager, onLogout }) {
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddRd, setShowAddRd] = useState(null);
   const [showAutomation, setShowAutomation] = useState(false);
+  const [showSverka, setShowSverka] = useState(false);
+  const [sverkaLoading, setSverkaLoading] = useState(false);
+  const [sverkaData, setSverkaData] = useState(null);
   const [automationPreview, setAutomationPreview] = useState([]);
   const [excludedIds, setExcludedIds] = useState(new Set());
   const [filterPlatform, setFilterPlatform] = useState("");
@@ -977,6 +980,37 @@ function ManagerPage({ manager, onLogout }) {
 
   const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms;
 
+  const runSverka = async () => {
+    setShowSverka(true); setSverkaLoading(true); setSverkaData(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("dynamic-processor", { body: {} });
+      if (error) throw new Error(error.message||"Не удалось вызвать функцию");
+      if (!data?.ok) throw new Error(data?.error||"Функция вернула ошибку");
+      const convs = data.conversions||[];
+      const geoPlatIds = new Set(geoPlatforms.map(p=>p.id));
+      const platSorted = [...platforms].sort((a,b)=>(b.name||"").length-(a.name||"").length);
+      const ktPairs = new Map();
+      for (const c of convs) {
+        const camp = c.campaign||"";
+        const plat = platSorted.find(p=>p.name && camp.startsWith(p.name));
+        if (!plat || !geoPlatIds.has(plat.id)) continue;
+        const sub = (c.sub18||"").trim().toLowerCase();
+        const key = sub+"|"+plat.id;
+        if (!ktPairs.has(key)) ktPairs.set(key, { sub18:sub, platId:plat.id, platName:plat.name, manager:(camp.slice(plat.name.length).trim()||"—"), revenue:c.revenue, datetime:c.datetime, source:c.source });
+      }
+      const geoLeads = allPlayers.filter(p=>p&&p.platform_id&&geoPlatIds.has(p.platform_id));
+      const leadPairs = new Set(geoLeads.map(p=>(p.sub18||"").trim().toLowerCase()+"|"+p.platform_id));
+      const ktKeys = new Set(ktPairs.keys());
+      const notInTracker = [...ktPairs.values()].filter(c=>!leadPairs.has(c.sub18+"|"+c.platId));
+      const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
+        .map(p=>({ name:p.name, sub18:p.sub18, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—" }));
+      setSverkaData({ notInTracker, checkSub, total:convs.length });
+    } catch(e) {
+      setSverkaData({ error:String(e?.message||e) });
+    }
+    setSverkaLoading(false);
+  };
+
   const filteredPlayers = players.filter(p=>{
     const plat=platforms.find(pl=>pl.id===p.platform_id);
     if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
@@ -1024,6 +1058,54 @@ function ManagerPage({ manager, onLogout }) {
     <div style={{ minHeight:"100vh",background:T.bg,color:T.text,fontFamily:"'Inter',sans-serif" }}>
       <style>{CSS}</style>
       {toast&&<Toast msg={toast.msg} type={toast.type} onUndo={toast.onUndo}/>}
+
+      {showSverka&&(
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:20,overflowY:"auto" }} onClick={e=>e.target===e.currentTarget&&setShowSverka(false)}>
+          <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:22,width:"100%",maxWidth:720,marginTop:30,boxShadow:"0 24px 64px rgba(0,0,0,.6)" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
+              <h3 style={{ color:T.text,fontSize:16,fontWeight:700,margin:0 }}>Сверка с Keitaro</h3>
+              <div style={{ display:"flex",gap:8 }}>
+                <button onClick={runSverka} disabled={sverkaLoading} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>{sverkaLoading?"Загрузка…":"Обновить"}</button>
+                <button onClick={()=>setShowSverka(false)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Закрыть</button>
+              </div>
+            </div>
+            <p style={{ color:T.muted,fontSize:12,margin:"0 0 16px" }}>Гео: {myGeos.find(g=>g.id===activeGeo)?.name||"—"} · за текущий месяц · только депозиты (Sale)</p>
+            {sverkaLoading&&<div style={{ color:T.muted,fontSize:13,padding:"24px 0",textAlign:"center" }}>Запрашиваю Keitaro…</div>}
+            {!sverkaLoading&&sverkaData?.error&&<div style={{ color:"#fca5a5",fontSize:13,padding:"16px",background:"rgba(239,68,68,.08)",border:"1px solid #7f1d1d",borderRadius:8 }}>Ошибка: {sverkaData.error}</div>}
+            {!sverkaLoading&&sverkaData&&!sverkaData.error&&(()=>{
+              const card={ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:16 };
+              return (
+                <div>
+                  <div style={{ color:T.muted,fontSize:11,marginBottom:14 }}>Конверсий из Keitaro за период: {sverkaData.total}</div>
+                  <div style={card}>
+                    <div style={{ padding:"10px 14px",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontWeight:700,fontSize:13 }}>❗ Не заведён в трекере ({sverkaData.notInTracker.length})</div>
+                    {sverkaData.notInTracker.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все депозиты из Keitaro заведены ✅</div>}
+                    {sverkaData.notInTracker.map((c,i)=>(
+                      <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                        <span style={{ color:T.text,fontWeight:600 }}>{c.platName} <span style={{color:T.muted,fontWeight:400}}>· {c.manager}</span></span>
+                        <span style={{ color:T.sub,fontFamily:"monospace" }}>{c.sub18}</span>
+                        <span style={{ color:T.muted }}>{c.revenue}€ · {(c.datetime||"").slice(5,16)} · {c.source}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={card}>
+                    <div style={{ padding:"10px 14px",background:"rgba(251,191,36,.08)",color:"#fcd34d",fontWeight:700,fontSize:13 }}>⚠ Проверь sub18 ({sverkaData.checkSub.length})</div>
+                    <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>Лиды со статусом «Да», по которым нет депозита в Keitaro</div>
+                    {sverkaData.checkSub.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все «Да» подтверждены в Keitaro ✅</div>}
+                    {sverkaData.checkSub.map((p,i)=>(
+                      <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                        <span style={{ color:T.text,fontWeight:600 }}>{p.name}</span>
+                        <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
+                        <span style={{ color:T.muted }}>{p.platName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {showAddLead&&(
         <AddLeadForm
@@ -1083,6 +1165,7 @@ function ManagerPage({ manager, onLogout }) {
         </div>
         <div style={{ display:"flex",gap:8,alignItems:"center" }}>
           <button onClick={()=>{ genAutomation(); setShowAutomation(true); }} className="btn-a" style={{ padding:"7px 14px",fontSize:12,borderRadius:8 }}>⚡ Автоматизация</button>
+          <button onClick={runSverka} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12 }}>🔍 Сверка</button>
           <button onClick={()=>setShowAddLead(true)} className="btn-p" style={{ padding:"7px 16px",fontSize:13,borderRadius:8 }}>+ Добавить лида</button>
           <button onClick={()=>setDark(d=>!d)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,cursor:"pointer",fontSize:14 }}>{dark?"☀️":"🌙"}</button>
           <button onClick={onLogout} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,padding:"7px 14px",borderRadius:7,cursor:"pointer",fontSize:13 }}>Выйти</button>
