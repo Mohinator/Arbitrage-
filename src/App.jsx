@@ -783,6 +783,7 @@ function ManagerPage({ manager, onLogout }) {
   const [showSverka, setShowSverka] = useState(false);
   const [sverkaLoading, setSverkaLoading] = useState(false);
   const [sverkaData, setSverkaData] = useState(null);
+  const [showIgnored, setShowIgnored] = useState(false);
   const [automationPreview, setAutomationPreview] = useState([]);
   const [excludedIds, setExcludedIds] = useState(new Set());
   const [filterPlatform, setFilterPlatform] = useState("");
@@ -1026,25 +1027,48 @@ function ManagerPage({ manager, onLogout }) {
       const leadByPair = new Map();
       geoLeads.forEach(p=>leadByPair.set((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id, p));
       const ktKeys = new Set(ktPairs.keys());
-      const notInTracker = [...ktPairs.values()].filter(c=>!leadByPair.has(c.sub18+"|"+c.platId));
+      // загруженные исключения
+      const { data: ign } = await supabase.from("sverka_ignored").select("*");
+      const ignored = ign||[];
+      const ignSet = new Set(ignored.map(r=>`${r.list_type}|${(r.sub18||"").toLowerCase()}|${r.platform_id||""}`));
+      const notIgn = (lt,sub,platId)=>!ignSet.has(`${lt}|${(sub||"").toLowerCase()}|${platId||""}`);
+      const notInTracker = [...ktPairs.values()].filter(c=>!leadByPair.has(c.sub18+"|"+c.platId)).filter(c=>notIgn("not_in_tracker",c.sub18,c.platId));
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
-        .map(p=>({ name:p.name, sub18:p.sub18, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id) }));
+        .map(p=>({ name:p.name, sub18:p.sub18, platId:p.platform_id, platName:platforms.find(pl=>pl.id===p.platform_id)?.name||"—", mgr:mgrName(p.manager_id) }))
+        .filter(p=>notIgn("check_sub",p.sub18,p.platId));
       const wrongMgr = [];
       for (const c of ktPairs.values()) {
         if (!c.convMgrId) continue;
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
-        if (lead && lead.manager_id !== c.convMgrId) wrongMgr.push({ name:lead.name, sub18:c.sub18, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId) });
+        if (lead && lead.manager_id !== c.convMgrId && notIgn("wrong_mgr",c.sub18,c.platId)) wrongMgr.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId) });
       }
       const statusMismatch = [];
       for (const c of ktPairs.values()) {
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
-        if (lead && lead.status !== "Да") statusMismatch.push({ name:lead.name, sub18:c.sub18, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id) });
+        if (lead && lead.status !== "Да" && notIgn("status_mismatch",c.sub18,c.platId)) statusMismatch.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id) });
       }
-      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, total:convs.length, scope:isTL?"гео":"свои" });
+      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:isTL?"гео":"свои", isTL });
     } catch(e) {
       setSverkaData({ error:String(e?.message||e) });
     }
     setSverkaLoading(false);
+  };
+
+  const ignoreSverkaItem = async (list_type, sub18, platId, note) => {
+    await supabase.from("sverka_ignored").insert({ list_type, sub18:(sub18||"").toLowerCase(), platform_id:platId||null, note:note||null });
+    setSverkaData(prev=>{
+      if(!prev) return prev;
+      const keep = (it)=> !((it.sub18||"").toLowerCase()===(sub18||"").toLowerCase() && (it.platId||null)===(platId||null));
+      const map = { not_in_tracker:"notInTracker", check_sub:"checkSub", wrong_mgr:"wrongMgr", status_mismatch:"statusMismatch" };
+      const field = map[list_type];
+      return { ...prev, [field]: (prev[field]||[]).filter(keep), ignored:[...(prev.ignored||[]), { list_type, sub18:(sub18||"").toLowerCase(), platform_id:platId||null }] };
+    });
+  };
+  const restoreSverkaItem = async (row) => {
+    let q = supabase.from("sverka_ignored").delete().eq("list_type",row.list_type).eq("sub18",row.sub18);
+    q = row.platform_id ? q.eq("platform_id",row.platform_id) : q.is("platform_id",null);
+    await q;
+    runSverka();
   };
 
   const filteredPlayers = players.filter(p=>{
@@ -1121,6 +1145,7 @@ function ManagerPage({ manager, onLogout }) {
                         <span style={{ color:T.text,fontWeight:600 }}>{c.platName} <span style={{color:T.muted,fontWeight:400}}>· {c.manager}</span></span>
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{c.sub18}</span>
                         <span style={{ color:T.muted }}>{c.revenue}€ · {(c.datetime||"").slice(5,16)} · {c.source}</span>
+                        {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("not_in_tracker",c.sub18,c.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                       </div>
                     ))}
                   </div>
@@ -1133,6 +1158,7 @@ function ManagerPage({ manager, onLogout }) {
                         <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#fcd34d",fontWeight:400 }}>· {p.mgr}</span></span>
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
                         <span style={{ color:T.muted }}>{p.platName}</span>
+                        {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("check_sub",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                       </div>
                     ))}
                   </div>
@@ -1145,6 +1171,7 @@ function ManagerPage({ manager, onLogout }) {
                           <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{color:T.muted,fontWeight:400,fontFamily:"monospace"}}>{p.sub18}</span></span>
                           <span style={{ color:T.muted }}>{p.platName}</span>
                           <span style={{ color:T.sub }}>трекер: <b style={{color:T.text}}>{p.trackerMgr}</b> · Keitaro: <b style={{color:"#c4b5fd"}}>{p.keitaroMgr}</b></span>
+                          {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("wrong_mgr",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                         </div>
                       ))}
                     </div>
@@ -1158,8 +1185,29 @@ function ManagerPage({ manager, onLogout }) {
                           <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#86efac",fontWeight:400 }}>· {p.mgr}</span></span>
                           <span style={{ color:T.muted }}>{p.platName}</span>
                           <span style={{ color:T.sub }}>статус: <b style={{color:"#fca5a5"}}>{p.status}</b></span>
+                          {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("status_mismatch",p.sub18,p.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {sverkaData.isTL&&sverkaData.ignored&&sverkaData.ignored.length>0&&(
+                    <div style={{ marginTop:4 }}>
+                      <button onClick={()=>setShowIgnored(v=>!v)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.muted,padding:"6px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Исключённые ({sverkaData.ignored.length}) {showIgnored?"▲":"▼"}</button>
+                      {showIgnored&&(
+                        <div style={{ ...card,marginTop:10 }}>
+                          {sverkaData.ignored.map((r,i)=>{
+                            const lbl={ not_in_tracker:"Не заведён", check_sub:"Проверь sub18", wrong_mgr:"Не на том менеджере", status_mismatch:"Статус не «Да»" }[r.list_type]||r.list_type;
+                            return (
+                              <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:i>0?`1px solid ${T.rowB}`:"none",flexWrap:"wrap",fontSize:12 }}>
+                                <span style={{ color:T.muted }}>{lbl}</span>
+                                <span style={{ color:T.sub,fontFamily:"monospace" }}>{r.sub18}</span>
+                                <span style={{ color:T.muted }}>{platforms.find(pl=>pl.id===r.platform_id)?.name||"—"}</span>
+                                <button onClick={()=>restoreSverkaItem(r)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:"#6ee7b7",background:"transparent",padding:"2px 10px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Вернуть</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
