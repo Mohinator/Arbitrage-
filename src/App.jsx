@@ -1021,7 +1021,12 @@ function ManagerPage({ manager, onLogout }) {
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
         if (lead && lead.manager_id !== c.convMgrId) wrongMgr.push({ name:lead.name, sub18:c.sub18, platName:c.platName, trackerMgr:mgrName(lead.manager_id), keitaroMgr:mgrName(c.convMgrId) });
       }
-      setSverkaData({ notInTracker, checkSub, wrongMgr, total:convs.length, scope:isTL?"гео":"свои" });
+      const statusMismatch = [];
+      for (const c of ktPairs.values()) {
+        const lead = leadByPair.get(c.sub18+"|"+c.platId);
+        if (lead && lead.status !== "Да") statusMismatch.push({ name:lead.name, sub18:c.sub18, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id) });
+      }
+      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, total:convs.length, scope:isTL?"гео":"свои" });
     } catch(e) {
       setSverkaData({ error:String(e?.message||e) });
     }
@@ -1126,6 +1131,19 @@ function ManagerPage({ manager, onLogout }) {
                           <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{color:T.muted,fontWeight:400,fontFamily:"monospace"}}>{p.sub18}</span></span>
                           <span style={{ color:T.muted }}>{p.platName}</span>
                           <span style={{ color:T.sub }}>трекер: <b style={{color:T.text}}>{p.trackerMgr}</b> · Keitaro: <b style={{color:"#c4b5fd"}}>{p.keitaroMgr}</b></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {sverkaData.statusMismatch&&sverkaData.statusMismatch.length>0&&(
+                    <div style={card}>
+                      <div style={{ padding:"10px 14px",background:"rgba(34,197,94,.1)",color:"#86efac",fontWeight:700,fontSize:13 }}>✔ Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
+                      <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>В Keitaro деп подтверждён, а в трекере статус другой — обнови</div>
+                      {sverkaData.statusMismatch.map((p,i)=>(
+                        <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                          <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#86efac",fontWeight:400 }}>· {p.mgr}</span></span>
+                          <span style={{ color:T.muted }}>{p.platName}</span>
+                          <span style={{ color:T.sub }}>статус: <b style={{color:"#fca5a5"}}>{p.status}</b></span>
                         </div>
                       ))}
                     </div>
