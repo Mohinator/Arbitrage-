@@ -789,6 +789,9 @@ function ManagerPage({ manager, onLogout }) {
   const [filterPlatform, setFilterPlatform] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [teamFilterPlatform, setTeamFilterPlatform] = useState("");
+  const [teamFilterStatus, setTeamFilterStatus] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [leadForm, setLeadForm] = useState({ date:new Date().toISOString().slice(0,10), platform_id:"", name:"", sub18:"", deposit:"", is_blik:false, status:"Да", next_rd_date:"" });
   const [rdForm, setRdForm] = useState({ amount:"", date:new Date().toISOString().slice(0,10) });
@@ -1648,8 +1651,25 @@ function ManagerPage({ manager, onLogout }) {
                         );
                       }).filter(Boolean)}
                     </div>
+                    <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
+                      <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
+                      <select value={teamFilterPlatform} onChange={e=>setTeamFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+                        <option value="">Все платформы</option>
+                        {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                      <select value={teamFilterStatus} onChange={e=>setTeamFilterStatus(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+                        <option value="">Все статусы</option>
+                        {STATUSES.map(s=><option key={s}>{s}</option>)}
+                      </select>
+                      {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:"#f87171",padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
+                    </div>
                     <PlayersTable
-                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id))}
+                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id)).filter(p=>{
+                        if(teamFilterPlatform&&p.platform_id!==teamFilterPlatform) return false;
+                        if(teamFilterStatus&&p.status!==teamFilterStatus) return false;
+                        if(teamSearch){ const q=teamSearch.toLowerCase(); if(!`${p.name||""} ${p.sub18||""}`.toLowerCase().includes(q)) return false; }
+                        return true;
+                      })}
                       redeposits={redeposits} plannedRds={plannedRds} platforms={platforms}
                       manager={manager} dark={dark}
                       readonly={!isTeamLead}
