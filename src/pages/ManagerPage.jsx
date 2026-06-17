@@ -652,10 +652,17 @@ export function ManagerPage({ manager, onLogout }) {
       {tab==="main"&&(
         <div style={{ padding:"16px 20px" }}>
           {todayRds.length>0&&(
-            <div style={{ background:T.alertBg,border:`1px solid ${T.alertBorder}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:14 }}>
+            <div style={{ background:T.alertBg,border:`1px solid ${T.alertBorder}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap" }}>
               <span className="alert-pulse" style={{ fontSize:18 }}>🔔</span>
-              <span style={{ color:"#d97706",fontWeight:700,fontSize:13 }}>Сегодня нужно сделать РД:</span>
-              <span style={{ color:dark?"#fbbf24":"#92400e",fontSize:13 }}>{todayRds.map(p=>p.name).join(" · ")}</span>
+              <span style={{ color:"#d97706",fontWeight:700,fontSize:13,marginRight:2 }}>Сегодня нужно сделать РД:</span>
+              {todayRds.flatMap(p=>{
+                const plat=platforms.find(pl=>pl.id===p.platform_id);
+                return (plannedRds||[]).filter(r=>r&&r.player_id===p.id&&r.date===today).map(r=>(
+                  <span key={`${p.id}-${r.rd_number}`} onClick={()=>goToLead(p)} className="row-hover" title="Перейти к лиду" style={{ cursor:"pointer",color:dark?"#fbbf24":"#92400e",fontSize:12,fontWeight:600,background:"rgba(217,119,6,.12)",border:"1px solid rgba(217,119,6,.35)",borderRadius:6,padding:"2px 8px" }}>
+                    {p.name} · {plat?.name||"—"} · РД{r.rd_number}{r.amount!=null?` · ${r.amount}€`:""}
+                  </span>
+                ));
+              })}
             </div>
           )}
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
