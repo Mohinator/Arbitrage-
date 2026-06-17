@@ -292,13 +292,11 @@ export function ManagerPage({ manager, onLogout }) {
         if (!plat || !geoPlatIds.has(plat.id)) continue;
         const tail = camp.slice(plat.name.length).trim();
         const convMgr = tailToMgr(tail);
-        if (!isTL && convMgr !== manager.id) continue; // менеджер видит только свои конверсии
         const sub = (c.sub18||"").trim().toLowerCase();
         const key = sub+"|"+plat.id;
         if (!ktPairs.has(key)) ktPairs.set(key, { sub18:sub, platId:plat.id, platName:plat.name, manager:tail||"—", convMgrId:convMgr, revenue:c.revenue, datetime:c.datetime, source:c.source });
       }
       let geoLeads = allPlayers.filter(p=>p&&p.platform_id&&geoPlatIds.has(p.platform_id));
-      if (!isTL) geoLeads = geoLeads.filter(p=>p.manager_id===manager.id);
       const leadByPair = new Map();
       geoLeads.forEach(p=>leadByPair.set((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id, p));
       const ktKeys = new Set(ktPairs.keys());
@@ -339,7 +337,7 @@ export function ManagerPage({ manager, onLogout }) {
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
         if (lead && lead.status !== "Да" && notIgn("status_mismatch",c.sub18,c.platId)) statusMismatch.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id), pid:lead.id, mgrId:lead.manager_id });
       }
-      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:isTL?"гео":"свои", isTL });
+      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:"гео", isTL });
     } catch(e) {
       setSverkaData({ error:String(e?.message||e) });
     }
