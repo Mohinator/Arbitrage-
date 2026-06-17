@@ -253,14 +253,18 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
         );
       })()}
       {platformPopup && (()=>{
-        const popupH=platforms.length*32+16;
+        const curPl=localPlayers.find(x=>x.id===platformPopup.playerId);
+        const curPlat=platforms.find(p=>p.id===curPl?.platform_id);
+        const geoId=curPlat?.geo_id;
+        const platList=platforms.filter(p=>(!geoId||p.geo_id===geoId)&&!p.is_hidden);
+        const popupH=platList.length*32+16;
         const openUp=platformPopup.y+popupH>window.innerHeight-20;
         const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
         return(
           <div className="fade-in" style={{ position:"fixed",left:platformPopup.x,top:openUp?platformPopup.y-popupH:platformPopup.y,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:10,padding:6,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:180,maxHeight:280,overflowY:"auto" }}
             onMouseDown={e=>e.stopPropagation()}>
             <div style={{ fontSize:10,color:Tb.muted,padding:"4px 10px 6px",fontWeight:700,textTransform:"uppercase" }}>Сменить платформу</div>
-            {platforms.map(p=><div key={p.id} onClick={()=>updatePlatform(platformPopup.playerId,p.id)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",fontSize:12,color:Tb.text,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{p.name}</div>)}
+            {platList.map(p=><div key={p.id} onClick={()=>updatePlatform(platformPopup.playerId,p.id)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",fontSize:12,color:Tb.text,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{p.name}</div>)}
           </div>
         );
       })()}
