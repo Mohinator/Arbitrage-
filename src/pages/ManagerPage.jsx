@@ -59,7 +59,7 @@ export function ManagerPage({ manager, onLogout }) {
 
   const load = async () => {
     const [{ data:p },{ data:pl },{ data:rd },{ data:prd },{ data:ug },{ data:g },{ data:am },{ data:allUg },{ data:al }] = await Promise.all([
-      supabase.from("platforms").select("*").eq("is_active",true).order("sort_order").order("name"),
+      supabase.from("platforms").select("*").order("sort_order").order("name"),
       supabase.from("players").select("*").order("sort_order",{ascending:true,nullsFirst:false}).order("date",{ascending:false}),
       supabase.from("redeposits").select("*"),
       supabase.from("planned_redeposits").select("*"),
@@ -120,6 +120,8 @@ export function ManagerPage({ manager, onLogout }) {
     setShowPlatformForm(false); load();
   };
   const deletePlatform = async (id) => { if(!confirm("Удалить платформу?")) return; await supabase.from("platforms").delete().eq("id",id); load(); };
+  const togglePlatformActive = async (p) => { await supabase.from("platforms").update({ is_active:p.is_active===false }).eq("id",p.id); load(); };
+  const togglePlatformHidden = async (p) => { await supabase.from("platforms").update({ is_hidden:!p.is_hidden }).eq("id",p.id); load(); };
   const createGeo = async () => {
     if(!geoForm.name.trim()) return;
     await supabase.from("geos").insert({name:geoForm.name.trim(),code:geoForm.code.trim().toUpperCase()});
@@ -250,7 +252,9 @@ export function ManagerPage({ manager, onLogout }) {
   const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
   const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
-  const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms;
+  const hiddenPlatIds = new Set(platforms.filter(p=>p&&p.is_hidden).map(p=>p.id));
+  const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo&&!p.is_hidden) : platforms.filter(p=>!p.is_hidden);
+  const addPlatforms = geoPlatforms.filter(p=>p.is_active!==false);
 
   const runSverka = async () => {
     setShowSverka(true); setSverkaLoading(true); setSverkaData(null);
@@ -353,6 +357,7 @@ export function ManagerPage({ manager, onLogout }) {
   const filteredPlayers = players.filter(p=>{
     const plat=platforms.find(pl=>pl.id===p.platform_id);
     if(activeGeo&&plat&&plat.geo_id!==activeGeo) return false;
+    if(hiddenPlatIds.has(p.platform_id)) return false;
     if(filterPlatform&&p.platform_id!==filterPlatform) return false;
     if(filterStatus&&p.status!==filterStatus) return false;
     if(searchQuery){ const q=searchQuery.toLowerCase(); if(!p.name?.toLowerCase().includes(q)&&!p.sub18?.toLowerCase().includes(q)) return false; }
@@ -503,7 +508,7 @@ export function ManagerPage({ manager, onLogout }) {
         <AddLeadForm
           dark={dark} T={T} IS={IS}
           leadForm={leadForm} setLeadForm={setLeadForm}
-          geoPlatforms={geoPlatforms} myGeos={myGeos} activeGeo={activeGeo}
+          geoPlatforms={addPlatforms} myGeos={myGeos} activeGeo={activeGeo}
           onSubmit={addLead} onClose={()=>setShowAddLead(false)}
         />
       )}
@@ -935,7 +940,7 @@ export function ManagerPage({ manager, onLogout }) {
                       {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:"#f87171",padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
                     </div>
                     <PlayersTable
-                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id)).filter(p=>{
+                      players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&!hiddenPlatIds.has(p.platform_id)&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id)).filter(p=>{
                         if(teamFilterPlatform&&p.platform_id!==teamFilterPlatform) return false;
                         if(teamFilterStatus&&p.status!==teamFilterStatus) return false;
                         if(teamSearch){ const q=teamSearch.toLowerCase(); if(!`${p.name||""} ${p.sub18||""}`.toLowerCase().includes(q)) return false; }
@@ -1160,9 +1165,9 @@ export function ManagerPage({ manager, onLogout }) {
                 </div>
                 <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                   <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Нужно добрать",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?9:8} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
+                      {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?10:9} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
                       {geoPlatStats.map(p=>{
                         const ok=p.avgCheck>=p.target_avg_check;
                         return(
@@ -1175,7 +1180,20 @@ export function ManagerPage({ manager, onLogout }) {
                             <td style={{ ...S.td,color:T.sub }}>{p.cap||"—"}</td>
                             <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{p.totalCount}</td>
                             <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
+                            <td style={S.td}>
+                              {p.is_hidden
+                                ? <span style={{ background:"rgba(100,116,139,.18)",color:"#94a3b8",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Скрыто</span>
+                                : p.is_active===false
+                                  ? <span style={{ background:"rgba(245,158,11,.15)",color:"#f59e0b",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Стоп</span>
+                                  : <span style={{ background:"rgba(34,197,94,.15)",color:"#86efac",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Активно</span>}
+                            </td>
                             {isTeamLead&&<td style={{ ...S.td,display:"flex",gap:6 }}>
+                              <button onClick={()=>togglePlatformActive(p)} title={p.is_active===false?"Включить (Активно)":"Поставить на Стоп"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_active===false?"#f59e0b":"#86efac",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>{p.is_active===false?"▶":"⏸"}</button>
+                              <button onClick={()=>togglePlatformHidden(p)} title={p.is_hidden?"Показать везде":"Скрыть (кроме отчётов)"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_hidden?"#a5b4fc":T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                                {p.is_hidden
+                                  ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                  : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>}
+                              </button>
                               <button onClick={()=>openPlatformForm(p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
