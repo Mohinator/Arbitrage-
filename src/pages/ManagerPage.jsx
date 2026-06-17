@@ -47,6 +47,7 @@ export function ManagerPage({ manager, onLogout }) {
   const [teamFilterPlatform, setTeamFilterPlatform] = useState("");
   const [teamFilterStatus, setTeamFilterStatus] = useState("");
   const [dragPlatId, setDragPlatId] = useState(null);
+  const [statPlatform, setStatPlatform] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [leadForm, setLeadForm] = useState({ date:new Date().toISOString().slice(0,10), platform_id:"", name:"", sub18:"", deposit:"", is_blik:false, status:"Да", next_rd_date:"" });
   const [rdForm, setRdForm] = useState({ amount:"", date:new Date().toISOString().slice(0,10) });
@@ -262,7 +263,8 @@ export function ManagerPage({ manager, onLogout }) {
   });
 
   const allMonths=[...new Set((isTeamLead?allPlayers:players).map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
-  const getStatPlayers=()=>!filterMonth?statBase.filter(p=>p.status==="Да"):statBase.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
+  const cardBase = statPlatform ? statBase.filter(p=>p.platform_id===statPlatform) : statBase;
+  const getStatPlayers=()=>!filterMonth?cardBase.filter(p=>p.status==="Да"):cardBase.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
   const hiddenPlatIds = new Set(platforms.filter(p=>p&&p.is_hidden).map(p=>p.id));
   const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo&&!p.is_hidden) : platforms.filter(p=>!p.is_hidden);
@@ -398,7 +400,7 @@ export function ManagerPage({ manager, onLogout }) {
 
   const chartData=(()=>{
     const byDay={};
-    statBase.filter(p=>p.status==="Да").forEach(p=>{
+    cardBase.filter(p=>p.status==="Да").forEach(p=>{
       const d=p.date; if(!byDay[d]) byDay[d]={total:0,cnt:0};
       byDay[d].total+=Number(p.deposit); byDay[d].cnt+=1;
       getPlayerRds(p.id).forEach(rd=>{ const dd=rd.date||d; if(!byDay[dd]) byDay[dd]={total:0,cnt:0}; byDay[dd].total+=Number(rd.amount); });
@@ -1103,19 +1105,23 @@ export function ManagerPage({ manager, onLogout }) {
       {/* PLATFORMS */}
       {tab==="platforms"&&(
         <div style={{ padding:"16px 20px" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Платформы</h2>
             <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
               <option value="">Все месяцы</option>
               {allMonths.map(mk=>{ const[yr,mo]=mk.split("-"); return<option key={mk} value={mk}>{new Date(Number(yr),Number(mo)-1,1).toLocaleString("ru",{month:"long",year:"numeric"})}</option>; })}
             </select>
+            <select value={statPlatform} onChange={e=>setStatPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+              <option value="">Все платформы</option>
+              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
             {[
-              ["Всего лидов",getStatPlayers().length,`из ${statBase.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
+              ["Всего лидов",getStatPlayers().length,`из ${cardBase.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
               ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#14b8a6"],
               ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#d97706"],
-              ["Нужно добрать",platformStats.reduce((s,p)=>s+p.needMore,0).toFixed(0)+"€","до цели СЧ","#f59e0b"],
+              ["Нужно добрать",(statPlatform?(platformStats.find(p=>p.id===statPlatform)?.needMore||0):platformStats.reduce((s,p)=>s+p.needMore,0)).toFixed(0)+"€","до цели СЧ","#f59e0b"],
             ].map(([l,v,s,a])=>(
               <div key={l} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",borderLeft:`3px solid ${a}` }}>
                 <div style={{ fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:4 }}>{l}</div>
