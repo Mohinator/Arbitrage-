@@ -46,6 +46,7 @@ export function ManagerPage({ manager, onLogout }) {
   const [teamSearch, setTeamSearch] = useState("");
   const [teamFilterPlatform, setTeamFilterPlatform] = useState("");
   const [teamFilterStatus, setTeamFilterStatus] = useState("");
+  const [dragPlatId, setDragPlatId] = useState(null);
   const [filterMonth, setFilterMonth] = useState("");
   const [leadForm, setLeadForm] = useState({ date:new Date().toISOString().slice(0,10), platform_id:"", name:"", sub18:"", deposit:"", is_blik:false, status:"Да", next_rd_date:"" });
   const [rdForm, setRdForm] = useState({ amount:"", date:new Date().toISOString().slice(0,10) });
@@ -122,6 +123,15 @@ export function ManagerPage({ manager, onLogout }) {
   const deletePlatform = async (id) => { if(!confirm("Удалить платформу?")) return; await supabase.from("platforms").delete().eq("id",id); load(); };
   const togglePlatformActive = async (p) => { await supabase.from("platforms").update({ is_active:p.is_active===false }).eq("id",p.id); load(); };
   const togglePlatformHidden = async (p) => { await supabase.from("platforms").update({ is_hidden:!p.is_hidden }).eq("id",p.id); load(); };
+  const reorderPlatforms = async (fromId, toId) => {
+    if(!fromId||!toId||fromId===toId) return;
+    const list = platformStats.filter(p=>p.geo_id===activeGeo).map(p=>p.id);
+    const from=list.indexOf(fromId), to=list.indexOf(toId);
+    if(from<0||to<0) return;
+    list.splice(to,0,list.splice(from,1)[0]);
+    await Promise.all(list.map((id,i)=>supabase.from("platforms").update({ sort_order:i }).eq("id",id)));
+    load();
+  };
   const createGeo = async () => {
     if(!geoForm.name.trim()) return;
     await supabase.from("geos").insert({name:geoForm.name.trim(),code:geoForm.code.trim().toUpperCase()});
@@ -1146,8 +1156,11 @@ export function ManagerPage({ manager, onLogout }) {
                       {geoPlatStats.map(p=>{
                         const ok=p.avgCheck>=p.target_avg_check;
                         return(
-                          <tr key={p.id} className="row-hover">
-                            <td style={{ ...S.td,fontWeight:600,color:T.text }}>{p.name}</td>
+                          <tr key={p.id} className="row-hover" draggable={isTeamLead} onDragStart={()=>setDragPlatId(p.id)} onDragOver={e=>{ if(isTeamLead) e.preventDefault(); }} onDrop={()=>{ reorderPlatforms(dragPlatId,p.id); setDragPlatId(null); }} style={isTeamLead?{ cursor:dragPlatId===p.id?"grabbing":"grab",opacity:dragPlatId===p.id?.5:1 }:undefined}>
+                            <td style={{ ...S.td,fontWeight:600,color:T.text }}>
+                              {isTeamLead&&<span style={{ color:T.muted,marginRight:8,cursor:"grab",userSelect:"none" }} title="Перетащить">⠿</span>}
+                              {p.name}
+                            </td>
                             <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{p.date_added||"—"}</td>
                             <td style={{ ...S.td,color:T.sub }}>{p.min_deposit||"—"}€</td>
                             <td style={{ ...S.td,color:"#d97706" }}>{p.min_deposit_blik?p.min_deposit_blik+"€":"—"}</td>
