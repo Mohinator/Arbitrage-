@@ -582,7 +582,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["stats","Статистика"],["platforms","Платформы"],["report","Отчёт"],["history","История"],...(isTeamLead?[["overview","Сводка"]]:[])]
+        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["platforms","Платформы"],["report","Отчёт"],["history","История"],...(isTeamLead?[["overview","Сводка"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -1044,68 +1044,6 @@ export function ManagerPage({ manager, onLogout }) {
         </div>
       )}
 
-      {/* STATS */}
-      {tab==="stats"&&(
-        <div style={{ padding:"16px 20px" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20 }}>
-            <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Статистика</h2>
-            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все месяцы</option>
-              {allMonths.map(mk=>{ const[yr,mo]=mk.split("-"); return<option key={mk} value={mk}>{new Date(Number(yr),Number(mo)-1,1).toLocaleString("ru",{month:"long",year:"numeric"})}</option>; })}
-            </select>
-          </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>
-            {[
-              ["Всего лидов",getStatPlayers().length,`из ${players.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
-              ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#14b8a6"],
-              ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#d97706"],
-              ["Нужно добрать",platformStats.reduce((s,p)=>s+p.needMore,0).toFixed(0)+"€","до цели СЧ","#f59e0b"],
-            ].map(([l,v,s,a])=>(
-              <div key={l} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",borderLeft:`3px solid ${a}` }}>
-                <div style={{ fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:4 }}>{l}</div>
-                <div style={{ fontSize:22,fontWeight:700,color:T.text }}>{v}</div>
-                <div style={{ fontSize:11,color:T.sub,marginTop:2 }}>{s}</div>
-              </div>
-            ))}
-          </div>
-          {chartData.length>1&&(
-            <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"20px 16px",marginBottom:24 }}>
-              <p style={{ color:T.text,fontWeight:600,fontSize:13,marginBottom:16 }}>Динамика СЧ по дням</p>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-                  <XAxis dataKey="date" tick={{ fill:T.muted,fontSize:10 }}/>
-                  <YAxis tick={{ fill:T.muted,fontSize:10 }}/>
-                  <Tooltip contentStyle={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:8 }} labelStyle={{ color:T.text }} itemStyle={{ color:"#818cf8" }}/>
-                  <Line type="monotone" dataKey="sch" stroke="#6366f1" strokeWidth={2} dot={false} name="СЧ"/>
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-            <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Платформа","Лидов","Сумма","BLIK","СЧ цель","СЧ факт","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-              <tbody>
-                {platformStats.map(p=>{
-                  const ok=p.avgCheck>=p.target_avg_check;
-                  return(
-                    <tr key={p.id} className="row-hover">
-                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{p.name}</td>
-                      <td style={{ ...S.td,color:T.sub }}>{p.totalCount}</td>
-                      <td style={{ ...S.td,color:T.sub }}>{p.totalAmount.toFixed(0)}€</td>
-                      <td style={S.td}>{p.totalCount>0?<div style={{ display:"flex",alignItems:"center",gap:5 }}><div style={{ width:44,background:T.rowBorder,borderRadius:3,height:4,overflow:"hidden",display:"flex" }}><div className="progress-bar" style={{ width:`${100-p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#818cf8)" }}/><div className="progress-bar" style={{ width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#d97706,#f59e0b)" }}/></div><span style={{ color:"#d97706",fontSize:11 }}>{p.blikCount}({p.blikPct}%)</span></div>:<span style={{ color:T.muted }}>—</span>}</td>
-                      <td style={{ ...S.td,color:T.sub }}>{p.target_avg_check}€</td>
-                      <td style={S.td}>{p.totalCount>0?<span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.avgCheck.toFixed(1)}€</span>:<span style={{ color:T.muted }}>—</span>}</td>
-                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {showGeoForm&&(
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
           <div className="slide-in" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.7)" }}>
@@ -1153,6 +1091,41 @@ export function ManagerPage({ manager, onLogout }) {
       {/* PLATFORMS */}
       {tab==="platforms"&&(
         <div style={{ padding:"16px 20px" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16 }}>
+            <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Платформы</h2>
+            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
+              <option value="">Все месяцы</option>
+              {allMonths.map(mk=>{ const[yr,mo]=mk.split("-"); return<option key={mk} value={mk}>{new Date(Number(yr),Number(mo)-1,1).toLocaleString("ru",{month:"long",year:"numeric"})}</option>; })}
+            </select>
+          </div>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
+            {[
+              ["Всего лидов",getStatPlayers().length,`из ${players.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
+              ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#14b8a6"],
+              ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#d97706"],
+              ["Нужно добрать",platformStats.reduce((s,p)=>s+p.needMore,0).toFixed(0)+"€","до цели СЧ","#f59e0b"],
+            ].map(([l,v,s,a])=>(
+              <div key={l} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",borderLeft:`3px solid ${a}` }}>
+                <div style={{ fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:4 }}>{l}</div>
+                <div style={{ fontSize:22,fontWeight:700,color:T.text }}>{v}</div>
+                <div style={{ fontSize:11,color:T.sub,marginTop:2 }}>{s}</div>
+              </div>
+            ))}
+          </div>
+          {chartData.length>1&&(
+            <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"20px 16px",marginBottom:24 }}>
+              <p style={{ color:T.text,fontWeight:600,fontSize:13,marginBottom:16 }}>Динамика СЧ по дням</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
+                  <XAxis dataKey="date" tick={{ fill:T.muted,fontSize:10 }}/>
+                  <YAxis tick={{ fill:T.muted,fontSize:10 }}/>
+                  <Tooltip contentStyle={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:8 }} labelStyle={{ color:T.text }} itemStyle={{ color:"#818cf8" }}/>
+                  <Line type="monotone" dataKey="sch" stroke="#6366f1" strokeWidth={2} dot={false} name="СЧ"/>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
           {myGeos.filter(geo=>geo.id===activeGeo).map(geo=>{
             const geoPlatStats=platformStats.filter(p=>p.geo_id===geo.id);
             return(
@@ -1165,9 +1138,9 @@ export function ManagerPage({ manager, onLogout }) {
                 </div>
                 <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                   <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Сумма","СЧ факт","BLIK","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?10:9} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
+                      {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?13:12} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
                       {geoPlatStats.map(p=>{
                         const ok=p.avgCheck>=p.target_avg_check;
                         return(
@@ -1179,6 +1152,9 @@ export function ManagerPage({ manager, onLogout }) {
                             <td style={S.td}><span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.target_avg_check}€</span></td>
                             <td style={{ ...S.td,color:T.sub }}>{p.cap||"—"}</td>
                             <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{p.totalCount}</td>
+                            <td style={{ ...S.td,color:T.sub }}>{p.totalAmount.toFixed(0)}€</td>
+                            <td style={S.td}>{p.totalCount>0?<span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.avgCheck.toFixed(1)}€</span>:<span style={{ color:T.muted }}>—</span>}</td>
+                            <td style={S.td}>{p.totalCount>0?<div style={{ display:"flex",alignItems:"center",gap:5 }}><div style={{ width:44,background:T.rowBorder,borderRadius:3,height:4,overflow:"hidden",display:"flex" }}><div className="progress-bar" style={{ width:`${100-p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#818cf8)" }}/><div className="progress-bar" style={{ width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#d97706,#f59e0b)" }}/></div><span style={{ color:"#d97706",fontSize:11 }}>{p.blikCount}({p.blikPct}%)</span></div>:<span style={{ color:T.muted }}>—</span>}</td>
                             <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
                             <td style={S.td}>
                               {p.is_hidden
