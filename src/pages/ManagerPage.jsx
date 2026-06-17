@@ -374,9 +374,10 @@ export function ManagerPage({ manager, onLogout }) {
 
   const overdueDatesByPlayer={};
   (plannedRds||[]).forEach(r=>{ if(r&&r.date&&r.date<today&&(!overdueDatesByPlayer[r.player_id]||r.date<overdueDatesByPlayer[r.player_id])) overdueDatesByPlayer[r.player_id]=r.date; });
-  const overdueRds=players.filter(p=>p&&overdueDatesByPlayer[p.id]);
+  const inActiveGeo=(p)=>geoPlatforms.some(gp=>gp.id===p.platform_id);
+  const overdueRds=players.filter(p=>p&&overdueDatesByPlayer[p.id]&&inActiveGeo(p));
   const todayRdPlayerIds=new Set((plannedRds||[]).filter(r=>r&&r.date===today).map(r=>r.player_id));
-  const todayRds=players.filter(p=>p&&todayRdPlayerIds.has(p.id));
+  const todayRds=players.filter(p=>p&&todayRdPlayerIds.has(p.id)&&inActiveGeo(p));
 
   const chartData=(()=>{
     const byDay={};
@@ -696,9 +697,10 @@ export function ManagerPage({ manager, onLogout }) {
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
               <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
               {(()=>{
-                const sourcePlayers=isTeamLead
+                const sourcePlayers=(isTeamLead
                   ? allPlayers.filter(p=>p&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
-                  : players.filter(p=>p.status==="Да");
+                  : players.filter(p=>p.status==="Да")
+                ).filter(p=>geoPlatforms.some(gp=>gp.id===p.platform_id));
                 const tasks=sourcePlayers.flatMap(p=>{
                   const plat=platforms.find(pl=>pl.id===p.platform_id);
                   const mgr=allManagers.find(m=>m.id===p.manager_id);
@@ -728,9 +730,10 @@ export function ManagerPage({ manager, onLogout }) {
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
               <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
               {(()=>{
-                const source=isTeamLead
+                const source=(isTeamLead
                   ? allPlayers.filter(p=>p&&overdueDatesByPlayer[p.id]&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
-                  : overdueRds;
+                  : overdueRds
+                ).filter(p=>geoPlatforms.some(gp=>gp.id===p.platform_id));
                 const filtered=source.filter(p=>{
                   if(todoPlatFilter&&p.platform_id!==todoPlatFilter) return false;
                   if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
