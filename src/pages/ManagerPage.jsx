@@ -591,14 +591,13 @@ export function ManagerPage({ manager, onLogout }) {
               const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
               const capCount=allActive.length;
               const capPct=plat.cap?Math.min(100,Math.round(capCount/plat.cap*100)):null;
-              const factTotal=allActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
-              const avgFact=allActive.length>0?factTotal/allActive.length:0;
-              const ok=avgFact>=(plat.target_avg_check||0);
               const myActive=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
               const myFactTotal=myActive.reduce((s,p)=>s+calcEffectiveTotal(p),0);
+              const avgFact=myActive.length>0?myFactTotal/myActive.length:0;
+              const ok=avgFact>=(plat.target_avg_check||0);
               const myPlannedExtra=myActive.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
               const plannedAvg=myActive.length>0?(myFactTotal+myPlannedExtra)/myActive.length:0;
-              const needMore=Math.max(0,(plat.target_avg_check||0)*capCount-factTotal);
+              const needMore=Math.max(0,(plat.target_avg_check||0)*myActive.length-myFactTotal);
               return(
                 <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
                   <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
@@ -892,6 +891,7 @@ export function ManagerPage({ manager, onLogout }) {
                         const ok=avg>=plat.target_avg_check;
                         const plannedExtra=mActive.reduce((s,p)=>s+plannedRds.filter(r=>r&&r.player_id===p.id).reduce((a,r)=>a+Number(r.amount),0),0);
                         const plannedAvg=mActive.length>0?(factTotal+plannedExtra)/mActive.length:0;
+                        const needMore=Math.max(0,(plat.target_avg_check||0)*mActive.length-factTotal);
                         const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да").length;
                         const capPct=plat.cap?Math.min(100,Math.round(allActive/plat.cap*100)):null;
                         return(
@@ -902,6 +902,7 @@ export function ManagerPage({ manager, onLogout }) {
                               <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                               <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                             </div>
+                            {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
                             <div style={{ marginTop:2 }}>
                               <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                                 <span>Капа</span><span>{allActive}{plat.cap?`/${plat.cap}`:""}</span>
