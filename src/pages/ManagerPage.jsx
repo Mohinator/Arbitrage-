@@ -241,16 +241,18 @@ export function ManagerPage({ manager, onLogout }) {
     load();
   };
 
+  const activeGeoPlatIds = new Set(platforms.filter(p=>p&&p.geo_id===activeGeo&&!p.is_hidden).map(p=>p.id));
+  const statBase = (isTeamLead ? allPlayers : players).filter(p=>p&&activeGeoPlatIds.has(p.platform_id));
   const platformStats = platforms.map(plat=>{
-    const active=players.filter(p=>p.platform_id===plat.id&&p.status==="Да");
+    const active=statBase.filter(p=>p.platform_id===plat.id&&p.status==="Да");
     const cnt=active.length,amt=active.reduce((s,p)=>s+calcEffectiveTotal(p),0),avg=cnt>0?amt/cnt:0;
     const blik=active.filter(p=>p.is_blik).length,blikPct=cnt>0?Math.round((blik/cnt)*100):0;
     const need=cnt>0?Math.max(0,plat.target_avg_check*cnt-amt):0;
     return{...plat,totalCount:cnt,totalAmount:amt,avgCheck:avg,blikCount:blik,blikPct,needMore:need};
   });
 
-  const allMonths=[...new Set(players.map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
-  const getStatPlayers=()=>!filterMonth?players.filter(p=>p.status==="Да"):players.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
+  const allMonths=[...new Set((isTeamLead?allPlayers:players).map(p=>p.date?p.date.slice(0,7):"").filter(Boolean))].sort().reverse();
+  const getStatPlayers=()=>!filterMonth?statBase.filter(p=>p.status==="Да"):statBase.filter(p=>p.status==="Да"&&p.date?.slice(0,7)===filterMonth);
 
   const hiddenPlatIds = new Set(platforms.filter(p=>p&&p.is_hidden).map(p=>p.id));
   const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo&&!p.is_hidden) : platforms.filter(p=>!p.is_hidden);
@@ -386,7 +388,7 @@ export function ManagerPage({ manager, onLogout }) {
 
   const chartData=(()=>{
     const byDay={};
-    players.filter(p=>p.status==="Да").forEach(p=>{
+    statBase.filter(p=>p.status==="Да").forEach(p=>{
       const d=p.date; if(!byDay[d]) byDay[d]={total:0,cnt:0};
       byDay[d].total+=Number(p.deposit); byDay[d].cnt+=1;
       getPlayerRds(p.id).forEach(rd=>{ const dd=rd.date||d; if(!byDay[dd]) byDay[dd]={total:0,cnt:0}; byDay[dd].total+=Number(rd.amount); });
@@ -1100,7 +1102,7 @@ export function ManagerPage({ manager, onLogout }) {
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
             {[
-              ["Всего лидов",getStatPlayers().length,`из ${players.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
+              ["Всего лидов",getStatPlayers().length,`из ${statBase.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
               ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#14b8a6"],
               ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#d97706"],
               ["Нужно добрать",platformStats.reduce((s,p)=>s+p.needMore,0).toFixed(0)+"€","до цели СЧ","#f59e0b"],
@@ -1138,7 +1140,7 @@ export function ManagerPage({ manager, onLogout }) {
                 </div>
                 <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                   <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Мои лиды","Сумма","СЧ факт","BLIK","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                    <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Лидов","Сумма","СЧ факт","BLIK","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                     <tbody>
                       {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?13:12} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
                       {geoPlatStats.map(p=>{
