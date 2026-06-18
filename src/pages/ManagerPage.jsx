@@ -613,7 +613,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["platforms","Платформы"],["report","Отчёт"],["history","История"],...(isTeamLead?[["overview","Сводка"]]:[])]
+        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["platforms","Платформы"],["report","Отчёт"],["history","История"],["overview","Сводка"]]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -1227,7 +1227,7 @@ export function ManagerPage({ manager, onLogout }) {
         </div>
       )}
 
-      {tab==="overview"&&isTeamLead&&(
+      {tab==="overview"&&(
         <div style={{ padding:"16px 20px" }}>
           <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка</h2>
 
