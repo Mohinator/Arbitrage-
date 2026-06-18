@@ -318,6 +318,17 @@ export function ManagerPage({ manager, onLogout }) {
       const ignSet = new Set(ignored.map(r=>`${r.list_type}|${(r.sub18||"").toLowerCase()}|${r.platform_id||""}`));
       const notIgn = (lt,sub,platId)=>!ignSet.has(`${lt}|${(sub||"").toLowerCase()}|${platId||""}`);
       const notInTracker = [...ktPairs.values()].filter(c=>c.convMgrId).filter(c=>!leadByPair.has(c.sub18+"|"+c.platId)).filter(c=>notIgn("not_in_tracker",c.sub18,c.platId));
+      // ВРЕМЕННАЯ ДИАГНОСТИКА — убрать после отладки
+      try {
+        const DBG="2yo7kfkb";
+        console.log("SVERKA_DEBUG sub="+DBG, {
+          keitaro_вернул: convs.filter(c=>(c.sub18||"").trim().toLowerCase()===DBG).map(c=>({campaign:c.campaign, source:c.source, revenue:c.revenue, datetime:c.datetime})),
+          сматчилось_с_платформой: [...ktPairs.values()].filter(c=>c.sub18===DBG).map(c=>({platName:c.platName, tail:c.manager, convMgrId:c.convMgrId})),
+          лид_в_трекере: geoLeads.filter(p=>(p.sub18||"").trim().toLowerCase()===DBG).map(p=>({platId:p.platform_id, status:p.status, mgr:mgrName(p.manager_id)})),
+          в_не_заведён: notInTracker.filter(c=>c.sub18===DBG).length>0,
+          активные_платформы_гео: [...geoPlatIds].length,
+        });
+      } catch(e){ console.log("dbg err",e); }
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
         .map(p=>{
           const sub=(p.sub18||"").trim().toLowerCase();
