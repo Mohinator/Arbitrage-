@@ -278,7 +278,7 @@ export function ManagerPage({ manager, onLogout }) {
       if (!data?.ok) throw new Error(data?.error||"Функция вернула ошибку");
       const convs = data.conversions||[];
       const isTL = manager.role==="team_lead";
-      const geoPlatIds = new Set(geoPlatforms.map(p=>p.id));
+      const geoPlatIds = new Set(platforms.filter(p=>p&&p.geo_id===activeGeo).map(p=>p.id));
       const platSorted = [...platforms].sort((a,b)=>(b.name||"").length-(a.name||"").length);
       // keitaro-имя -> id менеджера
       const nameToMgr = [];
