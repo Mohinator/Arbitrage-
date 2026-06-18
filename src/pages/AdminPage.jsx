@@ -17,6 +17,7 @@ export function AdminPage({ onLogout }) {
   const [backupBusy, setBackupBusy] = useState(false); const [lastBackupAt, setLastBackupAt] = useState(null);
   const [restorePreview, setRestorePreview] = useState(null); const [restoreSel, setRestoreSel] = useState([]); const [previewTable, setPreviewTable] = useState(""); const [restoreConfirm, setRestoreConfirm] = useState("");
   const [pendingRestore, setPendingRestore] = useState(null); const [restoreBusy, setRestoreBusy] = useState(false);
+  const [previewMgr, setPreviewMgr] = useState(null);
   const [showPlatformForm, setShowPlatformForm] = useState(false); const [editingPlatform, setEditingPlatform] = useState(null);
   const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
@@ -595,7 +596,7 @@ export function AdminPage({ onLogout }) {
               <div style={{ width:230,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:10,overflowY:"auto" }}>
                 <div style={{ color:"#64748b",fontSize:10,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8 }}>Таблицы для восстановления</div>
                 {tbls.map(t=>(
-                  <div key={t} onClick={()=>setPreviewTable(t)} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:7,cursor:"pointer",background:previewTable===t?"rgba(99,102,241,.15)":"transparent",marginBottom:2 }}>
+                  <div key={t} onClick={()=>{ setPreviewTable(t); setPreviewMgr(null); }} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:7,cursor:"pointer",background:previewTable===t?"rgba(99,102,241,.15)":"transparent",marginBottom:2 }}>
                     <input type="checkbox" checked={restoreSel.includes(t)} onChange={()=>toggle(t)} onClick={e=>e.stopPropagation()} style={{ accentColor:"#6366f1" }}/>
                     <span style={{ color:"#e2e8f0",fontSize:12,flex:1 }}>{Backup.TABLE_LABELS[t]||t}</span>
                     <span style={{ color:"#64748b",fontSize:11 }}>{(restorePreview.tables[t]||[]).length}</span>
@@ -607,17 +608,59 @@ export function AdminPage({ onLogout }) {
                 </div>
               </div>
               <div style={{ flex:1,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,overflow:"auto",minWidth:0 }}>
-                {rows.length===0
-                  ? <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Таблица пустая</div>
-                  : <table style={{ borderCollapse:"collapse",fontSize:11,width:"100%" }}>
-                      <thead><tr>{cols.map(c=><th key={c} style={{ position:"sticky",top:0,background:"#13151c",color:"#94a3b8",padding:"7px 10px",textAlign:"left",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" }}>{c}</th>)}</tr></thead>
-                      <tbody>
-                        {rows.slice(0,200).map((r,i)=>(
-                          <tr key={i}>{cols.map(c=><td key={c} style={{ color:"#cbd5e1",padding:"6px 10px",borderBottom:"1px solid #23262f",whiteSpace:"nowrap",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis" }}>{r[c]==null?"—":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}</tr>
+                {(()=>{
+                  const T = restorePreview.tables;
+                  const renderTable = (data,onRowClick)=>{
+                    if(!data||data.length===0) return <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Нет данных</div>;
+                    const cs = Object.keys(data[0]);
+                    return (
+                      <table style={{ borderCollapse:"collapse",fontSize:11,width:"100%" }}>
+                        <thead><tr>{cs.map(c=><th key={c} style={{ position:"sticky",top:0,background:"#13151c",color:"#94a3b8",padding:"7px 10px",textAlign:"left",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" }}>{c}</th>)}</tr></thead>
+                        <tbody>
+                          {data.slice(0,200).map((r,i)=>(
+                            <tr key={i} onClick={onRowClick?()=>onRowClick(r):undefined} style={onRowClick?{ cursor:"pointer" }:undefined} className={onRowClick?"row-hover":undefined}>
+                              {cs.map(c=><td key={c} style={{ color:"#cbd5e1",padding:"6px 10px",borderBottom:"1px solid #23262f",whiteSpace:"nowrap",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis" }}>{r[c]==null?"—":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    );
+                  };
+                  if(previewMgr){
+                    const mid=previewMgr.id;
+                    const myPlayers=(T.players||[]).filter(p=>p.manager_id===mid);
+                    const pids=new Set(myPlayers.map(p=>p.id));
+                    const sections=[
+                      ["Лиды", myPlayers],
+                      ["Редепозиты", (T.redeposits||[]).filter(r=>pids.has(r.player_id))],
+                      ["Плановые РД", (T.planned_redeposits||[]).filter(r=>pids.has(r.player_id))],
+                      ["Доступы к гео", (T.user_geos||[]).filter(u=>u.manager_id===mid)],
+                      ["История действий", (T.activity_log||[]).filter(l=>l.manager_id===mid)],
+                    ];
+                    return (
+                      <div>
+                        <div style={{ position:"sticky",top:0,background:"#13151c",borderBottom:"1px solid #2d3148",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,zIndex:1 }}>
+                          <button onClick={()=>setPreviewMgr(null)} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>← Назад</button>
+                          <span style={{ color:"#fff",fontWeight:700,fontSize:14 }}>{previewMgr.name}</span>
+                          <span style={{ color:"#64748b",fontSize:11 }}>{previewMgr.role}</span>
+                        </div>
+                        {sections.map(([title,data])=>(
+                          <div key={title} style={{ padding:"12px 14px",borderBottom:"1px solid #23262f" }}>
+                            <div style={{ color:"#a5b4fc",fontSize:12,fontWeight:700,marginBottom:8 }}>{title} <span style={{ color:"#64748b",fontWeight:400 }}>({data.length})</span></div>
+                            <div style={{ overflowX:"auto" }}>{renderTable(data)}</div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>}
-                {rows.length>200&&<div style={{ padding:10,color:"#64748b",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
+                      </div>
+                    );
+                  }
+                  return rows.length===0
+                    ? <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Таблица пустая</div>
+                    : <>
+                        {previewTable==="managers"&&<div style={{ padding:"8px 14px",color:"#64748b",fontSize:11,borderBottom:"1px solid #23262f" }}>Кликни на менеджера, чтобы увидеть все его данные</div>}
+                        {renderTable(rows, previewTable==="managers"?(m)=>setPreviewMgr(m):undefined)}
+                        {rows.length>200&&<div style={{ padding:10,color:"#64748b",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
+                      </>;
+                })()}
               </div>
             </div>
             <div style={{ marginTop:14,background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap" }}>
