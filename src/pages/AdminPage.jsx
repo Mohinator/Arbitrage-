@@ -66,7 +66,7 @@ export function AdminPage({ onLogout }) {
   const showToast = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
 
   const [highlightId, setHighlightId] = useState(null);
-  const [taskGeo, setTaskGeo] = useState(""); const [taskPlat, setTaskPlat] = useState(""); const [taskMgr, setTaskMgr] = useState("");
+  const [taskGeo, setTaskGeo] = useState(""); const [taskPlat, setTaskPlat] = useState(""); const [taskMgr, setTaskMgr] = useState(""); const [taskDateFilter, setTaskDateFilter] = useState("");
   const goToLead = (player) => {
     if(!player) return;
     const plat=platforms.find(p=>p.id===player.platform_id);
@@ -490,7 +490,8 @@ export function AdminPage({ onLogout }) {
           const platGeo=(pid)=>platforms.find(pl=>pl.id===pid)?.geo_id;
           const pGeo=(p)=>platGeo(p.platform_id)||userGeos.find(u=>u.manager_id===p.manager_id)?.geo_id;
           const pass=(p)=>{ if(taskGeo&&pGeo(p)!==taskGeo) return false; if(taskPlat&&p.platform_id!==taskPlat) return false; if(taskMgr&&p.manager_id!==taskMgr) return false; return true; };
-          const tasks=(plannedRds||[]).filter(r=>r&&r.date===today).map(r=>{ const player=players.find(p=>p.id===r.player_id); return player?{ player, plat:platforms.find(pl=>pl.id===player.platform_id), mgr:managers.find(m=>m.id===player.manager_id), rdNum:r.rd_number, amount:r.amount }:null; }).filter(Boolean).filter(t=>pass(t.player));
+          const taskDate=taskDateFilter||today;
+          const tasks=(plannedRds||[]).filter(r=>r&&r.date===taskDate).map(r=>{ const player=players.find(p=>p.id===r.player_id); return player?{ player, plat:platforms.find(pl=>pl.id===player.platform_id), mgr:managers.find(m=>m.id===player.manager_id), rdNum:r.rd_number, amount:r.amount }:null; }).filter(Boolean).filter(t=>pass(t.player));
           const overdue=players.filter(p=>p&&odd[p.id]&&pass(p)).sort((a,b)=>new Date(odd[a.id])-new Date(odd[b.id]));
           const card={ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" };
           return(
@@ -509,11 +510,13 @@ export function AdminPage({ onLogout }) {
                   <option value="">Все менеджеры</option>
                   {managers.filter(m=>!taskGeo||userGeos.some(ug=>ug.geo_id===taskGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
+                <input type="date" value={taskDateFilter} onChange={e=>setTaskDateFilter(e.target.value)} style={{...IS,width:"auto",colorScheme:"dark"}}/>
+                {taskDateFilter&&<button onClick={()=>setTaskDateFilter("")} style={{background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"0 12px",borderRadius:7,cursor:"pointer",fontSize:12}}>Сегодня</button>}
               </div>
               <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
-                  <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
-                  {tasks.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>На сегодня задач нет</div>}
+                  <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {taskDateFilter? new Date(taskDateFilter+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
+                  {tasks.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>}
                   {tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
                     <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={card}>
                       <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>

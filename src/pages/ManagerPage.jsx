@@ -28,6 +28,7 @@ export function ManagerPage({ manager, onLogout }) {
   const [showPlatformPicker, setShowPlatformPicker] = useState(false);
   const [todoPlatFilter, setTodoPlatFilter] = useState("");
   const [todoMgrFilter, setTodoMgrFilter] = useState("");
+  const [todoDate, setTodoDate] = useState("");
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
@@ -732,13 +733,16 @@ export function ManagerPage({ manager, onLogout }) {
                 {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             )}
+            <input type="date" value={todoDate} onChange={e=>setTodoDate(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
+            {todoDate&&<button onClick={()=>setTodoDate("")} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
             <span style={{ color:T.muted,fontSize:11 }}>Клик по лиду → переход к таблице</span>
           </div>
           <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
             {/* ЛЕВО: задачи на сегодня */}
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
-              <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на сегодня</h3>
+              <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {todoDate? new Date(todoDate+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
               {(()=>{
+                const taskDate = todoDate || today;
                 const sourcePlayers=(isTeamLead
                   ? allPlayers.filter(p=>p&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
                   : players.filter(p=>p.status==="Да")
@@ -746,13 +750,13 @@ export function ManagerPage({ manager, onLogout }) {
                 const tasks=sourcePlayers.flatMap(p=>{
                   const plat=platforms.find(pl=>pl.id===p.platform_id);
                   const mgr=allManagers.find(m=>m.id===p.manager_id);
-                  return plannedRds.filter(r=>r&&r.player_id===p.id&&r.date===today).map(r=>({ player:p, plat, mgr, rdNum:r.rd_number, amount:r.amount }));
+                  return plannedRds.filter(r=>r&&r.player_id===p.id&&r.date===taskDate).map(r=>({ player:p, plat, mgr, rdNum:r.rd_number, amount:r.amount }));
                 }).filter(t=>{
                   if(todoPlatFilter&&t.plat?.id!==todoPlatFilter) return false;
                   if(todoMgrFilter&&t.player?.manager_id!==todoMgrFilter) return false;
                   return true;
                 });
-                if(tasks.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>На сегодня задач нет</div>;
+                if(tasks.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>;
                 return tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
                   <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>
