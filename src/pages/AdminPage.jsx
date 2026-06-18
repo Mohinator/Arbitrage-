@@ -18,6 +18,41 @@ export function AdminPage({ onLogout }) {
   const [restorePreview, setRestorePreview] = useState(null); const [restoreSel, setRestoreSel] = useState([]); const [previewTable, setPreviewTable] = useState(""); const [restoreConfirm, setRestoreConfirm] = useState("");
   const [pendingRestore, setPendingRestore] = useState(null); const [restoreBusy, setRestoreBusy] = useState(false);
   const [previewMgr, setPreviewMgr] = useState(null);
+  const MGR_SECTIONS = [["players","Лиды"],["redeposits","Редепозиты"],["planned_redeposits","Плановые РД"],["user_geos","Доступы к гео"],["activity_log","История действий"]];
+  const [mgrSel, setMgrSel] = useState(MGR_SECTIONS.map(s=>s[0]));
+  const [mgrConfirm, setMgrConfirm] = useState("");
+
+  const buildMgrPlan = (m, tables) => {
+    const myPlayers=(tables.players||[]).filter(p=>p.manager_id===m.id);
+    const pids=new Set(myPlayers.map(p=>p.id));
+    return {
+      players: myPlayers,
+      redeposits: (tables.redeposits||[]).filter(r=>pids.has(r.player_id)),
+      planned_redeposits: (tables.planned_redeposits||[]).filter(r=>pids.has(r.player_id)),
+      user_geos: (tables.user_geos||[]).filter(u=>u.manager_id===m.id),
+      activity_log: (tables.activity_log||[]).filter(l=>l.manager_id===m.id),
+    };
+  };
+
+  const runMgrRestore = async () => {
+    if(mgrConfirm.trim().toUpperCase()!=="ВОССТАНОВИТЬ"){ showToast("Впишите слово ВОССТАНОВИТЬ","error"); return; }
+    if(mgrSel.length===0){ showToast("Не выбрано ни одного раздела","error"); return; }
+    const full = buildMgrPlan(previewMgr, restorePreview.tables);
+    const plan = {}; mgrSel.forEach(t=>{ plan[t]=full[t]||[]; });
+    if(Object.values(plan).every(a=>a.length===0)){ showToast("У менеджера нет данных в этих разделах","error"); return; }
+    setRestoreBusy(true);
+    try {
+      const idsByTable={}; Object.keys(plan).forEach(t=>idsByTable[t]=plan[t].map(r=>r.id).filter(Boolean));
+      const snapshot = await Backup.snapshotByIds(supabase, idsByTable);
+      await Backup.idbSet(Backup.PENDING_KEY, { at:new Date().toISOString(), mode:"plan", scope:"менеджер: "+previewMgr.name, tables:mgrSel, plan, snapshot });
+      await Backup.applyRestorePlan(supabase, plan);
+      setPendingRestore({ at:new Date().toISOString(), scope:"менеджер: "+previewMgr.name, tables:mgrSel });
+      setRestorePreview(null); setPreviewMgr(null);
+      await load();
+      showToast("Восстановлено для "+previewMgr.name);
+    } catch(e){ showToast("Ошибка восстановления: "+(e?.message||e),"error"); }
+    setRestoreBusy(false);
+  };
   const [showPlatformForm, setShowPlatformForm] = useState(false); const [editingPlatform, setEditingPlatform] = useState(null);
   const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
@@ -115,7 +150,8 @@ export function AdminPage({ onLogout }) {
     try {
       const p = await Backup.idbGet(Backup.PENDING_KEY);
       if(!p){ showToast("Точка отката не найдена","error"); setPendingRestore(null); setRestoreBusy(false); return; }
-      await Backup.rollbackRestore(supabase, p.snapshot, p.backup, p.tables);
+      if(p.mode==="plan") await Backup.rollbackPlan(supabase, p.snapshot, p.plan);
+      else await Backup.rollbackRestore(supabase, p.snapshot, p.backup, p.tables);
       await Backup.idbDel(Backup.PENDING_KEY);
       setPendingRestore(null);
       await load();
@@ -628,36 +664,40 @@ export function AdminPage({ onLogout }) {
                   };
                   if(previewMgr){
                     const mid=previewMgr.id;
-                    const myPlayers=(T.players||[]).filter(p=>p.manager_id===mid);
-                    const pids=new Set(myPlayers.map(p=>p.id));
-                    const sections=[
-                      ["Лиды", myPlayers],
-                      ["Редепозиты", (T.redeposits||[]).filter(r=>pids.has(r.player_id))],
-                      ["Плановые РД", (T.planned_redeposits||[]).filter(r=>pids.has(r.player_id))],
-                      ["Доступы к гео", (T.user_geos||[]).filter(u=>u.manager_id===mid)],
-                      ["История действий", (T.activity_log||[]).filter(l=>l.manager_id===mid)],
-                    ];
+                    const full=buildMgrPlan(previewMgr, T);
                     return (
                       <div>
-                        <div style={{ position:"sticky",top:0,background:"#13151c",borderBottom:"1px solid #2d3148",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,zIndex:1 }}>
+                        <div style={{ position:"sticky",top:0,background:"#13151c",borderBottom:"1px solid #2d3148",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,zIndex:2 }}>
                           <button onClick={()=>setPreviewMgr(null)} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>← Назад</button>
                           <span style={{ color:"#fff",fontWeight:700,fontSize:14 }}>{previewMgr.name}</span>
                           <span style={{ color:"#64748b",fontSize:11 }}>{previewMgr.role}</span>
+                          <span style={{ color:"#64748b",fontSize:11,marginLeft:"auto" }}>Отметь разделы для восстановления ↓</span>
                         </div>
-                        {sections.map(([title,data])=>(
-                          <div key={title} style={{ padding:"12px 14px",borderBottom:"1px solid #23262f" }}>
-                            <div style={{ color:"#a5b4fc",fontSize:12,fontWeight:700,marginBottom:8 }}>{title} <span style={{ color:"#64748b",fontWeight:400 }}>({data.length})</span></div>
-                            <div style={{ overflowX:"auto" }}>{renderTable(data)}</div>
-                          </div>
-                        ))}
+                        {MGR_SECTIONS.map(([key,title])=>{
+                          const data=full[key]||[];
+                          return (
+                            <div key={key} style={{ padding:"12px 14px",borderBottom:"1px solid #23262f" }}>
+                              <label style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer" }}>
+                                <input type="checkbox" checked={mgrSel.includes(key)} onChange={()=>setMgrSel(s=>s.includes(key)?s.filter(x=>x!==key):[...s,key])} style={{ accentColor:"#6366f1" }}/>
+                                <span style={{ color:"#a5b4fc",fontSize:12,fontWeight:700 }}>{title} <span style={{ color:"#64748b",fontWeight:400 }}>({data.length})</span></span>
+                              </label>
+                              <div style={{ overflowX:"auto" }}>{renderTable(data)}</div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ position:"sticky",bottom:0,background:"#13151c",borderTop:"1px solid #7f1d1d",padding:"12px 14px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",zIndex:2 }}>
+                          <span style={{ color:"#fca5a5",fontSize:12,fontWeight:600 }}>Восстановить выбранные разделы для {previewMgr.name} (merge, откат возможен)</span>
+                          <input value={mgrConfirm} onChange={e=>setMgrConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:190 }}/>
+                          <button onClick={runMgrRestore} disabled={restoreBusy} style={{ background:restoreBusy?"#334155":"linear-gradient(135deg,#dc2626,#b91c1c)",border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"…":"Восстановить"}</button>
+                        </div>
                       </div>
                     );
                   }
                   return rows.length===0
                     ? <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Таблица пустая</div>
                     : <>
-                        {previewTable==="managers"&&<div style={{ padding:"8px 14px",color:"#64748b",fontSize:11,borderBottom:"1px solid #23262f" }}>Кликни на менеджера, чтобы увидеть все его данные</div>}
-                        {renderTable(rows, previewTable==="managers"?(m)=>setPreviewMgr(m):undefined)}
+                        {previewTable==="managers"&&<div style={{ padding:"8px 14px",color:"#64748b",fontSize:11,borderBottom:"1px solid #23262f" }}>Кликни на менеджера, чтобы открыть его данные и восстановить выборочно</div>}
+                        {renderTable(rows, previewTable==="managers"?(m)=>{ setPreviewMgr(m); setMgrSel(MGR_SECTIONS.map(s=>s[0])); setMgrConfirm(""); }:undefined)}
                         {rows.length>200&&<div style={{ padding:10,color:"#64748b",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
                       </>;
                 })()}
@@ -675,7 +715,7 @@ export function AdminPage({ onLogout }) {
         {pendingRestore&&(
           <div style={{ position:"fixed",left:0,right:0,bottom:0,zIndex:8000,background:"#1a1d27",borderTop:"2px solid #f59e0b",padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",boxShadow:"0 -8px 32px rgba(0,0,0,.5)" }}>
             <span style={{ color:"#fbbf24",fontWeight:700,fontSize:13 }}>⚠ Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
-            <span style={{ color:"#64748b",fontSize:12 }}>Таблицы: {(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
+            <span style={{ color:"#64748b",fontSize:12 }}>{pendingRestore.scope?pendingRestore.scope+" · ":""}{(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
             <div style={{ marginLeft:"auto",display:"flex",gap:10 }}>
               <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>✓ Подтвердить</button>
               <button onClick={rollbackRestore} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #f87171",color:"#fca5a5",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>↺ Откатить</button>

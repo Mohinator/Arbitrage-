@@ -138,3 +138,44 @@ export async function idbDel(key){
   return new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).delete(key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
 }
 export const PENDING_KEY = "pending_restore";
+
+// ── точечное восстановление по «плану» { table: [rows] } (например, срез одного менеджера) ──
+export async function snapshotByIds(supabase, idsByTable){
+  const snap = {};
+  for (const t of Object.keys(idsByTable)){
+    const ids = idsByTable[t] || []; snap[t] = [];
+    for (let i=0;i<ids.length;i+=300){
+      const { data, error } = await supabase.from(t).select("*").in("id", ids.slice(i,i+300));
+      if (error) throw new Error(`Снимок «${t}»: ${error.message}`);
+      snap[t] = snap[t].concat(data||[]);
+    }
+  }
+  return snap;
+}
+export async function applyRestorePlan(supabase, plan){
+  for (const t of UPSERT_ORDER){
+    const rows = plan[t]; if (!rows || rows.length===0) continue;
+    for (let i=0;i<rows.length;i+=500){
+      const { error } = await supabase.from(t).upsert(rows.slice(i,i+500), { onConflict:"id" });
+      if (error) throw new Error(`Восстановление «${t}»: ${error.message}`);
+    }
+  }
+}
+export async function rollbackPlan(supabase, snapshot, plan){
+  for (const t of UPSERT_ORDER){
+    const rows = snapshot[t]; if (!rows || rows.length===0) continue;
+    for (let i=0;i<rows.length;i+=500){
+      const { error } = await supabase.from(t).upsert(rows.slice(i,i+500), { onConflict:"id" });
+      if (error) throw new Error(`Откат «${t}»: ${error.message}`);
+    }
+  }
+  for (const t of DELETE_ORDER){
+    const planRows = plan[t]; if (!planRows || planRows.length===0) continue;
+    const snapIds = new Set((snapshot[t]||[]).map(r=>r.id));
+    const newIds = planRows.map(r=>r.id).filter(id=>id!=null && !snapIds.has(id));
+    for (let i=0;i<newIds.length;i+=200){
+      const { error } = await supabase.from(t).delete().in("id", newIds.slice(i,i+200));
+      if (error) throw new Error(`Откат (удаление) «${t}»: ${error.message}`);
+    }
+  }
+}
