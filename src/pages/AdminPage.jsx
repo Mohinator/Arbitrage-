@@ -7,12 +7,16 @@ import { PlayersTable } from "../components/PlayersTable";
 import { AddLeadForm } from "../components/AddLeadForm";
 import { HistoryView } from "../components/HistoryView";
 import { ReportView } from "../components/ReportView";
+import * as Backup from "../backup";
 
 export function AdminPage({ onLogout }) {
   const [managers, setManagers] = useState([]); const [platforms, setPlatforms] = useState([]); const [players, setPlayers] = useState([]); const [redeposits, setRedeposits] = useState([]);
   const [geos, setGeos] = useState([]); const [userGeos, setUserGeos] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [tab, setTab] = useState("overview"); const [toast, setToast] = useState(null); const [newName, setNewName] = useState(""); const [newRole, setNewRole] = useState("manager");
+  const [backupBusy, setBackupBusy] = useState(false); const [lastBackupAt, setLastBackupAt] = useState(null);
+  const [restorePreview, setRestorePreview] = useState(null); const [restoreSel, setRestoreSel] = useState([]); const [previewTable, setPreviewTable] = useState(""); const [restoreConfirm, setRestoreConfirm] = useState("");
+  const [pendingRestore, setPendingRestore] = useState(null); const [restoreBusy, setRestoreBusy] = useState(false);
   const [showPlatformForm, setShowPlatformForm] = useState(false); const [editingPlatform, setEditingPlatform] = useState(null);
   const [pForm, setPForm] = useState({ name:"", target_avg_check:"", min_deposit:"", min_deposit_blik:"", cap:"", date_added:"", is_active:true, reset_monthly:false, geo_id:"" });
   const [showGeoForm, setShowGeoForm] = useState(false); const [geoForm, setGeoForm] = useState({ name:"", code:"" });
@@ -54,6 +58,70 @@ export function AdminPage({ onLogout }) {
     setGeos(g||[]); setUserGeos(ug||[]); setActivityLog(log||[]);
   };
   useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
+
+  const doBackup = async () => {
+    setBackupBusy(true);
+    try {
+      const obj = await Backup.buildBackup(supabase);
+      await Backup.postBackup(obj);
+      const when = new Date().toLocaleString("ru");
+      setLastBackupAt(when);
+      showToast("Бэкап отправлен ✓");
+    } catch(e){ showToast("Бэкап не удался: "+(e?.message||e),"error"); }
+    setBackupBusy(false);
+  };
+
+  const openRestorePreview = async () => {
+    setRestoreBusy(true);
+    try {
+      const b = await Backup.fetchBackup();
+      const present = Backup.BACKUP_TABLES.filter(t=>Array.isArray(b.tables[t]));
+      setRestorePreview(b);
+      setRestoreSel(present);
+      setPreviewTable(present[0]||"");
+      setRestoreConfirm("");
+    } catch(e){ showToast("Не удалось загрузить точку: "+(e?.message||e),"error"); }
+    setRestoreBusy(false);
+  };
+
+  const runRestore = async () => {
+    if(restoreConfirm.trim().toUpperCase()!=="ВОССТАНОВИТЬ"){ showToast("Введите слово ВОССТАНОВИТЬ для подтверждения","error"); return; }
+    if(restoreSel.length===0){ showToast("Не выбрано ни одной таблицы","error"); return; }
+    setRestoreBusy(true);
+    try {
+      const snapshot = await Backup.snapshotTables(supabase, restoreSel);
+      await Backup.idbSet(Backup.PENDING_KEY, { at:new Date().toISOString(), tables:restoreSel, snapshot, backup:restorePreview });
+      await Backup.applyRestore(supabase, restorePreview, restoreSel);
+      const pend = { at:new Date().toISOString(), tables:restoreSel };
+      setPendingRestore(pend);
+      setRestorePreview(null);
+      await load();
+      showToast("Восстановление применено — проверьте данные");
+    } catch(e){ showToast("Ошибка восстановления: "+(e?.message||e),"error"); }
+    setRestoreBusy(false);
+  };
+
+  const confirmRestore = async () => {
+    await Backup.idbDel(Backup.PENDING_KEY);
+    setPendingRestore(null);
+    showToast("Восстановление подтверждено ✓");
+  };
+
+  const rollbackRestore = async () => {
+    if(!confirm("Откатить к состоянию ДО восстановления? Текущие изменения по этим таблицам будут отменены.")) return;
+    setRestoreBusy(true);
+    try {
+      const p = await Backup.idbGet(Backup.PENDING_KEY);
+      if(!p){ showToast("Точка отката не найдена","error"); setPendingRestore(null); setRestoreBusy(false); return; }
+      await Backup.rollbackRestore(supabase, p.snapshot, p.backup, p.tables);
+      await Backup.idbDel(Backup.PENDING_KEY);
+      setPendingRestore(null);
+      await load();
+      showToast("Откат выполнен — данные вернулись к состоянию до восстановления");
+    } catch(e){ showToast("Ошибка отката: "+(e?.message||e),"error"); }
+    setRestoreBusy(false);
+  };
 
   const createManager = async () => {
     if(!newName.trim()) return;
@@ -160,7 +228,7 @@ export function AdminPage({ onLogout }) {
       </div>
 
       <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"0 24px",display:"flex"}}>
-        {[["overview","Сводка"],["tasks",<span>Задачи{(()=>{ const t=new Date().toISOString().slice(0,10); const ids=new Set((plannedRds||[]).filter(r=>r&&r.date&&r.date<t).map(r=>r.player_id)); const c=players.filter(p=>p&&ids.has(p.id)).length; return c>0?<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{c}</span>:null; })()}</span>],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["report","Отчёт"],["history","История"],["leads","Лиды"]].map(([key,label])=>(
+        {[["overview","Сводка"],["tasks",<span>Задачи{(()=>{ const t=new Date().toISOString().slice(0,10); const ids=new Set((plannedRds||[]).filter(r=>r&&r.date&&r.date<t).map(r=>r.player_id)); const c=players.filter(p=>p&&ids.has(p.id)).length; return c>0?<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{c}</span>:null; })()}</span>],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["report","Отчёт"],["history","История"],["leads","Лиды"],["backup","Бэкап"]].map(([key,label])=>(
           <button key={key} onClick={()=>setTab(key)} className="nb" style={{background:"transparent",border:"none",color:tab===key?"#6366f1":"#64748b",padding:"12px 18px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent"}}>{label}</button>
         ))}
       </div>
@@ -486,6 +554,89 @@ export function AdminPage({ onLogout }) {
                 </div>
               ));
             })()}
+          </div>
+        )}
+
+        {tab==="backup"&&(
+          <div style={{ maxWidth:760 }}>
+            <h2 style={{color:"#fff",marginBottom:6,fontSize:18}}>Бэкап и восстановление</h2>
+            <p style={{ color:"#64748b",fontSize:12,marginBottom:20 }}>Резервные копии всех таблиц отправляются на вебхук. Хранится одна (самая свежая) точка восстановления.</p>
+
+            <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,padding:20,marginBottom:16 }}>
+              <h3 style={{ color:"#e2e8f0",fontSize:14,margin:"0 0 6px" }}>💾 Резервная копия</h3>
+              <p style={{ color:"#64748b",fontSize:12,margin:"0 0 14px" }}>Читает все таблицы и отправляет JSON на вебхук. Авто-бэкап каждый день в 08:00 настраивается на стороне n8n (расписание).</p>
+              <button onClick={doBackup} disabled={backupBusy} style={{ background:backupBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"10px 18px",borderRadius:9,cursor:backupBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{backupBusy?"Отправляю…":"Сделать бэкап сейчас"}</button>
+              {lastBackupAt&&<span style={{ color:"#86efac",fontSize:12,marginLeft:12 }}>Последний: {lastBackupAt}</span>}
+            </div>
+
+            <div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:12,padding:20 }}>
+              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 6px" }}>↘ Восстановление</h3>
+              <p style={{ color:"#64748b",fontSize:12,margin:"0 0 14px" }}>Загружает последнюю точку, показывает все таблицы для просмотра, даёт выбрать какие восстановить. Данные дополняются (merge по id). Перед применением сохраняется локальная точка отката — пока не подтвердишь, можно откатить назад.</p>
+              <button onClick={openRestorePreview} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #f87171",color:"#fca5a5",padding:"10px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Загружаю…":"Загрузить точку восстановления"}</button>
+            </div>
+          </div>
+        )}
+
+        {restorePreview&&(()=>{
+          const tbls = Backup.BACKUP_TABLES.filter(t=>Array.isArray(restorePreview.tables[t]));
+          const rows = restorePreview.tables[previewTable]||[];
+          const cols = rows.length>0 ? Object.keys(rows[0]) : [];
+          const toggle = (t)=>setRestoreSel(s=>s.includes(t)?s.filter(x=>x!==t):[...s,t]);
+          return (
+          <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:9000,display:"flex",flexDirection:"column",padding:24 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
+              <div>
+                <h3 style={{ color:"#fff",margin:0,fontSize:16 }}>Просмотр точки восстановления</h3>
+                <span style={{ color:"#64748b",fontSize:12 }}>создана: {restorePreview.created_at? new Date(restorePreview.created_at).toLocaleString("ru"):"—"}</span>
+              </div>
+              <button onClick={()=>setRestorePreview(null)} style={{ background:"#1a1d27",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13 }}>Закрыть</button>
+            </div>
+            <div style={{ flex:1,display:"flex",gap:14,minHeight:0 }}>
+              <div style={{ width:230,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:10,overflowY:"auto" }}>
+                <div style={{ color:"#64748b",fontSize:10,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8 }}>Таблицы для восстановления</div>
+                {tbls.map(t=>(
+                  <div key={t} onClick={()=>setPreviewTable(t)} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:7,cursor:"pointer",background:previewTable===t?"rgba(99,102,241,.15)":"transparent",marginBottom:2 }}>
+                    <input type="checkbox" checked={restoreSel.includes(t)} onChange={()=>toggle(t)} onClick={e=>e.stopPropagation()} style={{ accentColor:"#6366f1" }}/>
+                    <span style={{ color:"#e2e8f0",fontSize:12,flex:1 }}>{Backup.TABLE_LABELS[t]||t}</span>
+                    <span style={{ color:"#64748b",fontSize:11 }}>{(restorePreview.tables[t]||[]).length}</span>
+                  </div>
+                ))}
+                <div style={{ display:"flex",gap:6,marginTop:8 }}>
+                  <button onClick={()=>setRestoreSel(tbls)} style={{ flex:1,background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Все</button>
+                  <button onClick={()=>setRestoreSel([])} style={{ flex:1,background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Снять</button>
+                </div>
+              </div>
+              <div style={{ flex:1,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,overflow:"auto",minWidth:0 }}>
+                {rows.length===0
+                  ? <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Таблица пустая</div>
+                  : <table style={{ borderCollapse:"collapse",fontSize:11,width:"100%" }}>
+                      <thead><tr>{cols.map(c=><th key={c} style={{ position:"sticky",top:0,background:"#13151c",color:"#94a3b8",padding:"7px 10px",textAlign:"left",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" }}>{c}</th>)}</tr></thead>
+                      <tbody>
+                        {rows.slice(0,200).map((r,i)=>(
+                          <tr key={i}>{cols.map(c=><td key={c} style={{ color:"#cbd5e1",padding:"6px 10px",borderBottom:"1px solid #23262f",whiteSpace:"nowrap",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis" }}>{r[c]==null?"—":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}</tr>
+                        ))}
+                      </tbody>
+                    </table>}
+                {rows.length>200&&<div style={{ padding:10,color:"#64748b",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
+              </div>
+            </div>
+            <div style={{ marginTop:14,background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap" }}>
+              <span style={{ color:"#fca5a5",fontSize:12,fontWeight:600 }}>Выбрано таблиц: {restoreSel.length}. Данные дополнятся (merge). Откат возможен до подтверждения.</span>
+              <input value={restoreConfirm} onChange={e=>setRestoreConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:200 }}/>
+              <button onClick={runRestore} disabled={restoreBusy} style={{ background:restoreBusy?"#334155":"linear-gradient(135deg,#dc2626,#b91c1c)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Восстанавливаю…":"Восстановить выбранное"}</button>
+            </div>
+          </div>
+          );
+        })()}
+
+        {pendingRestore&&(
+          <div style={{ position:"fixed",left:0,right:0,bottom:0,zIndex:8000,background:"#1a1d27",borderTop:"2px solid #f59e0b",padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",boxShadow:"0 -8px 32px rgba(0,0,0,.5)" }}>
+            <span style={{ color:"#fbbf24",fontWeight:700,fontSize:13 }}>⚠ Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
+            <span style={{ color:"#64748b",fontSize:12 }}>Таблицы: {(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
+            <div style={{ marginLeft:"auto",display:"flex",gap:10 }}>
+              <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>✓ Подтвердить</button>
+              <button onClick={rollbackRestore} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #f87171",color:"#fca5a5",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>↺ Откатить</button>
+            </div>
           </div>
         )}
       </div>
