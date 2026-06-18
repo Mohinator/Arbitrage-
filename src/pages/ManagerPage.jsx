@@ -38,6 +38,7 @@ export function ManagerPage({ manager, onLogout }) {
   const [sverkaLoading, setSverkaLoading] = useState(false);
   const [sverkaData, setSverkaData] = useState(null);
   const [showIgnored, setShowIgnored] = useState(false);
+  const [showUnknownDep, setShowUnknownDep] = useState(false);
   const [automationPreview, setAutomationPreview] = useState([]);
   const [excludedIds, setExcludedIds] = useState(new Set());
   const [filterPlatform, setFilterPlatform] = useState("");
@@ -318,17 +319,7 @@ export function ManagerPage({ manager, onLogout }) {
       const ignSet = new Set(ignored.map(r=>`${r.list_type}|${(r.sub18||"").toLowerCase()}|${r.platform_id||""}`));
       const notIgn = (lt,sub,platId)=>!ignSet.has(`${lt}|${(sub||"").toLowerCase()}|${platId||""}`);
       const notInTracker = [...ktPairs.values()].filter(c=>c.convMgrId).filter(c=>!leadByPair.has(c.sub18+"|"+c.platId)).filter(c=>notIgn("not_in_tracker",c.sub18,c.platId));
-      // ВРЕМЕННАЯ ДИАГНОСТИКА — убрать после отладки
-      try {
-        const DBG="2yo7kfkb";
-        console.log("SVERKA_DEBUG sub="+DBG, {
-          keitaro_вернул: convs.filter(c=>(c.sub18||"").trim().toLowerCase()===DBG).map(c=>({campaign:c.campaign, source:c.source, revenue:c.revenue, datetime:c.datetime})),
-          сматчилось_с_платформой: [...ktPairs.values()].filter(c=>c.sub18===DBG).map(c=>({platName:c.platName, tail:c.manager, convMgrId:c.convMgrId})),
-          лид_в_трекере: geoLeads.filter(p=>(p.sub18||"").trim().toLowerCase()===DBG).map(p=>({platId:p.platform_id, status:p.status, mgr:mgrName(p.manager_id)})),
-          в_не_заведён: notInTracker.filter(c=>c.sub18===DBG).length>0,
-          активные_платформы_гео: [...geoPlatIds].length,
-        });
-      } catch(e){ console.log("dbg err",e); }
+      const notInTrackerUnknown = [...ktPairs.values()].filter(c=>!c.convMgrId).filter(c=>!leadByPair.has(c.sub18+"|"+c.platId)).filter(c=>notIgn("not_in_tracker",c.sub18,c.platId));
       const checkSub = geoLeads.filter(p=>p.status==="Да" && !ktKeys.has((p.sub18||"").trim().toLowerCase()+"|"+p.platform_id))
         .map(p=>{
           const sub=(p.sub18||"").trim().toLowerCase();
@@ -348,7 +339,7 @@ export function ManagerPage({ manager, onLogout }) {
         const lead = leadByPair.get(c.sub18+"|"+c.platId);
         if (lead && lead.status !== "Да" && notIgn("status_mismatch",c.sub18,c.platId)) statusMismatch.push({ name:lead.name, sub18:c.sub18, platId:c.platId, platName:c.platName, status:lead.status||"—", mgr:mgrName(lead.manager_id), pid:lead.id, mgrId:lead.manager_id });
       }
-      setSverkaData({ notInTracker, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:"гео", isTL });
+      setSverkaData({ notInTracker, notInTrackerUnknown, checkSub, wrongMgr, statusMismatch, ignored, total:convs.length, scope:"гео", isTL });
     } catch(e) {
       setSverkaData({ error:String(e?.message||e) });
     }
@@ -458,6 +449,23 @@ export function ManagerPage({ manager, onLogout }) {
                       </div>
                     ))}
                   </div>
+                  {(sverkaData.notInTrackerUnknown||[]).length>0&&(
+                    <div style={card}>
+                      <div onClick={()=>setShowUnknownDep(v=>!v)} style={{ padding:"10px 14px",color:T.sub,fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+                        <span>❓ Не заведён · менеджер не распознан ({sverkaData.notInTrackerUnknown.length})</span>
+                        <span style={{ color:T.muted,fontSize:11 }}>{showUnknownDep?"▲":"▼"}</span>
+                      </div>
+                      <div style={{ padding:"0 14px 6px",color:T.muted,fontSize:11 }}>Депозиты без лида, чей менеджер в кампании Keitaro не привязан к keitaro-имени. Впиши имя из хвоста в нужного менеджера — деп уйдёт в основной список.</div>
+                      {showUnknownDep&&sverkaData.notInTrackerUnknown.map((c,i)=>(
+                        <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
+                          <span style={{ color:T.text,fontWeight:600 }}>{c.platName} <span style={{color:"#fca5a5",fontWeight:600}}>· {c.manager}</span></span>
+                          <span style={{ color:T.sub,fontFamily:"monospace" }}>{c.sub18}</span>
+                          <span style={{ color:T.muted }}>{c.revenue}€ · {(c.datetime||"").slice(5,16)} · {c.source}</span>
+                          {sverkaData.isTL&&<button onClick={()=>ignoreSverkaItem("not_in_tracker",c.sub18,c.platId)} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div style={card}>
                     <div style={{ padding:"10px 14px",background:"rgba(251,191,36,.08)",color:"#fcd34d",fontWeight:700,fontSize:13 }}>⚠ Проверь sub18 ({sverkaData.checkSub.length})</div>
                     <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>Лиды со статусом «Да», по которым нет депозита в Keitaro</div>
