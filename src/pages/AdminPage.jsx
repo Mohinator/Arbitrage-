@@ -8,6 +8,7 @@ import { AddLeadForm } from "../components/AddLeadForm";
 import { HistoryView } from "../components/HistoryView";
 import { ReportView } from "../components/ReportView";
 import * as Backup from "../backup";
+import * as P from "../presence";
 
 export function AdminPage({ onLogout }) {
   const [managers, setManagers] = useState([]); const [platforms, setPlatforms] = useState([]); const [players, setPlayers] = useState([]); const [redeposits, setRedeposits] = useState([]);
@@ -15,14 +16,21 @@ export function AdminPage({ onLogout }) {
   const [activityLog, setActivityLog] = useState([]);
   const [crmActivity, setCrmActivity] = useState([]);
   const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
-  const loadCrmActivity = async () => {
+  const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
+  const loadCrmActivity = async (date) => {
+    const d = date || presenceDate;
     setCrmBusy(true); setCrmError("");
     try {
-      const r = await fetch("/api/crm-activity");
-      const j = await r.json();
-      if(j.ok===false&&j.error) setCrmError(j.error);
-      setCrmActivity(j.users||[]);
-      setCrmRefreshedAt(j.refreshed_at||new Date().toISOString());
+      const { fromISO, toISO } = P.dayBoundsISO(d);
+      const [crmRes, logRes] = await Promise.all([
+        fetch(`/api/crm-activity?from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`).then(r=>r.json()).catch(e=>({ok:false,error:String(e),users:[]})),
+        supabase.from("activity_log").select("manager_id, created_at").gte("created_at", fromISO).lt("created_at", toISO),
+      ]);
+      if(crmRes.ok===false&&crmRes.error) setCrmError(crmRes.error);
+      setCrmActivity(crmRes.users||[]);
+      setCrmRefreshedAt(crmRes.refreshed_at||new Date().toISOString());
+      const ev={}; (logRes.data||[]).forEach(r=>{ if(!r.manager_id) return; (ev[r.manager_id]=ev[r.manager_id]||[]).push(r.created_at); });
+      setTrackerEvents(ev);
     } catch(e){ setCrmError("Не удалось получить данные: "+(e?.message||e)); }
     setCrmBusy(false);
   };
@@ -642,53 +650,60 @@ export function AdminPage({ onLogout }) {
           const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
           const assigned=new Set(managers.map(m=>m.crm_user_id).filter(Boolean).map(String));
           const unmatched=crmActivity.filter(a=>!assigned.has(String(a.crm_user_id)));
+          const isToday=presenceDate===P.todayStr();
           const fmtAgo=(ts)=>{ if(!ts) return "—"; const min=Math.floor((now-new Date(ts).getTime())/60000); if(min<1) return "только что"; if(min<60) return min+" мин назад"; const h=Math.floor(min/60); if(h<24) return h+" ч "+(min%60)+" мин назад"; return new Date(ts).toLocaleString("ru"); };
           const statusOf=(ts)=>{ if(!ts) return {t:"нет данных",c:"#64748b",bg:"rgba(100,116,139,.15)"}; const min=(now-new Date(ts).getTime())/60000; if(min<=15) return {t:"Активен",c:"#86efac",bg:"rgba(22,101,52,.35)"}; if(min<=60) return {t:"Простой",c:"#fbbf24",bg:"rgba(120,53,15,.35)"}; return {t:"Офлайн",c:"#fca5a5",bg:"rgba(127,29,29,.35)"}; };
           const teamMgrs=managers.filter(m=>m.role!=="admin");
+          const dataFor=(m)=>{ const a=m.crm_user_id?byCrm[String(m.crm_user_id)]:null; const ev=[...((a&&a.events)||[]), ...((trackerEvents[m.id])||[])]; return { a, sess:P.computeSessions(ev) }; };
           const th={ padding:"8px 12px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
           const td={ padding:"10px 12px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
           return (
-          <div style={{ maxWidth:920 }}>
-            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6 }}>
-              <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров (CRM)</h2>
-              <button onClick={loadCrmActivity} disabled={crmBusy} style={{ background:crmBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
+          <div style={{ maxWidth:1040 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
+              <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
+              <input type="date" value={presenceDate} max={P.todayStr()} onChange={e=>{ setPresenceDate(e.target.value); loadCrmActivity(e.target.value); }} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
+              {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setPresenceDate(t); loadCrmActivity(t); }} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
+              <button onClick={()=>loadCrmActivity()} disabled={crmBusy} style={{ background:crmBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
             </div>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>Сигнал активности — когда менеджер последний раз создавал/менял заказ или карточку в KeyCRM (поле updated_at). Данные тянутся напрямую из KeyCRM при открытии вкладки и по кнопке «Обновить».</p>
-            <p style={{ color:"#64748b",fontSize:11,marginBottom:18 }}>Активен — действие за последние 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
+            <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>«Работал» — суммарное активное время за день, «Простой» — разрывы между активностью внутри рабочего окна. Источник событий: KeyCRM (заказы/карточки) + действия в трекере. Статус — по последней активности.</p>
+            <p style={{ color:"#64748b",fontSize:11,marginBottom:18 }}>Активен — действие за 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
 
             {crmError&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmError}</div>}
 
-            {crmActivity.length===0
-              ? <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:20,color:"#94a3b8",fontSize:13 }}>{crmBusy?"Загружаю данные из KeyCRM…":"Данных нет. Проверь, что в Vercel задана переменная окружения KEYCRM_TOKEN, и нажми «Обновить»."}</div>
-              : <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
-                  <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                    <thead><tr>{["Менеджер","CRM-пользователь","Последняя активность","Статус"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {teamMgrs.map(m=>{
-                        const a=m.crm_user_id?byCrm[String(m.crm_user_id)]:null;
-                        const st=statusOf(a?.last_activity_at);
-                        return (
-                          <tr key={m.id} className="row-hover">
-                            <td style={{...td,fontWeight:600}}>{m.name} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
-                            <td style={td}>
-                              <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:200 }}>
-                                <option value="">— не сопоставлен —</option>
-                                {crmActivity.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
-                              </select>
-                            </td>
-                            <td style={{...td,color:"#cbd5e1"}}>{fmtAgo(a?.last_activity_at)}</td>
-                            <td style={td}><span style={{ background:st.bg,color:st.c,padding:"3px 10px",borderRadius:6,fontWeight:700,fontSize:12 }}>{st.t}</span></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>}
+            <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
+              <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                <thead><tr>{["Менеджер","CRM-пользователь","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {teamMgrs.map(m=>{
+                    const { a, sess }=dataFor(m);
+                    const st=isToday?statusOf(a?.last_activity_at):{t:sess.count>0?"был":"нет данных",c:"#94a3b8",bg:"rgba(100,116,139,.15)"};
+                    return (
+                      <tr key={m.id} className="row-hover">
+                        <td style={{...td,fontWeight:600}}>{m.name} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
+                        <td style={td}>
+                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:180 }}>
+                            <option value="">— не сопоставлен —</option>
+                            {crmActivity.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
+                          </select>
+                        </td>
+                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(sess.first)}</td>
+                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(sess.last)}</td>
+                        <td style={{...td,color:"#86efac",fontWeight:600}}>{P.fmtDur(sess.activeMin)}</td>
+                        <td style={{...td,color:"#fbbf24"}}>{P.fmtDur(sess.idleMin)}</td>
+                        <td style={td}><span style={{ background:st.bg,color:st.c,padding:"3px 10px",borderRadius:6,fontWeight:700,fontSize:12 }}>{st.t}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {crmActivity.length===0&&<div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:16,color:"#94a3b8",fontSize:13,marginBottom:16 }}>{crmBusy?"Загружаю данные из KeyCRM…":"Из KeyCRM данных нет (проверь KEYCRM_TOKEN в Vercel). Время работы пока считается только по действиям в трекере."}</div>}
 
             {unmatched.length>0&&(
               <div style={{ background:"#1a1d27",border:"1px solid #7f5d1d",borderRadius:12,padding:"14px 16px" }}>
                 <div style={{ color:"#fbbf24",fontSize:13,fontWeight:700,marginBottom:8 }}>CRM-пользователи без привязки ({unmatched.length})</div>
-                <p style={{ color:"#64748b",fontSize:12,margin:"0 0 10px" }}>Эти пользователи активны в CRM, но не сопоставлены ни с одним менеджером трекера. Выбери их в выпадающих списках выше у нужного менеджера.</p>
+                <p style={{ color:"#64748b",fontSize:12,margin:"0 0 10px" }}>Активны в CRM, но не сопоставлены. Выбери их в выпадающих списках выше у нужного менеджера.</p>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
                   {unmatched.map(a=><span key={a.crm_user_id} style={{ background:"rgba(251,191,36,.1)",border:"1px solid #7f5d1d",color:"#fcd34d",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{a.crm_user_name||a.crm_user_id} · {fmtAgo(a.last_activity_at)}</span>)}
                 </div>

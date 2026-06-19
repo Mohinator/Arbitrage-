@@ -7,6 +7,7 @@ import { PlayersTable } from "../components/PlayersTable";
 import { AddLeadForm } from "../components/AddLeadForm";
 import { HistoryView } from "../components/HistoryView";
 import { ReportView } from "../components/ReportView";
+import * as P from "../presence";
 
 export function ManagerPage({ manager, onLogout }) {
   const [dark, setDark] = useState(true);
@@ -29,6 +30,24 @@ export function ManagerPage({ manager, onLogout }) {
   const [todoPlatFilter, setTodoPlatFilter] = useState("");
   const [todoMgrFilter, setTodoMgrFilter] = useState("");
   const [todoDate, setTodoDate] = useState("");
+  const [crmActivity, setCrmActivity] = useState([]); const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
+  const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
+  const loadCrmActivity = async (date) => {
+    const d = date || presenceDate;
+    setCrmBusy(true); setCrmError("");
+    try {
+      const { fromISO, toISO } = P.dayBoundsISO(d);
+      const [crmRes, logRes] = await Promise.all([
+        fetch(`/api/crm-activity?from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`).then(r=>r.json()).catch(e=>({ok:false,error:String(e),users:[]})),
+        supabase.from("activity_log").select("manager_id, created_at").gte("created_at", fromISO).lt("created_at", toISO),
+      ]);
+      if(crmRes.ok===false&&crmRes.error) setCrmError(crmRes.error);
+      setCrmActivity(crmRes.users||[]); setCrmRefreshedAt(crmRes.refreshed_at||new Date().toISOString());
+      const ev={}; (logRes.data||[]).forEach(r=>{ if(!r.manager_id) return; (ev[r.manager_id]=ev[r.manager_id]||[]).push(r.created_at); });
+      setTrackerEvents(ev);
+    } catch(e){ setCrmError("Не удалось получить данные: "+(e?.message||e)); }
+    setCrmBusy(false);
+  };
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
@@ -84,6 +103,7 @@ export function ManagerPage({ manager, onLogout }) {
     setAllPlayers((pl||[]).filter(p=>p&&p.id));
   };
   useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); },[tab]);
 
   const today = new Date().toISOString().slice(0,10);
   const isTeamLead = manager.role === "team_lead";
@@ -614,7 +634,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* Nav */}
       <div style={{ position:"sticky",top:myGeos.length>1?93:57,zIndex:280,background:T.navBg,borderBottom:`1px solid ${T.border}`,padding:"0 20px",display:"flex" }}>
-        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["platforms","Платформы"],["report","Отчёт"],["history","История"],["overview","Сводка"]]
+        {[["main","Мои лиды"],["tasks",<span>Задачи{overdueRds.length>0&&<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{overdueRds.length}</span>}</span>],["team","Команда"+(myGeos.length>0?"":" ")],["platforms","Платформы"],["report","Отчёт"],["history","История"],["overview","Сводка"],...(isTeamLead?[["activity","Активность"]]:[])]
           .map(([key,label])=>(
           <button key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="nb" style={{ background:"transparent",border:"none",color:tab===key?"#6366f1":T.muted,padding:"12px 16px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent" }}>{label}</button>
         ))}
@@ -1342,8 +1362,52 @@ export function ManagerPage({ manager, onLogout }) {
           </div>
         </div>
       )}
+
+      {tab==="activity"&&isTeamLead&&(()=>{
+        const now=Date.now();
+        const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
+        const isToday=presenceDate===P.todayStr();
+        const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
+        const fmtAgo=(ts)=>{ if(!ts) return "—"; const min=Math.floor((now-new Date(ts).getTime())/60000); if(min<1) return "только что"; if(min<60) return min+" мин назад"; const h=Math.floor(min/60); if(h<24) return h+" ч "+(min%60)+" мин назад"; return new Date(ts).toLocaleString("ru"); };
+        const statusOf=(ts)=>{ if(!ts) return {t:"нет данных",c:T.muted,bg:"rgba(100,116,139,.15)"}; const min=(now-new Date(ts).getTime())/60000; if(min<=15) return {t:"Активен",c:"#16a34a",bg:"rgba(22,163,74,.15)"}; if(min<=60) return {t:"Простой",c:"#d97706",bg:"rgba(217,119,6,.15)"}; return {t:"Офлайн",c:"#dc2626",bg:"rgba(220,38,38,.12)"}; };
+        const dataFor=(m)=>{ const a=m.crm_user_id?byCrm[String(m.crm_user_id)]:null; const ev=[...((a&&a.events)||[]), ...((trackerEvents[m.id])||[])]; return { a, sess:P.computeSessions(ev) }; };
+        return (
+        <div style={{ maxWidth:1040 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
+            <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
+            <input type="date" value={presenceDate} max={P.todayStr()} onChange={e=>{ setPresenceDate(e.target.value); loadCrmActivity(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
+            {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setPresenceDate(t); loadCrmActivity(t); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
+            <button onClick={()=>loadCrmActivity()} disabled={crmBusy} style={{ background:crmBusy?T.border:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
+          </div>
+          <p style={{ color:T.muted,fontSize:12,marginBottom:4 }}>«Работал» — суммарное активное время за день, «Простой» — разрывы внутри рабочего окна. Источник: KeyCRM (заказы/карточки) + действия в трекере. Статус — по последней активности.</p>
+          <p style={{ color:T.muted,fontSize:11,marginBottom:18 }}>Активен — 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
+          {crmError&&<div style={{ background:T.surface,border:"1px solid #dc2626",borderRadius:10,padding:"12px 16px",color:"#dc2626",fontSize:13,marginBottom:16 }}>{crmError}</div>}
+          <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
+            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+              <thead><tr>{["Менеджер","CRM","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {teamMgrs.map(m=>{
+                  const { a, sess }=dataFor(m);
+                  const st=isToday?statusOf(a?.last_activity_at):{t:sess.count>0?"был":"нет данных",c:T.sub,bg:"rgba(100,116,139,.12)"};
+                  return (
+                    <tr key={m.id}>
+                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
+                      <td style={{ ...S.td,color:a?T.sub:T.muted,fontSize:12 }}>{a?(a.crm_user_name||a.crm_user_id):"— не сопоставлен —"}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.first)}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.last)}</td>
+                      <td style={{ ...S.td,color:"#16a34a",fontWeight:600 }}>{P.fmtDur(sess.activeMin)}</td>
+                      <td style={{ ...S.td,color:"#d97706" }}>{P.fmtDur(sess.idleMin)}</td>
+                      <td style={S.td}><span style={{ background:st.bg,color:st.c,padding:"3px 10px",borderRadius:6,fontWeight:700,fontSize:12 }}>{st.t}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {teamMgrs.some(m=>!m.crm_user_id)&&<p style={{ color:T.muted,fontSize:11,marginTop:10 }}>Сопоставление CRM-аккаунтов с менеджерами делает админ во вкладке «Активность».</p>}
+        </div>
+        );
+      })()}
     </div>
   );
 }
-
-// ── Admin Page ───────────────────────────────────────────────────────────────
