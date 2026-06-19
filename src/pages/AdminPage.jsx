@@ -691,7 +691,7 @@ export function AdminPage({ onLogout }) {
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
               <div>
                 <h3 style={{ color:"#fff",margin:0,fontSize:16 }}>Просмотр точки восстановления</h3>
-                <span style={{ color:"#64748b",fontSize:12 }}>создана: {restorePreview.created_at? new Date(restorePreview.created_at).toLocaleString("ru"):"—"}</span>
+                <span style={{ color:"#64748b",fontSize:12 }}>создана: {restorePreview?.created_at? new Date(restorePreview.created_at).toLocaleString("ru"):"—"}</span>
               </div>
               <button onClick={()=>setRestorePreview(null)} style={{ background:"#1a1d27",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13 }}>Закрыть</button>
             </div>

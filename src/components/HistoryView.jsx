@@ -12,7 +12,8 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
     ? { border:"#2d3148",text:"#e2e8f0",sub:"#94a3b8",muted:"#64748b",thBg:"#151824",rowB:"#1a1d27",inputBg:"#0f1117" }
     : { border:"#dde1ea",text:"#1e293b",sub:"#64748b",muted:"#94a3b8",thBg:"#e8eaf0",rowB:"#e2e6ef",inputBg:"#e8eaf0" };
   const sel={ background:T.inputBg,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" };
-  const filtered=(logs||[]).filter(l=>{
+  const safeLogs=(logs||[]).filter(l=>l&&l.created_at);
+  const filtered=safeLogs.filter(l=>{
     if(fGeo){ const ids=new Set(userGeos.filter(ug=>ug.geo_id===fGeo).map(ug=>ug.manager_id)); if(!ids.has(l.manager_id)) return false; }
     if(fMgr && l.manager_id!==fMgr) return false;
     if(fAction && l.action!==fAction) return false;
@@ -21,7 +22,7 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
     if(fSearch){ const q=fSearch.toLowerCase(); if(!`${l.managers?.name||""} ${l.players?.name||""}`.toLowerCase().includes(q)) return false; }
     return true;
   });
-  const actions=[...new Set((logs||[]).map(l=>l.action))];
+  const actions=[...new Set(safeLogs.map(l=>l.action))];
   const mgrOptions=(fGeo? managers.filter(m=>userGeos.some(ug=>ug.geo_id===fGeo&&ug.manager_id===m.id)) : managers);
   const TH={ padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:`1px solid ${T.border}`,background:T.thBg,whiteSpace:"nowrap" };
   const TD={ padding:"11px 12px",borderBottom:`1px solid ${T.rowB}` };
