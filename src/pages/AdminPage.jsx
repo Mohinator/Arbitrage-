@@ -14,6 +14,18 @@ export function AdminPage({ onLogout }) {
   const [geos, setGeos] = useState([]); const [userGeos, setUserGeos] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [crmActivity, setCrmActivity] = useState([]);
+  const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
+  const loadCrmActivity = async () => {
+    setCrmBusy(true); setCrmError("");
+    try {
+      const r = await fetch("/api/crm-activity");
+      const j = await r.json();
+      if(j.ok===false&&j.error) setCrmError(j.error);
+      setCrmActivity(j.users||[]);
+      setCrmRefreshedAt(j.refreshed_at||new Date().toISOString());
+    } catch(e){ setCrmError("Не удалось получить данные: "+(e?.message||e)); }
+    setCrmBusy(false);
+  };
   const [tab, setTab] = useState("overview"); const [toast, setToast] = useState(null); const [newName, setNewName] = useState(""); const [newRole, setNewRole] = useState("manager");
   const [backupBusy, setBackupBusy] = useState(false); const [lastBackupAt, setLastBackupAt] = useState(null);
   const [restorePreview, setRestorePreview] = useState(null); const [restoreSel, setRestoreSel] = useState([]); const [previewTable, setPreviewTable] = useState(""); const [restoreConfirm, setRestoreConfirm] = useState("");
@@ -99,10 +111,10 @@ export function AdminPage({ onLogout }) {
     ]);
     setManagers(m||[]); setPlatforms(p||[]); setPlayers(pl||[]); setRedeposits(rd||[]); setPlannedRds(prd||[]);
     setGeos(g||[]); setUserGeos(ug||[]); setActivityLog(log||[]);
-    supabase.from("crm_activity").select("*").then(({data})=>setCrmActivity(data||[])).catch(()=>{});
   };
   useEffect(()=>{ load(); },[]);
   useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
+  useEffect(()=>{ if(tab==="activity"&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); },[tab]);
 
   const doBackup = async () => {
     setBackupBusy(true);
@@ -632,18 +644,22 @@ export function AdminPage({ onLogout }) {
           const unmatched=crmActivity.filter(a=>!assigned.has(String(a.crm_user_id)));
           const fmtAgo=(ts)=>{ if(!ts) return "—"; const min=Math.floor((now-new Date(ts).getTime())/60000); if(min<1) return "только что"; if(min<60) return min+" мин назад"; const h=Math.floor(min/60); if(h<24) return h+" ч "+(min%60)+" мин назад"; return new Date(ts).toLocaleString("ru"); };
           const statusOf=(ts)=>{ if(!ts) return {t:"нет данных",c:"#64748b",bg:"rgba(100,116,139,.15)"}; const min=(now-new Date(ts).getTime())/60000; if(min<=15) return {t:"Активен",c:"#86efac",bg:"rgba(22,101,52,.35)"}; if(min<=60) return {t:"Простой",c:"#fbbf24",bg:"rgba(120,53,15,.35)"}; return {t:"Офлайн",c:"#fca5a5",bg:"rgba(127,29,29,.35)"}; };
-          const lastRefresh=crmActivity.reduce((mx,a)=>{ const t=a.refreshed_at?new Date(a.refreshed_at).getTime():0; return t>mx?t:mx; },0);
           const teamMgrs=managers.filter(m=>m.role!=="admin");
           const th={ padding:"8px 12px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
           const td={ padding:"10px 12px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
           return (
           <div style={{ maxWidth:920 }}>
-            <h2 style={{color:"#fff",marginBottom:6,fontSize:18}}>Активность менеджеров (CRM)</h2>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>Сигнал активности — когда менеджер последний раз создавал/менял заказ или карточку в KeyCRM (поле updated_at). Сбор настраивается в n8n по расписанию.</p>
-            <p style={{ color:"#64748b",fontSize:11,marginBottom:18 }}>Активен — действие за последние 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {lastRefresh>0&&<>Данные обновлены: {fmtAgo(new Date(lastRefresh).toISOString())}.</>}</p>
+            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6 }}>
+              <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров (CRM)</h2>
+              <button onClick={loadCrmActivity} disabled={crmBusy} style={{ background:crmBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
+            </div>
+            <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>Сигнал активности — когда менеджер последний раз создавал/менял заказ или карточку в KeyCRM (поле updated_at). Данные тянутся напрямую из KeyCRM при открытии вкладки и по кнопке «Обновить».</p>
+            <p style={{ color:"#64748b",fontSize:11,marginBottom:18 }}>Активен — действие за последние 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
+
+            {crmError&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmError}</div>}
 
             {crmActivity.length===0
-              ? <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:20,color:"#94a3b8",fontSize:13 }}>Данных пока нет. Настрой сбор в n8n (инструкция ниже по чату) — он будет писать сюда последнюю активность по каждому CRM-пользователю.</div>
+              ? <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:20,color:"#94a3b8",fontSize:13 }}>{crmBusy?"Загружаю данные из KeyCRM…":"Данных нет. Проверь, что в Vercel задана переменная окружения KEYCRM_TOKEN, и нажми «Обновить»."}</div>
               : <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
                   <table style={{ width:"100%",borderCollapse:"collapse" }}>
                     <thead><tr>{["Менеджер","CRM-пользователь","Последняя активность","Статус"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
