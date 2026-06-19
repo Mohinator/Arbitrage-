@@ -673,7 +673,10 @@ export function AdminPage({ onLogout }) {
               {crmUsersCount!=null&&<span style={{ color:"#64748b",fontSize:12 }}>CRM-пользователей: <strong style={{ color:"#cbd5e1" }}>{crmUsersCount}</strong></span>}
             </div>
             <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>«Работал» — суммарное активное время за день, «Простой» — разрывы между активностью внутри рабочего окна. Источник событий: KeyCRM (заказы/карточки) + действия в трекере. Статус — по последней активности.</p>
-            <p style={{ color:"#64748b",fontSize:11,marginBottom:18 }}>Активен — действие за 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
+            <p style={{ color:"#64748b",fontSize:11,marginBottom:6 }}>Активен — действие за 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
+            {(()=>{ const crmEv=crmActivity.reduce((s,a)=>s+((a.events&&a.events.length)||0),0); const trkEv=Object.values(trackerEvents).reduce((s,arr)=>s+arr.length,0); return (
+              <p style={{ color: crmEv===0?"#fca5a5":"#64748b",fontSize:11,marginBottom:18 }}>За выбранный день: из KeyCRM получено <strong>{crmEv}</strong> событий, из трекера <strong>{trkEv}</strong>.{crmEv===0&&" CRM ничего не дал — значит время считается только по действиям в трекере (приложении). Возможно, менеджеры не трогают заказы/карточки, либо API не отдаёт их активность за этот день."}</p>
+            ); })()}
 
             {crmError&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmError}</div>}
 
