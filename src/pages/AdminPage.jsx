@@ -682,6 +682,7 @@ export function AdminPage({ onLogout }) {
           );
         })()}
 
+        {restorePreview&&(()=>{
           const tbls = Backup.BACKUP_TABLES.filter(t=>Array.isArray(restorePreview.tables[t]));
           const rows = restorePreview.tables[previewTable]||[];
           const cols = rows.length>0 ? Object.keys(rows[0]) : [];
