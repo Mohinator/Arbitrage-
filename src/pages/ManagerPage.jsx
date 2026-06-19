@@ -32,6 +32,8 @@ export function ManagerPage({ manager, onLogout }) {
   const [todoDate, setTodoDate] = useState("");
   const [crmActivity, setCrmActivity] = useState([]); const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
   const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
+  const [crmUsers, setCrmUsers] = useState([]);
+  const loadCrmUsers = async () => { try { const j=await fetch("/api/crm-users").then(r=>r.json()); if(Array.isArray(j.users)) setCrmUsers(j.users); } catch(e){} };
   const loadCrmActivity = async (date) => {
     const d = date || presenceDate;
     setCrmBusy(true); setCrmError("");
@@ -103,7 +105,7 @@ export function ManagerPage({ manager, onLogout }) {
     setAllPlayers((pl||[]).filter(p=>p&&p.id));
   };
   useEffect(()=>{ load(); },[]);
-  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&isTeamLead&&crmUsers.length===0) loadCrmUsers(); },[tab]);
 
   const today = new Date().toISOString().slice(0,10);
   const isTeamLead = manager.role === "team_lead";
@@ -1366,6 +1368,8 @@ export function ManagerPage({ manager, onLogout }) {
       {tab==="activity"&&isTeamLead&&(()=>{
         const now=Date.now();
         const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
+        const byUser={}; crmUsers.forEach(u=>{ byUser[String(u.crm_user_id)]=u; });
+        const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byUser[k]&&byUser[k].crm_user_name)||(byCrm[k]&&byCrm[k].crm_user_name)||k; };
         const isToday=presenceDate===P.todayStr();
         const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
         const fmtAgo=(ts)=>{ if(!ts) return "—"; const min=Math.floor((now-new Date(ts).getTime())/60000); if(min<1) return "только что"; if(min<60) return min+" мин назад"; const h=Math.floor(min/60); if(h<24) return h+" ч "+(min%60)+" мин назад"; return new Date(ts).toLocaleString("ru"); };
@@ -1392,7 +1396,7 @@ export function ManagerPage({ manager, onLogout }) {
                   return (
                     <tr key={m.id}>
                       <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
-                      <td style={{ ...S.td,color:a?T.sub:T.muted,fontSize:12 }}>{a?(a.crm_user_name||a.crm_user_id):"— не сопоставлен —"}</td>
+                      <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"— не сопоставлен —"}</td>
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.first)}</td>
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.last)}</td>
                       <td style={{ ...S.td,color:"#16a34a",fontWeight:600 }}>{P.fmtDur(sess.activeMin)}</td>
