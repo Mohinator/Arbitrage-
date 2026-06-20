@@ -70,6 +70,7 @@ export default async function handler(req, res) {
   try {
     await pull("/order", "order");
     await pull("/pipelines/cards", "card");
+    await pull("/buyer", "buyer");
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ ok:true, refreshed_at:new Date().toISOString(), timeline:!!timeline, diag, users:Object.values(acc) });
   } catch (e) {
