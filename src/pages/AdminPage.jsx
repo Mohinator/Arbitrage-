@@ -18,6 +18,10 @@ export function AdminPage({ onLogout }) {
   const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
   const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
   const [crmUsers, setCrmUsers] = useState([]); const [crmUsersCount, setCrmUsersCount] = useState(null);
+  const [presenceMap, setPresenceMap] = useState({});
+  const loadPresence = async () => {
+    try { const { data } = await supabase.from("manager_presence").select("manager_id, last_seen"); const m={}; (data||[]).forEach(r=>{ m[r.manager_id]=r.last_seen; }); setPresenceMap(m); } catch(e){}
+  };
   const loadCrmUsers = async () => {
     try { const j = await fetch("/api/crm-users").then(r=>r.json()); if(Array.isArray(j.users)){ setCrmUsers(j.users); setCrmUsersCount(j.count); } }
     catch(e){ /* список не критичен */ }
@@ -128,6 +132,7 @@ export function AdminPage({ onLogout }) {
   useEffect(()=>{ load(); },[]);
   useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
   useEffect(()=>{ if(tab==="activity"&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&crmUsers.length===0) loadCrmUsers(); },[tab]);
+  useEffect(()=>{ if(tab!=="activity") return; loadPresence(); const iv=setInterval(loadPresence,30000); return ()=>clearInterval(iv); },[tab]);
 
   const doBackup = async () => {
     setBackupBusy(true);
@@ -682,14 +687,17 @@ export function AdminPage({ onLogout }) {
 
             <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                <thead><tr>{["Менеджер","CRM-пользователь","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Менеджер","Онлайн (трекер)","CRM-пользователь","Первая","Последняя","Работал","Простой","Статус CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {teamMgrs.map(m=>{
                     const { a, sess }=dataFor(m);
                     const st=isToday?statusOf(a?.last_activity_at):{t:sess.count>0?"был":"нет данных",c:"#94a3b8",bg:"rgba(100,116,139,.15)"};
+                    const pts=presenceMap[m.id]; const pmin=pts?(now-new Date(pts).getTime())/60000:null;
+                    const onl=pmin==null?{t:"—",c:"#64748b"}:pmin<=3?{t:"● онлайн",c:"#86efac"}:{t:fmtAgo(pts),c:pmin<=15?"#fbbf24":"#94a3b8"};
                     return (
                       <tr key={m.id} className="row-hover">
                         <td style={{...td,fontWeight:600}}>{m.name} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
+                        <td style={{...td,color:onl.c,fontWeight:pmin!=null&&pmin<=3?700:400,fontSize:12}}>{onl.t}</td>
                         <td style={td}>
                           <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:180 }}>
                             <option value="">— не сопоставлен —</option>
