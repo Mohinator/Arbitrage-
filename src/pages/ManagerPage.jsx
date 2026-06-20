@@ -109,17 +109,7 @@ export function ManagerPage({ manager, onLogout }) {
     setAllPlayers((pl||[]).filter(p=>p&&p.id));
   };
   useEffect(()=>{ load(); },[]);
-  useEffect(()=>{
-    if(!manager?.id) return;
-    const ping=()=>{ if(typeof document==="undefined"||document.visibilityState==="visible") supabase.from("manager_presence").upsert({ manager_id:manager.id, last_seen:new Date().toISOString() },{ onConflict:"manager_id" }).then(()=>{},()=>{}); };
-    ping();
-    const iv=setInterval(ping,60000);
-    const onVis=()=>{ if(document.visibilityState==="visible") ping(); };
-    document.addEventListener("visibilitychange",onVis);
-    return ()=>{ clearInterval(iv); document.removeEventListener("visibilitychange",onVis); };
-  },[manager?.id]);
-  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&isTeamLead&&crmUsers.length===0) loadCrmUsers(); if(tab==="activity"&&isTeamLead&&crmPresence.length===0) loadCrmPresence(); },[tab]);
-  useEffect(()=>{ if(tab!=="activity"||!isTeamLead) return; loadPresence(); const iv=setInterval(loadPresence,30000); return ()=>clearInterval(iv); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmPresence.length===0) loadCrmPresence(); },[tab]);
 
   const today = new Date().toISOString().slice(0,10);
   const isTeamLead = manager.role === "team_lead";
@@ -1381,47 +1371,29 @@ export function ManagerPage({ manager, onLogout }) {
 
       {tab==="activity"&&isTeamLead&&(()=>{
         const now=Date.now();
-        const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
         const byUser={}; crmUsers.forEach(u=>{ byUser[String(u.crm_user_id)]=u; });
         const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
         const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:T.muted}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); return { txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""), c:isTd?"#16a34a":days>=3?"#dc2626":T.sub }; };
-        const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byUser[k]&&byUser[k].crm_user_name)||(byCrm[k]&&byCrm[k].crm_user_name)||k; };
-        const isToday=presenceDate===P.todayStr();
+        const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byPres[k]&&byPres[k].full_name)||(byUser[k]&&byUser[k].crm_user_name)||k; };
         const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
-        const fmtAgo=(ts)=>{ if(!ts) return "—"; const min=Math.floor((now-new Date(ts).getTime())/60000); if(min<1) return "только что"; if(min<60) return min+" мин назад"; const h=Math.floor(min/60); if(h<24) return h+" ч "+(min%60)+" мин назад"; return new Date(ts).toLocaleString("ru"); };
-        const statusOf=(ts)=>{ if(!ts) return {t:"нет данных",c:T.muted,bg:"rgba(100,116,139,.15)"}; const min=(now-new Date(ts).getTime())/60000; if(min<=15) return {t:"Активен",c:"#16a34a",bg:"rgba(22,163,74,.15)"}; if(min<=60) return {t:"Простой",c:"#d97706",bg:"rgba(217,119,6,.15)"}; return {t:"Офлайн",c:"#dc2626",bg:"rgba(220,38,38,.12)"}; };
-        const dataFor=(m)=>{ const a=m.crm_user_id?byCrm[String(m.crm_user_id)]:null; const ev=[...((a&&a.events)||[]), ...((trackerEvents[m.id])||[])]; return { a, sess:P.computeSessions(ev) }; };
         return (
-        <div style={{ maxWidth:1040 }}>
+        <div style={{ maxWidth:760 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
-            <input type="date" value={presenceDate} max={P.todayStr()} onChange={e=>{ setPresenceDate(e.target.value); loadCrmActivity(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
-            {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setPresenceDate(t); loadCrmActivity(t); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
-            <button onClick={()=>loadCrmActivity()} disabled={crmBusy} style={{ background:crmBusy?T.border:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
+            <button onClick={loadCrmPresence} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700 }}>Обновить</button>
           </div>
-          <p style={{ color:T.muted,fontSize:12,marginBottom:4 }}>«Работал» — суммарное активное время за день, «Простой» — разрывы внутри рабочего окна. Источник: KeyCRM (заказы/карточки) + действия в трекере. Статус — по последней активности.</p>
-          <p style={{ color:T.muted,fontSize:11,marginBottom:18 }}>Активен — 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
-          {crmError&&<div style={{ background:T.surface,border:"1px solid #dc2626",borderRadius:10,padding:"12px 16px",color:"#dc2626",fontSize:13,marginBottom:16 }}>{crmError}</div>}
+          <p style={{ color:T.muted,fontSize:12,marginBottom:18 }}>«Вход в CRM» — реальное время последнего входа в KeyCRM. Зелёным — заходил сегодня, красным — несколько дней не появлялся.</p>
           <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Менеджер","Онлайн","CRM","Вход в CRM","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
+              <thead><tr>{["Менеджер","CRM","Вход в CRM"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
               <tbody>
                 {teamMgrs.map(m=>{
-                  const { a, sess }=dataFor(m);
-                  const st=isToday?statusOf(a?.last_activity_at):{t:sess.count>0?"был":"нет данных",c:T.sub,bg:"rgba(100,116,139,.12)"};
-                  const pts=presenceMap[m.id]; const pmin=pts?(now-new Date(pts).getTime())/60000:null;
-                  const onl=pmin==null?{t:"—",c:T.muted}:pmin<=3?{t:"● онлайн",c:"#16a34a"}:{t:fmtAgo(pts),c:pmin<=15?"#d97706":T.sub};
+                  const li=loginInfo(m);
                   return (
                     <tr key={m.id}>
                       <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
-                      <td style={{ ...S.td,color:onl.c,fontWeight:pmin!=null&&pmin<=3?700:400,fontSize:12 }}>{onl.t}</td>
                       <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"— не сопоставлен —"}</td>
-                      {(()=>{ const li=loginInfo(m); return <td style={{ ...S.td,color:li.c,fontSize:12 }}>{li.txt}</td>; })()}
-                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.first)}</td>
-                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.last)}</td>
-                      <td style={{ ...S.td,color:"#16a34a",fontWeight:600 }}>{P.fmtDur(sess.activeMin)}</td>
-                      <td style={{ ...S.td,color:"#d97706" }}>{P.fmtDur(sess.idleMin)}</td>
-                      <td style={S.td}><span style={{ background:st.bg,color:st.c,padding:"3px 10px",borderRadius:6,fontWeight:700,fontSize:12 }}>{st.t}</span></td>
+                      <td style={{ ...S.td,color:li.c,fontSize:13 }}>{li.txt}</td>
                     </tr>
                   );
                 })}
