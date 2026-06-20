@@ -19,6 +19,11 @@ export function AdminPage({ onLogout }) {
   const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
   const [crmUsers, setCrmUsers] = useState([]); const [crmUsersCount, setCrmUsersCount] = useState(null);
   const [crmPresence, setCrmPresence] = useState([]); const [crmPresenceErr, setCrmPresenceErr] = useState("");
+  const [crmMsgs, setCrmMsgs] = useState({}); const [crmMsgsInfo, setCrmMsgsInfo] = useState(null);
+  const loadCrmMsgs = async () => {
+    try { const j = await fetch("/api/crm-conversations").then(r=>r.json()); if(j.ok){ setCrmMsgs(j.users||{}); setCrmMsgsInfo({ distinct:j.distinct, scanned:j.scanned }); } else { setCrmMsgsInfo({ err:j.error }); } }
+    catch(e){ setCrmMsgsInfo({ err:String(e?.message||e) }); }
+  };
   const loadCrmPresence = async () => {
     try { const j = await fetch("/api/crm-presence").then(r=>r.json()); if(j.ok===false&&j.error) setCrmPresenceErr(j.error); else setCrmPresenceErr(""); setCrmPresence(j.users||[]); }
     catch(e){ setCrmPresenceErr("Не удалось получить /users: "+(e?.message||e)); }
@@ -136,7 +141,7 @@ export function AdminPage({ onLogout }) {
   };
   useEffect(()=>{ load(); },[]);
   useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
-  useEffect(()=>{ if(tab==="activity"&&crmPresence.length===0) loadCrmPresence(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&crmPresence.length===0) loadCrmPresence(); if(tab==="activity"&&!crmMsgsInfo) loadCrmMsgs(); },[tab]);
 
   const doBackup = async () => {
     setBackupBusy(true);
@@ -664,28 +669,31 @@ export function AdminPage({ onLogout }) {
           const optionUsers=crmPresence.length?crmPresence.map(u=>({crm_user_id:u.id,crm_user_name:u.full_name+(u.username?" ("+u.username+")":"")})):(crmUsers.length?crmUsers:[]);
           const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
           const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:"#64748b"}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); const txt=isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""); return { txt, c:isTd?"#86efac":days>=3?"#fca5a5":"#cbd5e1", blocked:u.status&&u.status!=="active"?u.status:null }; };
+          const msgInfo=(m)=>{ const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; if(!ts) return {txt:"—",c:"#64748b",w:400}; const min=Math.floor((now-new Date(ts).getTime())/60000); const d=new Date(ts); if(min<=15) return {txt:"● пишет сейчас",c:"#86efac",w:700}; if(min<60) return {txt:min+" мин назад",c:"#fbbf24",w:400}; const h=Math.floor(min/60); if(h<12) return {txt:h+" ч назад",c:"#fbbf24",w:400}; const isTd=d.toDateString()===new Date().toDateString(); return {txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}),c:"#94a3b8",w:400}; };
           const assigned=new Set(managers.map(m=>m.crm_user_id).filter(Boolean).map(String));
           const unmatched=optionUsers.filter(a=>!assigned.has(String(a.crm_user_id)));
           const teamMgrs=managers.filter(m=>m.role!=="admin");
           const th={ padding:"8px 12px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
           const td={ padding:"10px 12px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
           return (
-          <div style={{ maxWidth:820 }}>
+          <div style={{ maxWidth:960 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
               <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
-              <button onClick={loadCrmPresence} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700 }}>Обновить</button>
+              <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); }} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700 }}>Обновить</button>
               {crmPresence.length>0&&<span style={{ color:"#64748b",fontSize:12 }}>CRM-пользователей: <strong style={{ color:"#cbd5e1" }}>{crmPresence.length}</strong></span>}
+              {crmMsgsInfo&&!crmMsgsInfo.err&&<span style={{ color:"#64748b",fontSize:12 }}>По сообщениям видно менеджеров: <strong style={{ color:"#cbd5e1" }}>{crmMsgsInfo.distinct}</strong></span>}
             </div>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:18 }}>«Вход в CRM» — реальное время последнего входа в KeyCRM (из учётных данных пользователя). Зелёным — заходил сегодня, красным — несколько дней не появлялся.</p>
-
+            <p style={{ color:"#64748b",fontSize:12,marginBottom:18 }}>«Сообщения» — когда менеджер в последний раз <b>писал клиенту</b> в KeyCRM (исходящее сообщение). «● пишет сейчас» — в пределах 15 минут. «Вход в CRM» — время последнего входа в систему.</p>
+            {crmMsgsInfo&&crmMsgsInfo.err&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>«Сообщения»: {crmMsgsInfo.err}. Проверь KEYCRM_SESSION_TOKEN в Vercel.</div>}
+            {crmMsgsInfo&&!crmMsgsInfo.err&&crmMsgsInfo.distinct<=1&&<div style={{ background:"#1a1d27",border:"1px solid #7f5d1d",borderRadius:10,padding:"12px 16px",color:"#fcd34d",fontSize:12,marginBottom:16 }}>По сообщениям виден только 1 менеджер — значит API отдаёт только твои диалоги. Скажи мне об этом: переключим выборку на все диалоги другим способом.</div>}
             {crmPresenceErr&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmPresenceErr}. Проверь переменную KEYCRM_SESSION_TOKEN в Vercel.</div>}
 
             <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                <thead><tr>{["Менеджер","CRM-пользователь","Вход в CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Менеджер","CRM-пользователь","Сообщения (активность)","Вход в CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {teamMgrs.map(m=>{
-                    const li=loginInfo(m);
+                    const li=loginInfo(m); const mi=msgInfo(m);
                     return (
                       <tr key={m.id} className="row-hover">
                         <td style={{...td,fontWeight:600}}>{m.name} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
@@ -695,6 +703,7 @@ export function AdminPage({ onLogout }) {
                             {optionUsers.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
                           </select>
                         </td>
+                        <td style={{...td,color:mi.c,fontWeight:mi.w,fontSize:13}}>{mi.txt}</td>
                         <td style={{...td,color:li.c,fontSize:13}}>{li.txt}{li.blocked&&<span style={{ color:"#fca5a5",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>
                       </tr>
                     );
