@@ -34,6 +34,8 @@ export function ManagerPage({ manager, onLogout }) {
   const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
   const [crmUsers, setCrmUsers] = useState([]);
   const [presenceMap, setPresenceMap] = useState({});
+  const [crmPresence, setCrmPresence] = useState([]);
+  const loadCrmPresence = async () => { try { const j=await fetch("/api/crm-presence").then(r=>r.json()); setCrmPresence(j.users||[]); } catch(e){} };
   const loadPresence = async () => { try { const { data }=await supabase.from("manager_presence").select("manager_id, last_seen"); const m={}; (data||[]).forEach(r=>{ m[r.manager_id]=r.last_seen; }); setPresenceMap(m); } catch(e){} };
   const loadCrmUsers = async () => { try { const j=await fetch("/api/crm-users").then(r=>r.json()); if(Array.isArray(j.users)) setCrmUsers(j.users); } catch(e){} };
   const loadCrmActivity = async (date) => {
@@ -116,7 +118,7 @@ export function ManagerPage({ manager, onLogout }) {
     document.addEventListener("visibilitychange",onVis);
     return ()=>{ clearInterval(iv); document.removeEventListener("visibilitychange",onVis); };
   },[manager?.id]);
-  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&isTeamLead&&crmUsers.length===0) loadCrmUsers(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&isTeamLead&&crmUsers.length===0) loadCrmUsers(); if(tab==="activity"&&isTeamLead&&crmPresence.length===0) loadCrmPresence(); },[tab]);
   useEffect(()=>{ if(tab!=="activity"||!isTeamLead) return; loadPresence(); const iv=setInterval(loadPresence,30000); return ()=>clearInterval(iv); },[tab]);
 
   const today = new Date().toISOString().slice(0,10);
@@ -1381,6 +1383,8 @@ export function ManagerPage({ manager, onLogout }) {
         const now=Date.now();
         const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
         const byUser={}; crmUsers.forEach(u=>{ byUser[String(u.crm_user_id)]=u; });
+        const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
+        const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:T.muted}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); return { txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""), c:isTd?"#16a34a":days>=3?"#dc2626":T.sub }; };
         const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byUser[k]&&byUser[k].crm_user_name)||(byCrm[k]&&byCrm[k].crm_user_name)||k; };
         const isToday=presenceDate===P.todayStr();
         const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
@@ -1400,7 +1404,7 @@ export function ManagerPage({ manager, onLogout }) {
           {crmError&&<div style={{ background:T.surface,border:"1px solid #dc2626",borderRadius:10,padding:"12px 16px",color:"#dc2626",fontSize:13,marginBottom:16 }}>{crmError}</div>}
           <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Менеджер","Онлайн","CRM","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
+              <thead><tr>{["Менеджер","Онлайн","CRM","Вход в CRM","Первая","Последняя","Работал","Простой","Статус"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
               <tbody>
                 {teamMgrs.map(m=>{
                   const { a, sess }=dataFor(m);
@@ -1412,6 +1416,7 @@ export function ManagerPage({ manager, onLogout }) {
                       <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
                       <td style={{ ...S.td,color:onl.c,fontWeight:pmin!=null&&pmin<=3?700:400,fontSize:12 }}>{onl.t}</td>
                       <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"— не сопоставлен —"}</td>
+                      {(()=>{ const li=loginInfo(m); return <td style={{ ...S.td,color:li.c,fontSize:12 }}>{li.txt}</td>; })()}
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.first)}</td>
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(sess.last)}</td>
                       <td style={{ ...S.td,color:"#16a34a",fontWeight:600 }}>{P.fmtDur(sess.activeMin)}</td>

@@ -18,6 +18,11 @@ export function AdminPage({ onLogout }) {
   const [crmBusy, setCrmBusy] = useState(false); const [crmError, setCrmError] = useState(""); const [crmRefreshedAt, setCrmRefreshedAt] = useState(null);
   const [presenceDate, setPresenceDate] = useState(P.todayStr()); const [trackerEvents, setTrackerEvents] = useState({});
   const [crmUsers, setCrmUsers] = useState([]); const [crmUsersCount, setCrmUsersCount] = useState(null);
+  const [crmPresence, setCrmPresence] = useState([]); const [crmPresenceErr, setCrmPresenceErr] = useState("");
+  const loadCrmPresence = async () => {
+    try { const j = await fetch("/api/crm-presence").then(r=>r.json()); if(j.ok===false&&j.error) setCrmPresenceErr(j.error); else setCrmPresenceErr(""); setCrmPresence(j.users||[]); }
+    catch(e){ setCrmPresenceErr("Не удалось получить /users: "+(e?.message||e)); }
+  };
   const [presenceMap, setPresenceMap] = useState({});
   const loadPresence = async () => {
     try { const { data } = await supabase.from("manager_presence").select("manager_id, last_seen"); const m={}; (data||[]).forEach(r=>{ m[r.manager_id]=r.last_seen; }); setPresenceMap(m); } catch(e){}
@@ -131,7 +136,7 @@ export function AdminPage({ onLogout }) {
   };
   useEffect(()=>{ load(); },[]);
   useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
-  useEffect(()=>{ if(tab==="activity"&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&crmUsers.length===0) loadCrmUsers(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&crmActivity.length===0&&!crmBusy) loadCrmActivity(); if(tab==="activity"&&crmUsers.length===0) loadCrmUsers(); if(tab==="activity"&&crmPresence.length===0) loadCrmPresence(); },[tab]);
   useEffect(()=>{ if(tab!=="activity") return; loadPresence(); const iv=setInterval(loadPresence,30000); return ()=>clearInterval(iv); },[tab]);
 
   const doBackup = async () => {
@@ -658,7 +663,9 @@ export function AdminPage({ onLogout }) {
         {tab==="activity"&&(()=>{
           const now=Date.now();
           const byCrm={}; crmActivity.forEach(a=>{ byCrm[String(a.crm_user_id)]=a; });
-          const optionUsers=crmUsers.length?crmUsers:crmActivity;
+          const optionUsers=crmPresence.length?crmPresence.map(u=>({crm_user_id:u.id,crm_user_name:u.full_name+(u.username?" ("+u.username+")":"")})):(crmUsers.length?crmUsers:crmActivity);
+          const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
+          const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:"#64748b"}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); const txt=isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""); return { txt, c:isTd?"#86efac":days>=3?"#fca5a5":"#cbd5e1", blocked:u.status&&u.status!=="active"?u.status:null }; };
           const assigned=new Set(managers.map(m=>m.crm_user_id).filter(Boolean).map(String));
           const unmatched=optionUsers.filter(a=>!assigned.has(String(a.crm_user_id)));
           const isToday=presenceDate===P.todayStr();
@@ -669,13 +676,13 @@ export function AdminPage({ onLogout }) {
           const th={ padding:"8px 12px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
           const td={ padding:"10px 12px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
           return (
-          <div style={{ maxWidth:1040 }}>
+          <div style={{ maxWidth:1240 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
               <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
               <input type="date" value={presenceDate} max={P.todayStr()} onChange={e=>{ setPresenceDate(e.target.value); loadCrmActivity(e.target.value); }} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
               {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setPresenceDate(t); loadCrmActivity(t); }} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
-              <button onClick={()=>{ loadCrmActivity(); loadCrmUsers(); }} disabled={crmBusy} style={{ background:crmBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
-              {crmUsersCount!=null&&<span style={{ color:"#64748b",fontSize:12 }}>CRM-пользователей: <strong style={{ color:"#cbd5e1" }}>{crmUsersCount}</strong></span>}
+              <button onClick={()=>{ loadCrmActivity(); loadCrmUsers(); loadCrmPresence(); }} disabled={crmBusy} style={{ background:crmBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:crmBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{crmBusy?"Обновляю…":"Обновить"}</button>
+              {crmPresence.length>0&&<span style={{ color:"#64748b",fontSize:12 }}>CRM-пользователей: <strong style={{ color:"#cbd5e1" }}>{crmPresence.length}</strong></span>}
             </div>
             <p style={{ color:"#64748b",fontSize:12,marginBottom:4 }}>«Работал» — суммарное активное время за день, «Простой» — разрывы между активностью внутри рабочего окна. Источник событий: KeyCRM (заказы/карточки) + действия в трекере. Статус — по последней активности.</p>
             <p style={{ color:"#64748b",fontSize:11,marginBottom:6 }}>Активен — действие за 15 мин · Простой — 15–60 мин · Офлайн — больше часа. {crmRefreshedAt&&<>Обновлено: {fmtAgo(crmRefreshedAt)}.</>}</p>
@@ -684,10 +691,11 @@ export function AdminPage({ onLogout }) {
             ); })()}
 
             {crmError&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmError}</div>}
+            {crmPresenceErr&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>«Вход в CRM»: {crmPresenceErr}. Проверь переменную KEYCRM_SESSION_TOKEN в Vercel.</div>}
 
             <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                <thead><tr>{["Менеджер","Онлайн (трекер)","CRM-пользователь","Первая","Последняя","Работал","Простой","Статус CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Менеджер","Онлайн (трекер)","CRM-пользователь","Вход в CRM","Первая","Последняя","Работал","Простой","Статус CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {teamMgrs.map(m=>{
                     const { a, sess }=dataFor(m);
@@ -704,6 +712,7 @@ export function AdminPage({ onLogout }) {
                             {optionUsers.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
                           </select>
                         </td>
+                        {(()=>{ const li=loginInfo(m); return <td style={{...td,color:li.c,fontSize:12}}>{li.txt}{li.blocked&&<span style={{ color:"#fca5a5",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>; })()}
                         <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(sess.first)}</td>
                         <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(sess.last)}</td>
                         <td style={{...td,color:"#86efac",fontWeight:600}}>{P.fmtDur(sess.activeMin)}</td>
