@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { supabase } from "../supabaseClient";
 import { STATUSES, LEAD_COLORS, CSS } from "../constants";
@@ -38,6 +38,20 @@ export function ManagerPage({ manager, onLogout }) {
   const loadCrmPresence = async () => { try { const j=await fetch("/api/crm-presence").then(r=>r.json()); setCrmPresence(j.users||[]); } catch(e){} };
   const [crmMsgs, setCrmMsgs] = useState({});
   const loadCrmMsgs = async () => { try { const j=await fetch("/api/crm-conversations").then(r=>r.json()); if(j.ok) setCrmMsgs(j.users||{}); } catch(e){} };
+  const [dayDate, setDayDate] = useState(P.todayStr());
+  const [dayData, setDayData] = useState({}); const [dayTracker, setDayTracker] = useState({});
+  const [dayBusy, setDayBusy] = useState(false); const [dayLoaded, setDayLoaded] = useState(false); const [expandedId, setExpandedId] = useState(null);
+  const loadDay = async (dateStr) => {
+    const d = dateStr || dayDate; setDayBusy(true);
+    try {
+      const { fromISO, toISO } = P.dayBoundsISO(d);
+      const j = await fetch(`/api/crm-day?from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`).then(r=>r.json());
+      if(j.ok) setDayData(j.users||{});
+      const { data } = await supabase.from("activity_log").select("manager_id, created_at").gte("created_at", fromISO).lt("created_at", toISO);
+      const tr={}; (data||[]).forEach(r=>{ (tr[r.manager_id]||(tr[r.manager_id]=[])).push(r.created_at); }); setDayTracker(tr);
+    } catch(e){}
+    setDayBusy(false); setDayLoaded(true);
+  };
   const loadPresence = async () => { try { const { data }=await supabase.from("manager_presence").select("manager_id, last_seen"); const m={}; (data||[]).forEach(r=>{ m[r.manager_id]=r.last_seen; }); setPresenceMap(m); } catch(e){} };
   const loadCrmUsers = async () => { try { const j=await fetch("/api/crm-users").then(r=>r.json()); if(Array.isArray(j.users)) setCrmUsers(j.users); } catch(e){} };
   const loadCrmActivity = async (date) => {
@@ -111,7 +125,7 @@ export function ManagerPage({ manager, onLogout }) {
     setAllPlayers((pl||[]).filter(p=>p&&p.id));
   };
   useEffect(()=>{ load(); },[]);
-  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmPresence.length===0) loadCrmPresence(); if(tab==="activity"&&isTeamLead&&Object.keys(crmMsgs).length===0) loadCrmMsgs(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&isTeamLead&&crmPresence.length===0) loadCrmPresence(); if(tab==="activity"&&isTeamLead&&Object.keys(crmMsgs).length===0) loadCrmMsgs(); if(tab==="activity"&&isTeamLead&&!dayLoaded) loadDay(); },[tab]);
 
   const today = new Date().toISOString().slice(0,10);
   const isTeamLead = manager.role === "team_lead";
@@ -1373,32 +1387,49 @@ export function ManagerPage({ manager, onLogout }) {
 
       {tab==="activity"&&isTeamLead&&(()=>{
         const now=Date.now();
+        const isToday=dayDate===P.todayStr();
         const byUser={}; crmUsers.forEach(u=>{ byUser[String(u.crm_user_id)]=u; });
         const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
         const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:T.muted}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); return { txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""), c:isTd?"#16a34a":days>=3?"#dc2626":T.sub }; };
-        const msgInfo=(m)=>{ const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; if(!ts) return {txt:"—",c:T.muted,w:400}; const min=Math.floor((now-new Date(ts).getTime())/60000); const d=new Date(ts); if(min<=15) return {txt:"● пишет сейчас",c:"#16a34a",w:700}; if(min<60) return {txt:min+" мин назад",c:"#d97706",w:400}; const h=Math.floor(min/60); if(h<12) return {txt:h+" ч назад",c:"#d97706",w:400}; const isTd=d.toDateString()===new Date().toDateString(); return {txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}),c:T.sub,w:400}; };
+        const liveNow=(m)=>{ if(!isToday) return false; const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; return ts&&((now-new Date(ts).getTime())/60000<=15); };
+        const dayFor=(m)=>{ const ev=[...((m.crm_user_id&&dayData[String(m.crm_user_id)])||[]), ...((dayTracker[m.id])||[])]; return P.computeSessions(ev,20); };
         const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byPres[k]&&byPres[k].full_name)||(byUser[k]&&byUser[k].crm_user_name)||k; };
         const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
         return (
-        <div style={{ maxWidth:880 }}>
+        <div style={{ maxWidth:980 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
-            <button onClick={loadCrmPresence} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700 }}>Обновить</button>
+            <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
+            {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
+            <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?T.border:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
           </div>
-          <p style={{ color:T.muted,fontSize:12,marginBottom:18 }}>«Вход в CRM» — реальное время последнего входа в KeyCRM. Зелёным — заходил сегодня, красным — несколько дней не появлялся.</p>
+          <p style={{ color:T.muted,fontSize:12,marginBottom:18 }}>«Отработал» — активное время (исходящие сообщения в CRM + действия в трекере), окно — от первой до последней активности, разрыв ≥20 мин = отсутствие. Нажми «Отсутствие», чтобы увидеть интервалы.</p>
           <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
-              <thead><tr>{["Менеджер","CRM","Сообщения","Вход в CRM"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
+              <thead><tr>{["Менеджер","CRM","Отработал","Первая","Последняя","Отсутствие","Вход в CRM"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
               <tbody>
                 {teamMgrs.map(m=>{
-                  const li=loginInfo(m); const mi=msgInfo(m);
+                  const li=loginInfo(m); const s=dayFor(m); const live=liveNow(m); const open=expandedId===m.id;
                   return (
-                    <tr key={m.id}>
-                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
-                      <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"— не сопоставлен —"}</td>
-                      <td style={{ ...S.td,color:mi.c,fontWeight:mi.w,fontSize:13 }}>{mi.txt}</td>
-                      <td style={{ ...S.td,color:li.c,fontSize:13 }}>{li.txt}</td>
+                    <Fragment key={m.id}>
+                    <tr>
+                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {live&&<span style={{ color:"#16a34a",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
+                      <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"—"}</td>
+                      <td style={{ ...S.td,color:s.activeMin>0?"#16a34a":T.muted,fontWeight:700 }}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(s.first)}</td>
+                      <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(s.last)}</td>
+                      <td style={{ ...S.td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#d97706":T.muted }} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
+                      <td style={{ ...S.td,color:li.c,fontSize:12 }}>{li.txt}</td>
                     </tr>
+                    {open&&s.gaps.length>0&&(
+                      <tr><td colSpan={7} style={{ background:dark?"#15171f":"#f1f5f9",borderBottom:`1px solid ${T.border}`,padding:"10px 16px" }}>
+                        <div style={{ color:T.sub,fontSize:12,marginBottom:6 }}>Интервалы отсутствия ({m.name}):</div>
+                        <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
+                          {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(217,119,6,.1)",border:"1px solid #b45309",color:"#d97706",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
+                        </div>
+                      </td></tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>

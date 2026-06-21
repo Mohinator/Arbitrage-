@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { supabase } from "../supabaseClient";
 import { STATUSES, LEAD_COLORS, CSS } from "../constants";
@@ -23,6 +23,20 @@ export function AdminPage({ onLogout }) {
   const loadCrmMsgs = async () => {
     try { const j = await fetch("/api/crm-conversations").then(r=>r.json()); if(j.ok){ setCrmMsgs(j.users||{}); setCrmMsgsInfo({ distinct:j.distinct, scanned:j.scanned }); } else { setCrmMsgsInfo({ err:j.error }); } }
     catch(e){ setCrmMsgsInfo({ err:String(e?.message||e) }); }
+  };
+  const [dayDate, setDayDate] = useState(P.todayStr());
+  const [dayData, setDayData] = useState({}); const [dayTracker, setDayTracker] = useState({});
+  const [dayBusy, setDayBusy] = useState(false); const [dayInfo, setDayInfo] = useState(null); const [expandedId, setExpandedId] = useState(null);
+  const loadDay = async (dateStr) => {
+    const d = dateStr || dayDate; setDayBusy(true);
+    try {
+      const { fromISO, toISO } = P.dayBoundsISO(d);
+      const j = await fetch(`/api/crm-day?from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`).then(r=>r.json());
+      if(j.ok){ setDayData(j.users||{}); setDayInfo({ conversations:j.conversations, messages:j.messages }); } else setDayInfo({ err:j.error });
+      const { data } = await supabase.from("activity_log").select("manager_id, created_at").gte("created_at", fromISO).lt("created_at", toISO);
+      const tr={}; (data||[]).forEach(r=>{ (tr[r.manager_id]||(tr[r.manager_id]=[])).push(r.created_at); }); setDayTracker(tr);
+    } catch(e){ setDayInfo({ err:String(e?.message||e) }); }
+    setDayBusy(false);
   };
   const loadCrmPresence = async () => {
     try { const j = await fetch("/api/crm-presence").then(r=>r.json()); if(j.ok===false&&j.error) setCrmPresenceErr(j.error); else setCrmPresenceErr(""); setCrmPresence(j.users||[]); }
@@ -141,7 +155,7 @@ export function AdminPage({ onLogout }) {
   };
   useEffect(()=>{ load(); },[]);
   useEffect(()=>{ Backup.idbGet(Backup.PENDING_KEY).then(p=>{ if(p) setPendingRestore(p); }).catch(()=>{}); },[]);
-  useEffect(()=>{ if(tab==="activity"&&crmPresence.length===0) loadCrmPresence(); if(tab==="activity"&&!crmMsgsInfo) loadCrmMsgs(); },[tab]);
+  useEffect(()=>{ if(tab==="activity"&&crmPresence.length===0) loadCrmPresence(); if(tab==="activity"&&!crmMsgsInfo) loadCrmMsgs(); if(tab==="activity"&&!dayInfo) loadDay(); },[tab]);
 
   const doBackup = async () => {
     setBackupBusy(true);
@@ -666,46 +680,62 @@ export function AdminPage({ onLogout }) {
 
         {tab==="activity"&&(()=>{
           const now=Date.now();
+          const isToday=dayDate===P.todayStr();
           const optionUsers=crmPresence.length?crmPresence.map(u=>({crm_user_id:u.id,crm_user_name:u.full_name+(u.username?" ("+u.username+")":"")})):(crmUsers.length?crmUsers:[]);
           const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
           const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:"#64748b"}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); const txt=isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""); return { txt, c:isTd?"#86efac":days>=3?"#fca5a5":"#cbd5e1", blocked:u.status&&u.status!=="active"?u.status:null }; };
-          const msgInfo=(m)=>{ const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; if(!ts) return {txt:"—",c:"#64748b",w:400}; const min=Math.floor((now-new Date(ts).getTime())/60000); const d=new Date(ts); if(min<=15) return {txt:"● пишет сейчас",c:"#86efac",w:700}; if(min<60) return {txt:min+" мин назад",c:"#fbbf24",w:400}; const h=Math.floor(min/60); if(h<12) return {txt:h+" ч назад",c:"#fbbf24",w:400}; const isTd=d.toDateString()===new Date().toDateString(); return {txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}),c:"#94a3b8",w:400}; };
+          const liveNow=(m)=>{ if(!isToday) return false; const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; return ts&&((now-new Date(ts).getTime())/60000<=15); };
+          const dayFor=(m)=>{ const ev=[...((m.crm_user_id&&dayData[String(m.crm_user_id)])||[]), ...((dayTracker[m.id])||[])]; return P.computeSessions(ev,20); };
           const assigned=new Set(managers.map(m=>m.crm_user_id).filter(Boolean).map(String));
           const unmatched=optionUsers.filter(a=>!assigned.has(String(a.crm_user_id)));
           const teamMgrs=managers.filter(m=>m.role!=="admin");
-          const th={ padding:"8px 12px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
-          const td={ padding:"10px 12px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
+          const th={ padding:"8px 10px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
+          const td={ padding:"10px 10px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
           return (
-          <div style={{ maxWidth:960 }}>
+          <div style={{ maxWidth:1080 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
               <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
-              <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); }} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700 }}>Обновить</button>
-              {crmPresence.length>0&&<span style={{ color:"#64748b",fontSize:12 }}>CRM-пользователей: <strong style={{ color:"#cbd5e1" }}>{crmPresence.length}</strong></span>}
-              {crmMsgsInfo&&!crmMsgsInfo.err&&<span style={{ color:"#64748b",fontSize:12 }}>По сообщениям видно менеджеров: <strong style={{ color:"#cbd5e1" }}>{crmMsgsInfo.distinct}</strong></span>}
+              <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
+              {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
+              <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
+              {dayInfo&&!dayInfo.err&&<span style={{ color:"#64748b",fontSize:12 }}>диалогов: {dayInfo.conversations} · сообщений: {dayInfo.messages}</span>}
             </div>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:18 }}>«Сообщения» — когда менеджер в последний раз <b>писал клиенту</b> в KeyCRM (исходящее сообщение). «● пишет сейчас» — в пределах 15 минут. «Вход в CRM» — время последнего входа в систему.</p>
-            {crmMsgsInfo&&crmMsgsInfo.err&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>«Сообщения»: {crmMsgsInfo.err}. Проверь KEYCRM_SESSION_TOKEN в Vercel.</div>}
-            {crmMsgsInfo&&!crmMsgsInfo.err&&crmMsgsInfo.distinct<=1&&<div style={{ background:"#1a1d27",border:"1px solid #7f5d1d",borderRadius:10,padding:"12px 16px",color:"#fcd34d",fontSize:12,marginBottom:16 }}>По сообщениям виден только 1 менеджер — значит API отдаёт только твои диалоги. Скажи мне об этом: переключим выборку на все диалоги другим способом.</div>}
+            <p style={{ color:"#64748b",fontSize:12,marginBottom:18 }}>«Отработал» — суммарное активное время (по исходящим сообщениям в CRM + действиям в трекере), окно — от первой до последней активности, разрыв ≥20 мин считается отсутствием. Нажми на ячейку «Отсутствие», чтобы увидеть интервалы.</p>
+
+            {dayInfo&&dayInfo.err&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{dayInfo.err}. Проверь KEYCRM_SESSION_TOKEN в Vercel.</div>}
             {crmPresenceErr&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmPresenceErr}. Проверь переменную KEYCRM_SESSION_TOKEN в Vercel.</div>}
 
             <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
-                <thead><tr>{["Менеджер","CRM-пользователь","Сообщения (активность)","Вход в CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Менеджер","CRM-пользователь","Отработал","Первая","Последняя","Отсутствие","Вход в CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {teamMgrs.map(m=>{
-                    const li=loginInfo(m); const mi=msgInfo(m);
+                    const li=loginInfo(m); const s=dayFor(m); const live=liveNow(m); const open=expandedId===m.id;
                     return (
-                      <tr key={m.id} className="row-hover">
-                        <td style={{...td,fontWeight:600}}>{m.name} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
+                      <Fragment key={m.id}>
+                      <tr className="row-hover">
+                        <td style={{...td,fontWeight:600}}>{m.name} {live&&<span style={{ color:"#86efac",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
                         <td style={td}>
-                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:240 }}>
+                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:230 }}>
                             <option value="">— не сопоставлен —</option>
                             {optionUsers.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
                           </select>
                         </td>
-                        <td style={{...td,color:mi.c,fontWeight:mi.w,fontSize:13}}>{mi.txt}</td>
-                        <td style={{...td,color:li.c,fontSize:13}}>{li.txt}{li.blocked&&<span style={{ color:"#fca5a5",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>
+                        <td style={{...td,color:s.activeMin>0?"#86efac":"#64748b",fontWeight:700}}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
+                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(s.first)}</td>
+                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(s.last)}</td>
+                        <td style={{...td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#fbbf24":"#64748b"}} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
+                        <td style={{...td,color:li.c,fontSize:12}}>{li.txt}{li.blocked&&<span style={{ color:"#fca5a5",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>
                       </tr>
+                      {open&&s.gaps.length>0&&(
+                        <tr><td colSpan={7} style={{ background:"#15171f",borderBottom:"1px solid #23262f",padding:"10px 16px" }}>
+                          <div style={{ color:"#94a3b8",fontSize:12,marginBottom:6 }}>Интервалы отсутствия ({m.name}):</div>
+                          <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
+                            {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(251,191,36,.08)",border:"1px solid #7f5d1d",color:"#fcd34d",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
+                          </div>
+                        </td></tr>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </tbody>

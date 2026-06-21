@@ -24,9 +24,16 @@ export function computeSessions(tsList, gapMin = 20){
   segs.push([s,prev]);
   let active = 0;
   segs.forEach(([a,b]) => { active += (b>a ? b-a : TAIL); });
+  const gaps = [];
+  for (let i=1;i<segs.length;i++){ const gStart=segs[i-1][1], gEnd=segs[i][0]; gaps.push({ start:gStart, end:gEnd, min:Math.round((gEnd-gStart)/60000) }); }
   const first = ts[0], last = ts[ts.length-1];
   const idle = Math.max(0, (last-first) - active);
-  return { first, last, activeMin: Math.round(active/60000), idleMin: Math.round(idle/60000), count: ts.length, sessions: segs };
+  return { first, last, activeMin: Math.round(active/60000), idleMin: Math.round(idle/60000), count: ts.length, sessions: segs, gaps };
+}
+
+export function fmtInterval(g){
+  const f=(t)=>new Date(t).toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"});
+  return f(g.start)+"–"+f(g.end);
 }
 
 export function fmtDur(min){
