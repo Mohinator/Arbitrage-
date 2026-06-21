@@ -16,7 +16,7 @@ export function todayStr(){
 // из массива ISO/Date меток → { first, last, activeMin, idleMin, sessions:[[start,end],...] }
 export function computeSessions(tsList, gapMin = 20){
   const ts = (tsList||[]).map(t => new Date(t).getTime()).filter(n => !isNaN(n)).sort((a,b)=>a-b);
-  if (ts.length === 0) return { first:null, last:null, activeMin:0, idleMin:0, count:0, sessions:[] };
+  if (ts.length === 0) return { first:null, last:null, activeMin:0, idleMin:0, count:0, sessions:[], gaps:[] };
   const GAP = gapMin*60000;
   const TAIL = 5*60000; // одиночное событие считаем как ~5 мин активности
   const segs = []; let s = ts[0], prev = ts[0];
