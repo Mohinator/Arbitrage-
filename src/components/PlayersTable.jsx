@@ -27,6 +27,66 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   const [hiddenMonths, setHiddenMonths] = useState(new Set());
   const [localPlayers, setLocalPlayers] = useState(players);
   const [dragIdx, setDragIdx] = useState(null);
+  const [dragMode, setDragMode] = useState(null); // "row" | "rd"
+  // RD drag-n-drop
+  const [rdSel, setRdSel] = useState(new Set()); // keys "playerId:rd_number"
+  const [rdDragging, setRdDragging] = useState(false);
+  const rdDragRef = useRef(null); // {items:[{playerId,rd_number,amount,date,isFact}]}
+  const rdKey = (pid,n) => `${pid}:${n}`;
+  // build a quick lookup of occupied slots per player from current props
+  const slotKey = (pid,n) => `${pid}:${n}`;
+  const occupiedSlots = useMemo(() => {
+    const s = new Set();
+    (redeposits||[]).forEach(r=>{ if(r) s.add(slotKey(r.player_id,r.rd_number)); });
+    (plannedRds||[]).forEach(r=>{ if(r) s.add(slotKey(r.player_id,r.rd_number)); });
+    return s;
+  }, [redeposits, plannedRds]);
+
+  // Move one RD (fact or planned) from its source slot to a target empty slot
+  const moveOneRd = async (item, targetPid, targetSlot) => {
+    const table = item.isFact ? "redeposits" : "planned_redeposits";
+    // delete source
+    await supabase.from(table).delete().eq("player_id", item.playerId).eq("rd_number", item.rd_number);
+    // insert at target
+    await supabase.from(table).insert({ player_id: targetPid, rd_number: targetSlot, amount: item.amount, date: item.date });
+    await logAction("rd_moved", item.playerId, { from_rd:item.rd_number, to_player:targetPid, to_rd:targetSlot, amount:item.amount, isFact:item.isFact });
+  };
+
+  // Drop a set of RD items onto target player, starting at startSlot, filling EMPTY slots only
+  const dropRdsOnto = async (items, targetPid, startSlot) => {
+    if (readonly || !items.length) return;
+    // compute which slots are already occupied for the target, minus the sources being moved away
+    const taken = new Set();
+    (redeposits||[]).forEach(r=>{ if(r&&r.player_id===targetPid) taken.add(r.rd_number); });
+    (plannedRds||[]).forEach(r=>{ if(r&&r.player_id===targetPid) taken.add(r.rd_number); });
+    // sources moving away from the same target free up their slots
+    items.forEach(it=>{ if(it.playerId===targetPid) taken.delete(it.rd_number); });
+    // assign slots: first item to startSlot (if empty), rest to next empty slots ascending
+    const ordered = [...items];
+    const assignments = [];
+    let placed = 0;
+    // try startSlot first for the first item
+    const trySlots = [];
+    for (let n=startSlot; n<=9; n++) trySlots.push(n);
+    for (let n=1; n<startSlot; n++) trySlots.push(n);
+    let ti = 0;
+    for (const it of ordered) {
+      while (ti<trySlots.length && taken.has(trySlots[ti])) ti++;
+      if (ti>=trySlots.length) break; // no room
+      const slot = trySlots[ti];
+      taken.add(slot);
+      assignments.push({ it, slot });
+      placed++;
+      ti++;
+    }
+    if (!placed) { showToast && showToast("Нет свободных ячеек РД"); return; }
+    for (const a of assignments) await moveOneRd(a.it, targetPid, a.slot);
+    setRdSel(new Set());
+    if (placed<items.length) showToast && showToast(`Перенесено ${placed} из ${items.length} (не хватило ячеек)`);
+    else showToast && showToast(placed>1?`Перенесено РД: ${placed}`:"РД перенесён");
+    onReload && onReload();
+  };
+
   const [dateSortDir, setDateSortDir] = useState(null);
   const sortByDate = async () => {
     if (readonly) return;
@@ -198,9 +258,9 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
     return ()=>document.removeEventListener("mousedown",h);
   },[platformPopup]);
 
-  const handleDragStart = (idx) => { if (readonly) return; setDragIdx(idx); };
+  const handleDragStart = (idx) => { if (readonly) return; setDragMode("row"); setDragIdx(idx); };
   const handleDragOver = (e, idx) => {
-    if (readonly) return;
+    if (readonly || dragMode!=="row") return;
     e.preventDefault();
     if (dragIdx===null||dragIdx===idx) return;
     const reordered=[...localPlayers];
@@ -210,7 +270,9 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   };
   const handleDragEnd = async () => {
     if (readonly) return;
-    setDragIdx(null);
+    const wasRow = dragMode==="row";
+    setDragIdx(null); setDragMode(null);
+    if (!wasRow) return;
     await Promise.all(localPlayers.filter(p=>p&&p.id).map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
   };
 
@@ -352,10 +414,10 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                     return (
                       <tr key={player.id} className={`row-hover tag-${player.color||"none"}`}
                         ref={el=>{ if(el&&highlightId===player.id) el.scrollIntoView({behavior:"smooth",block:"center"}); }}
-                        draggable={!readonly} onDragStart={()=>handleDragStart(globalIdx)} onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
+                        onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
                         style={{ background:highlightId===player.id?"rgba(155,79,224,.28)":undefined,boxShadow:highlightId===player.id?"inset 0 0 0 2px #9B5FD0":"none",transition:"background .4s,box-shadow .4s" }}>
                         <td style={{ ...S.td,color:T.muted,fontSize:10,textAlign:"center" }}>{globalIdx+1}</td>
-                        {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи">⠿</span></td>}
+                        {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи строку" draggable onDragStart={()=>handleDragStart(globalIdx)} onDragEnd={handleDragEnd} style={{ cursor:"grab" }}>⠿</span></td>}
                         {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
                           <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#9B5FD0",cursor:"pointer" }}/>
                         </td>}
@@ -377,19 +439,43 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                         </td>
                         <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums" }}>{player.deposit}€</td>
                         {rdArr.map((rd,i)=>{
+                          const slot=i+1;
                           const isToday=rd&&!rd.isFact&&rd.date===today;
                           const isOverdue=rd&&!rd.isFact&&rd.date&&rd.date<today;
                           const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
                           const amtColor=isOverdue?"#F2706E":isToday?"#F4B740":rdColor;
+                          const selKey=rdKey(player.id,slot);
+                          const isSel=rdSel.has(selKey);
+                          const isEmpty=!rd;
                           return (
-                            <td key={i} className="rd-cell" style={{ ...S.rdTd,color:rdColor,fontWeight:rd?.isFact?700:400,lineHeight:1.3 }}
+                            <td key={i} className="rd-cell" style={{ ...S.rdTd,color:rdColor,fontWeight:rd?.isFact?700:400,lineHeight:1.3,position:"relative",background:isSel?"rgba(155,79,224,.18)":undefined,outline:isSel?"1px solid rgba(155,79,224,.6)":undefined,cursor:!readonly&&rd?"grab":undefined }}
+                              draggable={!readonly&&!!rd}
+                              onDragStart={e=>{
+                                if(readonly||!rd){ e.preventDefault(); return; }
+                                setDragMode("rd"); setRdDragging(true);
+                                // if this cell is part of a selection, drag whole selection; else just this one
+                                let items;
+                                if(isSel && rdSel.size>0){
+                                  items=[...rdSel].map(k=>{ const ci=k.lastIndexOf(":"); const pid=k.slice(0,ci); const n=Number(k.slice(ci+1)); const f=(redeposits||[]).find(r=>r&&String(r.player_id)===pid&&r.rd_number===n); const p=(plannedRds||[]).find(r=>r&&String(r.player_id)===pid&&r.rd_number===n); const src=f?{...f,isFact:true}:p?{...p,isFact:false}:null; return src?{playerId:src.player_id,rd_number:n,amount:src.amount,date:src.date,isFact:src.isFact}:null; }).filter(Boolean);
+                                } else {
+                                  items=[{playerId:player.id,rd_number:slot,amount:rd.amount,date:rd.date,isFact:rd.isFact}];
+                                  setRdSel(new Set());
+                                }
+                                rdDragRef.current={items};
+                                try{ e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain","rd"); }catch(_){}
+                              }}
+                              onDragEnd={()=>{ setRdDragging(false); setDragMode(null); rdDragRef.current=null; }}
+                              onDragOver={e=>{ if(dragMode==="rd"&&isEmpty){ e.preventDefault(); e.stopPropagation(); try{e.dataTransfer.dropEffect="move";}catch(_){} } }}
+                              onDrop={e=>{ if(dragMode==="rd"&&isEmpty&&rdDragRef.current){ e.preventDefault(); e.stopPropagation(); const items=rdDragRef.current.items; setRdDragging(false); setDragMode(null); rdDragRef.current=null; dropRdsOnto(items,player.id,slot); } }}
                               onClick={e=>{
                                 if (readonly) return;
-                                if (!rd) { const popup={playerId:player.id,rdNumber:i+1,x:e.clientX,y:e.clientY}; rdInputPopupRef.current=popup; setRdInputPopup(popup); setRdInputVal(""); setRdInputDate(today); return; }
+                                if (e.shiftKey && rd){ e.preventDefault(); e.stopPropagation(); setRdSel(s=>{ const n=new Set(s); n.has(selKey)?n.delete(selKey):n.add(selKey); return n; }); return; }
+                                if (rdSel.size>0) setRdSel(new Set());
+                                if (!rd) { const popup={playerId:player.id,rdNumber:slot,x:e.clientX,y:e.clientY}; rdInputPopupRef.current=popup; setRdInputPopup(popup); setRdInputVal(""); setRdInputDate(today); return; }
                                 if (rd.isFact) setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,canRevert:true});
                                 else setShowEditRd({playerId:player.id,rdNumber:rd.rd_number,amount:rd.amount,date:rd.date,isPlanned:true});
                               }}
-                              title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
+                              title={readonly?"":!rd?(rdDragging?"Бросить сюда":"Ввести РД"):rd.isFact?"Перетащи · Shift=выделить · клик=изменить":"Перетащи · Shift=выделить · клик=подтвердить"}>
                               {rd?<div>
                                 <div style={{ fontSize:11,color:amtColor,fontWeight:isToday||isOverdue?700:undefined }}>{rd.amount}€</div>
                                 {rd.isFact
@@ -405,7 +491,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                                         {formatDate(rd.date)}
                                       </div>
                                 }
-                              </div>:<span style={{ fontSize:16,opacity:.2 }}>+</span>}
+                              </div>:<span style={{ fontSize:16,opacity:rdDragging?.5:.2,color:rdDragging?"#9B5FD0":undefined }}>+</span>}
                             </td>
                           );
                         })}
