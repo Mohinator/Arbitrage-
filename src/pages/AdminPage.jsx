@@ -273,8 +273,8 @@ export function AdminPage({ onLogout }) {
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
 
       {showGeoForm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(8,8,8,.45)",backdropFilter:"blur(8px) saturate(120%)",WebkitBackdropFilter:"blur(8px) saturate(120%)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div className="slide-in" style={{background:"rgba(20,20,22,.72)",backdropFilter:"blur(28px) saturate(150%)",WebkitBackdropFilter:"blur(28px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)"}}>
+        <div style={{position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div className="slide-in" style={{background:"rgba(16,16,18,.55)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)"}}>
             <h3 style={{color:"#fff",marginBottom:18,fontSize:15,fontWeight:700}}>Добавить гео</h3>
             <div style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Название *</label><input value={geoForm.name} onChange={e=>setGeoForm(f=>({...f,name:e.target.value}))} placeholder="Польша" style={IS}/></div>
             <div style={{marginBottom:18}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Код (2 буквы)</label><input value={geoForm.code} onChange={e=>setGeoForm(f=>({...f,code:e.target.value}))} placeholder="PL" maxLength={3} style={IS}/></div>
@@ -287,8 +287,8 @@ export function AdminPage({ onLogout }) {
       )}
 
       {showPlatformForm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(8,8,8,.45)",backdropFilter:"blur(8px) saturate(120%)",WebkitBackdropFilter:"blur(8px) saturate(120%)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div className="slide-in" style={{background:"rgba(20,20,22,.72)",backdropFilter:"blur(28px) saturate(150%)",WebkitBackdropFilter:"blur(28px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)"}}>
+        <div style={{position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div className="slide-in" style={{background:"rgba(16,16,18,.55)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)"}}>
             <h3 style={{color:"#fff",marginBottom:18,fontSize:15,fontWeight:700}}>{editingPlatform?"Редактировать":"Добавить"} платформу</h3>
             {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Мин. депозит BLIK (€)","min_deposit_blik","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
               <div key={k} style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
@@ -761,7 +761,7 @@ export function AdminPage({ onLogout }) {
           const cols = rows.length>0 ? Object.keys(rows[0]) : [];
           const toggle = (t)=>setRestoreSel(s=>s.includes(t)?s.filter(x=>x!==t):[...s,t]);
           return (
-          <div style={{ position:"fixed",inset:0,background:"rgba(8,8,8,.45)",backdropFilter:"blur(8px) saturate(120%)",WebkitBackdropFilter:"blur(8px) saturate(120%)",zIndex:9000,display:"flex",flexDirection:"column",padding:24 }}>
+          <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:9000,display:"flex",flexDirection:"column",padding:24 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
               <div>
                 <h3 style={{ color:"#fff",margin:0,fontSize:16 }}>Просмотр точки восстановления</h3>

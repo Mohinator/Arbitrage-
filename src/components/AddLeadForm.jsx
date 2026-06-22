@@ -4,8 +4,8 @@ import { StatusBadge } from "./common";
 export function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, myGeos, activeGeo, onSubmit, onClose }) {
   const isPoland = myGeos.find(g=>g.id===activeGeo)?.code==='PL';
   return (
-    <div style={{ position:"fixed",inset:0,background:"rgba(8,8,8,.45)",backdropFilter:"blur(8px) saturate(120%)",WebkitBackdropFilter:"blur(8px) saturate(120%)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="slide-in" style={{ background:"rgba(20,20,22,.72)",backdropFilter:"blur(28px) saturate(150%)",WebkitBackdropFilter:"blur(28px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+    <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="slide-in" style={{ background:"rgba(16,16,18,.55)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
         <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>Добавить лида</h3>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12 }}>
           {[["Дата","date","date"],["Продукт","platform_id","select"],["Имя лида","name","text"],["SUB18","sub18","text"],["Депозит (€)","deposit","number"]].map(([l,k,t])=>(
