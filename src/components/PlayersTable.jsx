@@ -270,7 +270,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
 
       {showEditRd && !readonly && (
         <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&setShowEditRd(null)}>
-          <div className="slide-in" style={{ background:"rgba(16,16,18,.55)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+          <div className="slide-in" style={{ background:"rgba(16,16,18,.40)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:340,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
             <h3 style={{ color:T.text,marginBottom:6,fontSize:15,fontWeight:700 }}>{showEditRd.isPlanned?"Подтверждение РД":"РД"}{showEditRd.rdNumber}</h3>
             <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>{localPlayers.find(p=>p.id===showEditRd.playerId)?.name}</p>
             {[["Сумма (€)","amount","number"],["Дата","date","date"]].map(([l,k,t])=>(

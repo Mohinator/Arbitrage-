@@ -156,7 +156,7 @@ tr.tag-hot td,tr.tag-warm td,tr.tag-cold td,tr.tag-problem td{background:transpa
 }
 .glass-modal{
   position:relative;
-  background:rgba(16,16,18,.55);
+  background:rgba(16,16,18,.40);
   -webkit-backdrop-filter:blur(24px) saturate(150%);
   backdrop-filter:blur(24px) saturate(150%);
   border:1px solid rgba(255,255,255,.1);
