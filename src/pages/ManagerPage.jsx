@@ -1307,10 +1307,10 @@ export function ManagerPage({ manager, onLogout }) {
 
       {tab==="overview"&&(
         <div style={{ padding:"16px 20px" }}>
-          <h2 style={{ color:T.text,marginBottom:20,fontSize:18 }}>Сводка</h2>
+          <h2 style={{ color:T.text,marginBottom:20,fontSize:22,fontWeight:800,fontFamily:THEME.fontGilroy }}>Сводка</h2>
 
           {/* Platform summary - admin style */}
-          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>Общий СЧ по платформам</h3>
+          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700,fontFamily:THEME.fontGilroy }}>Общий СЧ по платформам</h3>
           <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
             <table style={{ width:"100%",borderCollapse:"collapse" }}>
               <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
@@ -1327,19 +1327,19 @@ export function ManagerPage({ manager, onLogout }) {
                   return(
                     <tr key={plat.id} className="row-hover">
                       <td style={{ ...S.td,fontWeight:600,color:T.text }}>{plat.name}</td>
-                      <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{platPlayers.length}</td>
+                      <td style={{ ...S.td,color:T.text,fontWeight:700 }}>{platPlayers.length}</td>
                       <td style={{ ...S.td,color:T.sub }}>{total.toFixed(0)}€</td>
-                      <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{avg.toFixed(1)}€</span></td>
+                      <td style={S.td}><span style={{ background:ok?THEME.okSoft:THEME.badSoft,color:ok?THEME.ok:THEME.bad,padding:"3px 10px",borderRadius:THEME.rChip,fontWeight:600,fontSize:12 }}>{avg.toFixed(1)}€</span></td>
                       <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
                       <td style={S.td}>
                         {capPct!==null
                           ?<div style={{ display:"flex",alignItems:"center",gap:6 }}>
-                              <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4 }}/></div>
-                              <span style={{ fontSize:11,color:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":T.muted }}>{capCount}/{plat.cap}</span>
+                              <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4 }}/></div>
+                              <span style={{ fontSize:11,color:T.muted }}>{capCount}/{plat.cap}</span>
                             </div>
                           :<span style={{ color:T.muted }}>—</span>}
                       </td>
-                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"✓"}</td>
+                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"—"}</td>
                     </tr>
                   );
                 }).filter(Boolean)}
@@ -1348,7 +1348,7 @@ export function ManagerPage({ manager, onLogout }) {
           </div>
 
           {/* Manager summary - detailed admin style */}
-          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700 }}>По менеджерам</h3>
+          <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700,fontFamily:THEME.fontGilroy }}>По менеджерам</h3>
           <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:28 }}>
             {(()=>{
               const geoManagerIds=userGeos.filter(ug=>ug&&ug.geo_id===activeGeo).map(ug=>ug.manager_id);
@@ -1377,7 +1377,7 @@ export function ManagerPage({ manager, onLogout }) {
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:active.length>0?`1px solid ${T.border}`:"none" }}>
                       <div style={{ width:7,height:7,borderRadius:"50%",background:THEME.grad,flexShrink:0 }}/>
                       <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{mgr.name}</span>
-                      {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700 }}>Тим лид</span>}
+                      {mgr.role==="team_lead"&&<span className="badge-role" style={{ fontSize:10,padding:"1px 7px" }}>Тим лид</span>}
                       {mgrGeos.map(g=><span key={g.id} className="badge-role" style={{ fontSize:10,padding:"1px 7px" }}>{g.name}</span>)}
                       <div style={{ flex:1 }}/>
                       <span style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></span>
@@ -1398,10 +1398,10 @@ export function ManagerPage({ manager, onLogout }) {
                             return(
                               <tr key={plat.id} className="row-hover">
                                 <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat.name}</td>
-                                <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{pp.length}</td>
+                                <td style={{ ...S.td,color:T.text,fontWeight:700 }}>{pp.length}</td>
                                 <td style={{ ...S.td,color:T.sub }}>{pt.toFixed(0)}€</td>
                                 <td style={{ ...S.td,color:T.muted }}>{plat.target_avg_check}€</td>
-                                <td style={S.td}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 8px",borderRadius:5,fontWeight:700,fontSize:12 }}>{pa.toFixed(1)}€</span></td>
+                                <td style={S.td}><span style={{ background:ok?THEME.okSoft:THEME.badSoft,color:ok?THEME.ok:THEME.bad,padding:"3px 10px",borderRadius:THEME.rChip,fontWeight:600,fontSize:12 }}>{pa.toFixed(1)}€</span></td>
                               </tr>
                             );
                           }).filter(Boolean)}
