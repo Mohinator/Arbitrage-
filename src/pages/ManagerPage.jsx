@@ -721,7 +721,7 @@ export function ManagerPage({ manager, onLogout }) {
                       <span>Капа</span><span>{capCount}{plat.cap?`/${plat.cap}`:""}</span>
                     </div>
                     <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                      {capPct!==null&&<div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4,transition:"width .3s" }}/>}
+                      {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#F2706E":capPct>=80?"#F4B740":"#A78BFA",borderRadius:4,height:4,transition:"width .3s" }}/>}
                     </div>
                   </div>
                 </div>
@@ -1029,7 +1029,7 @@ export function ManagerPage({ manager, onLogout }) {
                                 <span>Капа</span><span>{allActive}{plat.cap?`/${plat.cap}`:""}</span>
                               </div>
                               <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                                {capPct!==null&&<div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4 }}/>}
+                                {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#F2706E":capPct>=80?"#F4B740":"#A78BFA",borderRadius:4,height:4 }}/>}
                               </div>
                             </div>
                           </div>
@@ -1334,7 +1334,7 @@ export function ManagerPage({ manager, onLogout }) {
                       <td style={S.td}>
                         {capPct!==null
                           ?<div style={{ display:"flex",alignItems:"center",gap:6 }}>
-                              <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4 }}/></div>
+                              <div style={{ background:T.border,borderRadius:4,height:4,width:60 }}><div style={{ width:`${capPct}%`,background:capPct>=100?"#F2706E":capPct>=80?"#F4B740":"#A78BFA",borderRadius:4,height:4 }}/></div>
                               <span style={{ fontSize:11,color:T.muted }}>{capCount}/{plat.cap}</span>
                             </div>
                           :<span style={{ color:T.muted }}>—</span>}
