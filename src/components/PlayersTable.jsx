@@ -380,7 +380,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                           const isToday=rd&&!rd.isFact&&rd.date===today;
                           const isOverdue=rd&&!rd.isFact&&rd.date&&rd.date<today;
                           const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
-                          const glow=isOverdue?"0 0 10px rgba(242,112,110,.85),0 0 4px rgba(242,112,110,.6)":isToday?"0 0 10px rgba(244,183,64,.85),0 0 4px rgba(244,183,64,.6)":"none";
+                          const amtColor=isOverdue?"#F2706E":isToday?"#F4B740":rdColor;
                           return (
                             <td key={i} className="rd-cell" style={{ ...S.rdTd,color:rdColor,fontWeight:rd?.isFact?700:400,lineHeight:1.3 }}
                               onClick={e=>{
@@ -391,7 +391,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                               }}
                               title={readonly?"":!rd?"Ввести РД":rd.isFact?"Изменить":"Нажми для подтверждения"}>
                               {rd?<div>
-                                <div style={{ fontSize:11,textShadow:glow }}>{rd.amount}€</div>
+                                <div style={{ fontSize:11,color:amtColor,fontWeight:isToday||isOverdue?700:undefined }}>{rd.amount}€</div>
                                 {rd.isFact
                                   ?<div style={{ fontSize:9,color:T.muted,marginTop:1 }}>{formatDate(rd.date)}</div>
                                   :(rdDateEdit?.playerId===player.id&&rdDateEdit?.rdNumber===rd.rd_number&&!readonly)
