@@ -21,14 +21,14 @@ export function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, 
           <div style={{ marginBottom:12 }}>
             <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>BLIK?</label>
             <div style={{ display:"flex",background:T.inputBg,borderRadius:7,padding:2,gap:2,width:"fit-content" }}>
-              {[["Нет",false],["BLIK",true]].map(([l,v])=><button key={String(v)} onClick={()=>setLeadForm(f=>({...f,is_blik:v}))} style={{ border:"none",padding:"5px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,background:leadForm.is_blik===v?(v?"linear-gradient(135deg,#d97706,#f59e0b)":"linear-gradient(135deg,#6366f1,#818cf8)"):"transparent",color:leadForm.is_blik===v?"#fff":T.muted,transition:"all .2s" }}>{l}</button>)}
+              {[["Нет",false],["BLIK",true]].map(([l,v])=><button key={String(v)} onClick={()=>setLeadForm(f=>({...f,is_blik:v}))} style={{ border:"none",padding:"5px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,background:leadForm.is_blik===v?(v?"rgba(244,183,64,.18)":"var(--grad)"):"transparent",color:leadForm.is_blik===v?"#fff":T.muted,transition:"all .2s" }}>{l}</button>)}
             </div>
           </div>
         )}
         <div style={{ marginBottom:12 }}>
           <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase" }}>Статус</label>
           <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-            {STATUSES.map(st=><button key={st} type="button" onClick={()=>setLeadForm(f=>({...f,status:st}))} style={{ cursor:"pointer",outline:leadForm.status===st?"2px solid #6366f1":"none",borderRadius:20,outlineOffset:2,background:"transparent",border:"none",padding:0 }}><StatusBadge status={st} dark={dark}/></button>)}
+            {STATUSES.map(st=><button key={st} type="button" onClick={()=>setLeadForm(f=>({...f,status:st}))} style={{ cursor:"pointer",outline:leadForm.status===st?"2px solid #9B5FD0":"none",borderRadius:20,outlineOffset:2,background:"transparent",border:"none",padding:0 }}><StatusBadge status={st} dark={dark}/></button>)}
           </div>
         </div>
         <div style={{ display:"flex",gap:10 }}>

@@ -8,7 +8,7 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
   const [expanded, setExpanded] = useState(()=>new Set());
   const toggleExpand=(id)=>setExpanded(prev=>{ const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
   const T = dark
-    ? { border:"#2d3148",text:"#e2e8f0",sub:"#94a3b8",muted:"#64748b",thBg:"#151824",rowB:"#1a1d27",inputBg:"#0f1117",card:"#151824" }
+    ? { border:"rgba(255,255,255,.08)",text:"#F0F0F2",sub:"#8B8B9A",muted:"#4A4A5A",thBg:"transparent",rowB:"rgba(255,255,255,.05)",inputBg:"rgba(255,255,255,.03)",card:"#101010" }
     : { border:"#dde1ea",text:"#1e293b",sub:"#64748b",muted:"#94a3b8",thBg:"#e8eaf0",rowB:"#e2e6ef",inputBg:"#e8eaf0",card:"#f5f6fa" };
   const sel={ background:T.inputBg,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" };
   const platGeo=(pid)=>platforms.find(p=>p.id===pid)?.geo_id;

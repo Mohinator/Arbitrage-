@@ -9,7 +9,7 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
   const [fSearch, setFSearch] = useState("");
   const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_planned":"Запланировал РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
   const T = dark
-    ? { border:"#2d3148",text:"#e2e8f0",sub:"#94a3b8",muted:"#64748b",thBg:"#151824",rowB:"#1a1d27",inputBg:"#0f1117" }
+    ? { border:"rgba(255,255,255,.08)",text:"#F0F0F2",sub:"#8B8B9A",muted:"#4A4A5A",thBg:"transparent",rowB:"rgba(255,255,255,.05)",inputBg:"rgba(255,255,255,.03)" }
     : { border:"#dde1ea",text:"#1e293b",sub:"#64748b",muted:"#94a3b8",thBg:"#e8eaf0",rowB:"#e2e6ef",inputBg:"#e8eaf0" };
   const sel={ background:T.inputBg,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" };
   const safeLogs=(logs||[]).filter(l=>l&&l.created_at);
