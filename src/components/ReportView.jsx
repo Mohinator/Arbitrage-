@@ -3,6 +3,7 @@ import { useState } from "react";
 export function ReportView({ players, redeposits, platforms, managers, geos, userGeos, dark }) {
   const todayS=new Date().toISOString().slice(0,10);
   const [fDate, setFDate] = useState(todayS);
+  const [period, setPeriod] = useState("day"); // "day" | "month" | "all"
   const [fGeo, setFGeo] = useState("");
   const [fMgr, setFMgr] = useState("");
   const [expanded, setExpanded] = useState(()=>new Set());
@@ -17,8 +18,9 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
   const passGeo=(p)=> !fGeo || pGeo(p)===fGeo;
   const passMgr=(p)=> !fMgr || p.manager_id===fMgr;
   const playerById=(id)=>players.find(p=>p.id===id);
-  const dayPlayers=(players||[]).filter(p=>p&&p.date===fDate&&passGeo(p)&&passMgr(p));
-  const dayRds=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&r.date===fDate&&passGeo(p)&&passMgr(p); });
+  const inPeriod=(d)=>{ if(!d) return false; if(period==="all") return true; if(period==="month") return d.slice(0,7)===fDate.slice(0,7); return d===fDate; };
+  const dayPlayers=(players||[]).filter(p=>p&&inPeriod(p.date)&&passGeo(p)&&passMgr(p));
+  const dayRds=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&inPeriod(r.date)&&passGeo(p)&&passMgr(p); });
   const mgrIds=[...new Set([...dayPlayers.map(p=>p.manager_id), ...dayRds.map(r=>playerById(r.player_id)?.manager_id)].filter(Boolean))];
   const rows=mgrIds.map(mid=>{
     const mp=dayPlayers.filter(p=>p.manager_id===mid);
@@ -91,7 +93,12 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
           <option value="">Все менеджеры</option>
           {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <input type="date" value={fDate} onChange={e=>setFDate(e.target.value)} style={sel}/>
+        <div style={{ display:"flex",border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden" }}>
+          {[["day","День"],["month","Месяц"],["all","Всё время"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{ setPeriod(k); setExpanded(new Set()); }} style={{ background:period===k?"linear-gradient(135deg,#F4924A 0%,#C9517A 50%,#9B5FD0 100%)":"transparent",color:period===k?"#fff":T.sub,border:"none",padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Gilroy','Inter',system-ui,sans-serif" }}>{l}</button>
+          ))}
+        </div>
+        {period!=="all"&&<input type={period==="month"?"month":"date"} value={period==="month"?fDate.slice(0,7):fDate} onChange={e=>setFDate(period==="month"?e.target.value+"-01":e.target.value)} style={sel}/>}
         <div style={{ display:"flex",border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden",marginLeft:"auto" }}>
           {[["mgr","Менеджеры"],["plat","Платформы"]].map(([k,l])=>(
             <button key={k} onClick={()=>{ setViewMode(k); setExpanded(new Set()); }} style={{ background:viewMode===k?"linear-gradient(135deg,#F4924A 0%,#C9517A 50%,#9B5FD0 100%)":"transparent",color:viewMode===k?"#fff":T.sub,border:"none",padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Gilroy','Inter',system-ui,sans-serif" }}>{l}</button>
@@ -106,9 +113,9 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
           </div>
         ))}
       </div>
-      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>{viewMode==="plat"?"Платформы":"Менеджеры"} за {(([y,m,d])=>`${d}.${m}.${y}`)(fDate.split("-"))}</h3>
+      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>{viewMode==="plat"?"Платформы":"Менеджеры"} {period==="all"?"за всё время":period==="month"?("за "+["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"][Number(fDate.slice(5,7))-1]+" "+fDate.slice(0,4)):("за "+(([y,m,d])=>`${d}.${m}.${y}`)(fDate.split("-")))}</h3>
       <div style={{ border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
-        {activeRows.length===0&&<div style={{ padding:24,textAlign:"center",color:T.muted,fontSize:13 }}>В этот день никто не работал</div>}
+        {activeRows.length===0&&<div style={{ padding:24,textAlign:"center",color:T.muted,fontSize:13 }}>{period==="all"?"Нет данных":period==="month"?"В этом месяце никто не работал":"В этот день никто не работал"}</div>}
         {activeRows.map((r,i)=>{
           const open=expanded.has(r.id);
           const breakdown=open?breakdownFor(r.id):[];
