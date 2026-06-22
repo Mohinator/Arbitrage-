@@ -148,6 +148,20 @@ tr.tag-hot td,tr.tag-warm td,tr.tag-cold td,tr.tag-problem td{background:transpa
   border:1px solid rgba(155,79,224,.3);
 }
 
+/* ── сайдбар-тултип (мгновенный) ── */
+.sb-tip{position:relative;}
+.sb-tip::after{
+  content:attr(data-tip);
+  position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);
+  background:var(--surface);color:var(--text);
+  font-family:var(--gilroy);font-size:12px;font-weight:600;white-space:nowrap;
+  padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;z-index:600;
+  transition:opacity .08s ease;
+}
+.sb-tip:hover::after{opacity:1;}
+
 /* ── утилиты ── */
 .alert-pulse{animation:pulse 2s infinite;}
 .progress-bar{transition:width .8s cubic-bezier(.4,0,.2,1);}

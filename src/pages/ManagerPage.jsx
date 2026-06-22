@@ -12,7 +12,8 @@ import * as P from "../presence";
 function SbIcon({ name }) {
   const c = { width:18, height:18, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:1.8, strokeLinecap:"round", strokeLinejoin:"round" };
   switch(name){
-    case "main": case "team": return <svg {...c}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+    case "main": return <svg {...c}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+    case "team": return <svg {...c}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
     case "tasks": return <svg {...c}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
     case "platforms": return <svg {...c}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
     case "report": return <svg {...c}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
@@ -482,7 +483,7 @@ export function ManagerPage({ manager, onLogout }) {
           <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"8px 0",borderTop:`1px solid ${T.border}`,borderBottom:`1px solid ${T.border}`,width:"100%",marginBottom:6 }}>
             {myGeos.map(g=>{
               const on=activeGeo===g.id;
-              return <div key={g.id} onClick={()=>setActiveGeo(g.id)} title={g.name} style={{ width:38,height:28,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,fontFamily:THEME.fontGilroy,fontSize:10,fontWeight:600,letterSpacing:".05em",color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>{(g.code||g.name.slice(0,2)).toUpperCase()}</div>;
+              return <div key={g.id} onClick={()=>setActiveGeo(g.id)} className="sb-tip" data-tip={g.name} style={{ width:38,height:28,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,fontFamily:THEME.fontGilroy,fontSize:10,fontWeight:600,letterSpacing:".05em",color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>{(g.code||g.name.slice(0,2)).toUpperCase()}</div>;
             })}
           </div>
         )}
@@ -499,7 +500,7 @@ export function ManagerPage({ manager, onLogout }) {
             const on=tab===key;
             const badge=key==="tasks"&&overdueRds.length>0?overdueRds.length:null;
             return (
-              <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} title={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
+              <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="sb-tip" data-tip={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
                 <SbIcon name={key}/>
                 {badge&&<span style={{ position:"absolute",top:3,right:3,minWidth:14,height:14,padding:"0 3px",background:THEME.bad,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:THEME.fontGilroy,fontSize:8,fontWeight:700,color:"#fff" }}>{badge}</span>}
               </div>
@@ -508,7 +509,7 @@ export function ManagerPage({ manager, onLogout }) {
         </nav>
         <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,paddingTop:8,borderTop:`1px solid ${T.border}`,width:"100%" }}>
           <div title={manager.name} style={{ width:34,height:34,borderRadius:10,background:THEME.gradSoft,border:"1px solid rgba(155,79,224,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:THEME.fontGilroy,fontSize:13,fontWeight:700,color:"#fff" }}>{manager.name.slice(0,1).toUpperCase()}</div>
-          <div onClick={onLogout} title="Выйти" style={{ width:34,height:30,display:"flex",alignItems:"center",justifyContent:"center",color:T.muted,borderRadius:8,cursor:"pointer" }}>
+          <div onClick={onLogout} className="sb-tip" data-tip="Выйти" style={{ width:34,height:30,display:"flex",alignItems:"center",justifyContent:"center",color:T.muted,borderRadius:8,cursor:"pointer" }}>
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </div>
         </div>
@@ -536,8 +537,8 @@ export function ManagerPage({ manager, onLogout }) {
                 <div>
                   <div style={{ color:T.muted,fontSize:11,marginBottom:14 }}>Конверсий из Keitaro за период: {sverkaData.total}</div>
                   <div style={card}>
-                    <div style={{ padding:"10px 14px",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontWeight:700,fontSize:13 }}>❗ Не заведён в трекере ({sverkaData.notInTracker.length})</div>
-                    {sverkaData.notInTracker.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все депозиты из Keitaro заведены ✅</div>}
+                    <div style={{ padding:"10px 14px",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontWeight:700,fontSize:13 }}>Не заведён в трекере ({sverkaData.notInTracker.length})</div>
+                    {sverkaData.notInTracker.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все депозиты из Keitaro заведены </div>}
                     {sverkaData.notInTracker.map((c,i)=>(
                       <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
                         <span style={{ color:T.text,fontWeight:600 }}>{c.platName} <span style={{color:T.muted,fontWeight:400}}>· {c.manager}</span></span>
@@ -550,7 +551,7 @@ export function ManagerPage({ manager, onLogout }) {
                   {(sverkaData.notInTrackerUnknown||[]).length>0&&(
                     <div style={card}>
                       <div onClick={()=>setShowUnknownDep(v=>!v)} style={{ padding:"10px 14px",color:T.sub,fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-                        <span>❓ Не заведён · менеджер не распознан ({sverkaData.notInTrackerUnknown.length})</span>
+                        <span>Не заведён · менеджер не распознан ({sverkaData.notInTrackerUnknown.length})</span>
                         <span style={{ color:T.muted,fontSize:11 }}>{showUnknownDep?"▲":"▼"}</span>
                       </div>
                       <div style={{ padding:"0 14px 6px",color:T.muted,fontSize:11 }}>Депозиты без лида, чей менеджер в кампании Keitaro не привязан к keitaro-имени. Впиши имя из хвоста в нужного менеджера — деп уйдёт в основной список.</div>
@@ -565,22 +566,22 @@ export function ManagerPage({ manager, onLogout }) {
                     </div>
                   )}
                   <div style={card}>
-                    <div style={{ padding:"10px 14px",background:"rgba(251,191,36,.08)",color:"#fcd34d",fontWeight:700,fontSize:13 }}>⚠ Проверь sub18 ({sverkaData.checkSub.length})</div>
+                    <div style={{ padding:"10px 14px",background:"rgba(251,191,36,.08)",color:"#fcd34d",fontWeight:700,fontSize:13 }}>Проверь sub18 ({sverkaData.checkSub.length})</div>
                     <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>Лиды со статусом «Да», по которым нет депозита в Keitaro</div>
-                    {sverkaData.checkSub.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все «Да» подтверждены в Keitaro ✅</div>}
+                    {sverkaData.checkSub.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все «Да» подтверждены в Keitaro </div>}
                     {sverkaData.checkSub.map((p,i)=>(
                       <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
                         <span style={{ color:T.text,fontWeight:600 }}>{p.name} <span style={{ color:"#fcd34d",fontWeight:400 }}>· {p.mgr}</span></span>
                         <span style={{ color:T.sub,fontFamily:"monospace" }}>{p.sub18}</span>
                         <span style={{ color:T.muted }}>{p.platName}</span>
                         {sverkaData.isTL&&<button onClick={e=>{ e.stopPropagation(); ignoreSverkaItem("check_sub",p.sub18,p.platId); }} title="Исключить из сверки" style={{ background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1 }}>✕</button>}
-                        {p.hint&&<span style={{ flexBasis:"100%",color:"#fca5a5",fontSize:11,marginTop:2 }}>⚠ возможно, перепутана платформа — в Keitaro деп на: <b>{p.hint}</b></span>}
+                        {p.hint&&<span style={{ flexBasis:"100%",color:"#fca5a5",fontSize:11,marginTop:2 }}>возможно, перепутана платформа — в Keitaro деп на: <b>{p.hint}</b></span>}
                       </div>
                     ))}
                   </div>
                   {sverkaData.wrongMgr&&sverkaData.wrongMgr.length>0&&(
                     <div style={card}>
-                      <div style={{ padding:"10px 14px",background:"rgba(168,85,247,.1)",color:"#c4b5fd",fontWeight:700,fontSize:13 }}>↪ Лид не на том менеджере ({sverkaData.wrongMgr.length})</div>
+                      <div style={{ padding:"10px 14px",background:"rgba(168,85,247,.1)",color:"#c4b5fd",fontWeight:700,fontSize:13 }}>Лид не на том менеджере ({sverkaData.wrongMgr.length})</div>
                       <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>sub18 и платформа сошлись, но в Keitaro деп на другого менеджера</div>
                       {sverkaData.wrongMgr.map((p,i)=>(
                         <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
@@ -594,7 +595,7 @@ export function ManagerPage({ manager, onLogout }) {
                   )}
                   {sverkaData.statusMismatch&&sverkaData.statusMismatch.length>0&&(
                     <div style={card}>
-                      <div style={{ padding:"10px 14px",background:"rgba(34,197,94,.1)",color:"#86efac",fontWeight:700,fontSize:13 }}>✔ Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
+                      <div style={{ padding:"10px 14px",background:"rgba(34,197,94,.1)",color:"#86efac",fontWeight:700,fontSize:13 }}>Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
                       <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>В Keitaro деп подтверждён, а в трекере статус другой — обнови</div>
                       {sverkaData.statusMismatch.map((p,i)=>(
                         <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
@@ -686,8 +687,8 @@ export function ManagerPage({ manager, onLogout }) {
         <span style={{ fontSize:11,fontWeight:700,fontFamily:THEME.fontGilroy,background:THEME.gradSoft,color:"#c8a8ff",padding:"3px 9px",borderRadius:50,letterSpacing:".05em",border:"1px solid rgba(155,79,224,.3)" }}>{isTeamLead?"ТИМ ЛИД":"МЕНЕДЖЕР"}</span>
         <span style={{ color:T.muted,fontSize:13 }}>/ <b style={{ color:T.sub,fontWeight:500 }}>{manager.name}</b></span>
         <div style={{ flex:1 }}/>
-        <button onClick={()=>{ genAutomation(); setShowAutomation(true); }} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>⚡ Автоматизация</button>
-        <button onClick={runSverka} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>🔍 Сверка</button>
+        <button onClick={()=>{ genAutomation(); setShowAutomation(true); }} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>Автоматизация</button>
+        <button onClick={runSverka} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>Сверка</button>
         <button onClick={()=>setShowAddLead(true)} className="btn-p" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 18px",fontSize:13 }}>+ Добавить лида</button>
       </header>
 
@@ -707,20 +708,20 @@ export function ManagerPage({ manager, onLogout }) {
               const plannedAvg=myActive.length>0?(myFactTotal+myPlannedExtra)/myActive.length:0;
               const needMore=Math.max(0,(plat.target_avg_check||0)*myActive.length-myFactTotal);
               return(
-                <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
+                <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"rgba(61,214,140,.35)":T.border}`,borderRadius:10,padding:"7px 12px",minWidth:160,display:"flex",flexDirection:"column",gap:3 }}>
                   <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
-                  <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                  <div style={{ display:"flex",gap:7,alignItems:"center",flexWrap:"wrap" }}>
                     <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avgFact.toFixed(1)}€</span>
-                    <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                    <span style={{ fontSize:11,color:T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                     <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                   </div>
                   {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
-                  <div style={{ marginTop:2 }}>
+                  <div style={{ marginTop:1 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                       <span>Капа</span><span>{capCount}{plat.cap?`/${plat.cap}`:""}</span>
                     </div>
                     <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                      {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4,transition:"width .3s" }}/>}
+                      {capPct!==null&&<div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4,transition:"width .3s" }}/>}
                     </div>
                   </div>
                 </div>
@@ -761,7 +762,7 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           {todayRds.length>0&&(
             <div style={{ background:T.alertBg,border:`1px solid ${T.alertBorder}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap" }}>
-              <span className="alert-pulse" style={{ fontSize:18 }}>🔔</span>
+              <span className="alert-pulse" style={{ fontSize:18 }}></span>
               <span style={{ color:"#d97706",fontWeight:700,fontSize:13,marginRight:2 }}>Сегодня нужно сделать РД:</span>
               {todayRds.flatMap(p=>{
                 const plat=platforms.find(pl=>pl.id===p.platform_id);
@@ -774,7 +775,7 @@ export function ManagerPage({ manager, onLogout }) {
             </div>
           )}
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
-            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
+            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
             <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
               <option value="">Все платформы</option>
               {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -811,7 +812,7 @@ export function ManagerPage({ manager, onLogout }) {
           <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
             {/* ЛЕВО: задачи на сегодня */}
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
-              <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {todoDate? new Date(todoDate+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
+              <h3 style={{ color:THEME.lead,fontSize:14,margin:"0 0 10px" }}>Задачи на {todoDate? new Date(todoDate+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
               {(()=>{
                 const taskDate = todoDate || today;
                 const sourcePlayers=(isTeamLead
@@ -830,22 +831,22 @@ export function ManagerPage({ manager, onLogout }) {
                 if(tasks.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>;
                 return tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
                   <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
-                    <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>
+                    <div style={{ width:8,height:8,borderRadius:"50%",background:THEME.grad,flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
-                        {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
+                        {isTeamLead&&mgr&&<span className="badge-role" style={{ fontSize:11 }}>{mgr.name}</span>}
                       </div>
                       <div style={{ fontSize:12,color:T.muted }}>{plat?.name||"—"} · РД{rdNum}</div>
                     </div>
-                    {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc" }}>{amount}€</div>}
+                    {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:T.text }}>{amount}€</div>}
                   </div>
                 ));
               })()}
             </div>
             {/* ПРАВО: просроченные */}
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
-              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
+              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>Просроченные</h3>
               {(()=>{
                 const source=(isTeamLead
                   ? allPlayers.filter(p=>p&&overdueDatesByPlayer[p.id]&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
@@ -856,7 +857,7 @@ export function ManagerPage({ manager, onLogout }) {
                   if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
                   return true;
                 }).sort((a,b)=>new Date(overdueDatesByPlayer[a.id])-new Date(overdueDatesByPlayer[b.id]));
-                if(filtered.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>;
+                if(filtered.length===0) return <div style={{ color:T.muted,fontSize:13,padding:"16px 0" }}>Нет просроченных РД</div>;
                 return filtered.map(player=>{
                   const plat=platforms.find(p=>p.id===player.platform_id);
                   const mgr=allManagers.find(m=>m.id===player.manager_id);
@@ -869,7 +870,7 @@ export function ManagerPage({ manager, onLogout }) {
                       <div style={{ flex:1 }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                           <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
-                          {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
+                          {isTeamLead&&mgr&&<span className="badge-role" style={{ fontSize:11 }}>{mgr.name}</span>}
                         </div>
                         <div style={{ fontSize:12,color:T.muted }}>{plat?.name||"—"}{planned?` · РД${planned.rd_number}`:""} · {od?(([y,m,d])=>`${d}.${m}`)(od.split("-")):""}</div>
                       </div>
@@ -936,17 +937,17 @@ export function ManagerPage({ manager, onLogout }) {
                 {filtered.length===0&&<div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>Нет задач по фильтру</div>}
                 {filtered.map(({player,plat,mgr,rdNum,date,isOverdue},idx)=>(
                   <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
-                    <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":"#6366f1",flexShrink:0 }}/>
+                    <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":THEME.grad,flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:3 }}>
                         <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{player.name}</span>
                         {player.sub18&&<span onClick={()=>{ navigator.clipboard.writeText(player.sub18); showToast("SUB18 скопирован"); }} style={{ color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer",borderBottom:`1px dashed ${T.border}` }} title="Скопировать SUB18">{player.sub18}</span>}
-                        {isTeamLead&&mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}
+                        {isTeamLead&&mgr&&<span className="badge-role" style={{ fontSize:11 }}>{mgr.name}</span>}
                       </div>
                       <div style={{ fontSize:12,color:T.muted }}>{plat?.name} · РД{rdNum}</div>
                     </div>
                     <div style={{ textAlign:"right" }}>
-                      {(()=>{ const pRd=plannedRds.find(r=>r&&r.player_id===player.id&&r.rd_number===rdNum); return pRd?<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc",marginBottom:2 }}>{pRd.amount}€</div>:null; })()}
+                      {(()=>{ const pRd=plannedRds.find(r=>r&&r.player_id===player.id&&r.rd_number===rdNum); return pRd?<div style={{ fontSize:14,fontWeight:700,color:T.text,marginBottom:2 }}>{pRd.amount}€</div>:null; })()}
                       <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#a5b4fc",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
                     </div>
                   </div>
@@ -969,7 +970,7 @@ export function ManagerPage({ manager, onLogout }) {
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
                 <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
-                  <span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 10px",borderRadius:6,fontSize:12,fontWeight:700 }}>{geo.name}</span>
+                  <span className="badge-role">{geo.name}</span>
                 </div>
                 <div style={{ display:"flex",gap:10,flexWrap:"wrap",marginBottom:16 }}>
                   {geoManagers2.map(m=>{
@@ -979,15 +980,17 @@ export function ManagerPage({ manager, onLogout }) {
                     const avg=mActive.length>0?total/mActive.length:0;
                     const isViewing=viewing===m.id;
                     return(
-                      <div key={m.id} onClick={()=>setViewingManager(prev=>({...prev,[geo.id]:isViewing?null:m.id}))} style={{ background:isViewing?`linear-gradient(135deg,${dark?"#1e3a5f":"#dbeafe"},${dark?"#1e2235":"#eff6ff"})`:T.surface,border:`1px solid ${isViewing?"#6366f1":T.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",transition:"all .2s",minWidth:160 }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
-                          <div style={{ width:7,height:7,borderRadius:"50%",background:m.role==="team_lead"?"#14b8a6":"#6366f1" }}/>
-                          <span style={{ fontWeight:700,color:T.text,fontSize:13 }}>{m.name}</span>
-                          {m.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:9,padding:"1px 5px",borderRadius:4,fontWeight:700 }}>ТЛ</span>}
+                      <div key={m.id} onClick={()=>setViewingManager(prev=>({...prev,[geo.id]:isViewing?null:m.id}))} style={{ background:isViewing?THEME.grad:T.border,padding:isViewing?1.5:1,borderRadius:11,cursor:"pointer",transition:"all .2s",minWidth:160 }}>
+                        <div style={{ background:T.surface,borderRadius:9.5,padding:"11px 15px" }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
+                            <div style={{ width:7,height:7,borderRadius:"50%",background:THEME.grad }}/>
+                            <span style={{ fontWeight:700,color:T.text,fontSize:13 }}>{m.name}</span>
+                            {m.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:9,padding:"1px 5px",borderRadius:4,fontWeight:700 }}>ТЛ</span>}
+                          </div>
+                          <div style={{ fontSize:11,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
+                          <div style={{ fontSize:11,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mActive.length}</strong></div>
+                          <div style={{ fontSize:11,color:T.muted }}>СЧ: <strong style={{ color:avg>0?(avg>=platforms[0]?.target_avg_check?"#86efac":"#fca5a5"):T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
                         </div>
-                        <div style={{ fontSize:11,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
-                        <div style={{ fontSize:11,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mActive.length}</strong></div>
-                        <div style={{ fontSize:11,color:T.muted }}>СЧ: <strong style={{ color:avg>0?(avg>=platforms[0]?.target_avg_check?"#86efac":"#fca5a5"):T.muted }}>{avg>0?avg.toFixed(1)+"€":"—"}</strong></div>
                       </div>
                     );
                   })}
@@ -1013,20 +1016,20 @@ export function ManagerPage({ manager, onLogout }) {
                         const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да").length;
                         const capPct=plat.cap?Math.min(100,Math.round(allActive/plat.cap*100)):null;
                         return(
-                          <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"#166534":T.border}`,borderRadius:10,padding:"8px 14px",minWidth:170,display:"flex",flexDirection:"column",gap:4 }}>
+                          <div key={plat.id} style={{ background:T.surface,border:`1px solid ${ok?"rgba(61,214,140,.35)":T.border}`,borderRadius:10,padding:"7px 12px",minWidth:160,display:"flex",flexDirection:"column",gap:3 }}>
                             <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
-                            <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                            <div style={{ display:"flex",gap:7,alignItems:"center",flexWrap:"wrap" }}>
                               <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avg.toFixed(1)}€</span>
-                              <span style={{ fontSize:11,color:"#a5b4fc",fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                              <span style={{ fontSize:11,color:T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                               <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                             </div>
                             {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
-                            <div style={{ marginTop:2 }}>
+                            <div style={{ marginTop:1 }}>
                               <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                                 <span>Капа</span><span>{allActive}{plat.cap?`/${plat.cap}`:""}</span>
                               </div>
                               <div style={{ background:T.border,borderRadius:4,height:4 }}>
-                                {capPct!==null&&<div style={{ width:`${capPct}%`,background:capPct>=100?"#ef4444":capPct>=80?"#f59e0b":"#6366f1",borderRadius:4,height:4 }}/>}
+                                {capPct!==null&&<div style={{ width:`${capPct}%`,background:THEME.grad,borderRadius:4,height:4 }}/>}
                               </div>
                             </div>
                           </div>
@@ -1034,7 +1037,7 @@ export function ManagerPage({ manager, onLogout }) {
                       }).filter(Boolean)}
                     </div>
                     <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
-                      <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="🔍 Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
+                      <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
                       <select value={teamFilterPlatform} onChange={e=>setTeamFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
                         <option value="">Все платформы</option>
                         {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -1090,7 +1093,7 @@ export function ManagerPage({ manager, onLogout }) {
               if(todoMgrFilter&&p.manager_id!==todoMgrFilter) return false;
               return true;
             }).sort((a,b)=>new Date(overdueDatesByPlayer[a.id])-new Date(overdueDatesByPlayer[b.id]));
-            if(filtered.length===0) return <div style={{ textAlign:"center",padding:40,color:T.muted }}>✅ Нет просроченных РД</div>;
+            if(filtered.length===0) return <div style={{ textAlign:"center",padding:40,color:T.muted }}>Нет просроченных РД</div>;
             return(
               <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                 <table style={{ width:"100%",borderCollapse:"collapse" }}>
@@ -1107,10 +1110,10 @@ export function ManagerPage({ manager, onLogout }) {
                         <tr key={player.id} className="row-hover" style={{ background:dark?"rgba(239,68,68,.04)":"rgba(239,68,68,.03)" }}>
                           <td style={{ ...S.td,fontWeight:600,color:T.text }}>{player.name}</td>
                           <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat?.name||"—"}</td>
-                          {isTeamLead&&<td style={{ ...S.td,color:"#a5b4fc",fontSize:12 }}>{mgr?.name||"—"}</td>}
+                          {isTeamLead&&<td style={{ ...S.td,color:T.sub,fontSize:12 }}>{mgr?.name||"—"}</td>}
                           <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
                           <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
-                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>⚠ {overdueDate?(([y,m,d])=>`${d}.${m}.${y}`)(overdueDate.split("-")):"—"}</span></td>
+                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>{overdueDate?(([y,m,d])=>`${d}.${m}.${y}`)(overdueDate.split("-")):"—"}</span></td>
                           <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
                           <td style={S.td}><StatusBadge status={player.status} dark={dark}/></td>
                         </tr>
@@ -1372,15 +1375,15 @@ export function ManagerPage({ manager, onLogout }) {
                 return(
                   <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:active.length>0?`1px solid ${T.border}`:"none" }}>
-                      <div style={{ width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1",flexShrink:0 }}/>
+                      <div style={{ width:7,height:7,borderRadius:"50%",background:THEME.grad,flexShrink:0 }}/>
                       <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{mgr.name}</span>
                       {mgr.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700 }}>Тим лид</span>}
-                      {mgrGeos.map(g=><span key={g.id} style={{ background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:10,padding:"1px 6px",borderRadius:4 }}>{g.name}</span>)}
+                      {mgrGeos.map(g=><span key={g.id} className="badge-role" style={{ fontSize:10,padding:"1px 7px" }}>{g.name}</span>)}
                       <div style={{ flex:1 }}/>
                       <span style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></span>
                       <span style={{ fontSize:12,color:T.muted }}>Сумма: <strong style={{ color:T.text }}>{total.toFixed(0)}€</strong></span>
-                      {overdue.length>0&&<span style={{ fontSize:12,color:"#fca5a5" }}>⚠ Просроч: <strong>{overdue.length}</strong></span>}
-                      {noPlanned.length>0&&<span style={{ fontSize:12,color:"#f59e0b" }}>📋 Без план РД: <strong>{noPlanned.length}</strong></span>}
+                      {overdue.length>0&&<span style={{ fontSize:12,color:"#fca5a5" }}>Просроч: <strong>{overdue.length}</strong></span>}
+                      {noPlanned.length>0&&<span style={{ fontSize:12,color:"#f59e0b" }}>Без план РД: <strong>{noPlanned.length}</strong></span>}
                     </div>
                     {active.length>0&&(
                       <table style={{ width:"100%",borderCollapse:"collapse" }}>
@@ -1425,7 +1428,7 @@ export function ManagerPage({ manager, onLogout }) {
         const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byPres[k]&&byPres[k].full_name)||(byUser[k]&&byUser[k].crm_user_name)||k; };
         const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
         return (
-        <div style={{ maxWidth:980 }}>
+        <div style={{ padding:"16px 20px",maxWidth:1040 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
             <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>

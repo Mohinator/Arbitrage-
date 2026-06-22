@@ -576,7 +576,7 @@ export function AdminPage({ onLogout }) {
               </div>
               <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
-                  <h3 style={{ color:"#c8a8ff",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {taskDateFilter? new Date(taskDateFilter+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
+                  <h3 style={{ color:"#c8a8ff",fontSize:14,margin:"0 0 10px" }}>Задачи на {taskDateFilter? new Date(taskDateFilter+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
                   {tasks.length===0&&<div style={{ color:"#8B8B9A",fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>}
                   {tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
                     <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={card}>
@@ -590,8 +590,8 @@ export function AdminPage({ onLogout }) {
                   ))}
                 </div>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
-                  <h3 style={{ color:"#F2706E",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
-                  {overdue.length===0&&<div style={{ color:"#8B8B9A",fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>}
+                  <h3 style={{ color:"#F2706E",fontSize:14,margin:"0 0 10px" }}>Просроченные</h3>
+                  {overdue.length===0&&<div style={{ color:"#8B8B9A",fontSize:13,padding:"16px 0" }}>Нет просроченных РД</div>}
                   {overdue.map(player=>{
                     const plat=platforms.find(p=>p.id===player.platform_id);
                     const mgr=managers.find(m=>m.id===player.manager_id);
@@ -664,7 +664,7 @@ export function AdminPage({ onLogout }) {
             <p style={{ color:"#4A4A5A",fontSize:12,marginBottom:20 }}>Резервные копии всех таблиц отправляются на вебхук. Хранится одна (самая свежая) точка восстановления.</p>
 
             <div style={{ background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:20,marginBottom:16 }}>
-              <h3 style={{ color:"#F0F0F2",fontSize:14,margin:"0 0 6px" }}>💾 Резервная копия</h3>
+              <h3 style={{ color:"#F0F0F2",fontSize:14,margin:"0 0 6px" }}>Резервная копия</h3>
               <p style={{ color:"#4A4A5A",fontSize:12,margin:"0 0 14px" }}>Читает все таблицы и отправляет JSON на вебхук. Авто-бэкап каждый день в 08:00 настраивается на стороне n8n (расписание).</p>
               <button onClick={doBackup} disabled={backupBusy} style={{ background:backupBusy?"rgba(255,255,255,.1)":"var(--grad)",border:"none",color:"#fff",padding:"10px 18px",borderRadius:9,cursor:backupBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{backupBusy?"Отправляю…":"Сделать бэкап сейчас"}</button>
               {lastBackupAt&&<span style={{ color:"#3DD68C",fontSize:12,marginLeft:12 }}>Последний: {lastBackupAt}</span>}
@@ -855,7 +855,7 @@ export function AdminPage({ onLogout }) {
 
         {pendingRestore&&(
           <div style={{ position:"fixed",left:0,right:0,bottom:0,zIndex:8000,background:"#101010",borderTop:"2px solid #F4924A",padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",boxShadow:"0 -8px 32px rgba(0,0,0,.5)" }}>
-            <span style={{ color:"#F4B740",fontWeight:700,fontSize:13 }}>⚠ Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
+            <span style={{ color:"#F4B740",fontWeight:700,fontSize:13 }}>Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
             <span style={{ color:"#4A4A5A",fontSize:12 }}>{pendingRestore.scope?pendingRestore.scope+" · ":""}{(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
             <div style={{ marginLeft:"auto",display:"flex",gap:10 }}>
               <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>✓ Подтвердить</button>

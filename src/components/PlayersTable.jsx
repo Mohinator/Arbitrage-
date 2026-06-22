@@ -244,7 +244,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
               onKeyDown={e=>{ if(e.key==="Enter") closeRdPopup(true); if(e.key==="Escape") closeRdPopup(false); }}
               style={{ background:"transparent",border:"none",borderBottom:`1px solid ${Tb.border}`,color:Tb.text,padding:"2px 0",fontSize:14,outline:"none",width:"100%",marginBottom:6,fontWeight:600 }}/>
             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
-              <span style={{ fontSize:10,color:Tb.muted }}>📅</span>
+              <span style={{ fontSize:10,color:Tb.muted }}></span>
               <input type="date" value={rdInputDate} onChange={e=>setRdInputDate(e.target.value)}
                 style={{ background:"transparent",border:"none",color:Tb.muted,fontSize:11,outline:"none",flex:1,cursor:"pointer" }}/>
             </div>
