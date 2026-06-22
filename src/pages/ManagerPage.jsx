@@ -520,7 +520,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {showSverka&&(
         <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:20,overflowY:"auto" }} onClick={e=>e.target===e.currentTarget&&setShowSverka(false)}>
-          <div className="slide-in" style={{ background:"rgba(16,16,18,.40)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:22,width:"100%",maxWidth:720,marginTop:30,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+          <div className="slide-in" style={{ background:"rgba(16,16,18,.25)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:22,width:"100%",maxWidth:720,marginTop:30,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
               <h3 style={{ color:T.text,fontSize:16,fontWeight:700,margin:0 }}>Сверка с Keitaro</h3>
               <div style={{ display:"flex",gap:8 }}>
@@ -645,7 +645,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {showAutomation&&(
         <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-          <div className="slide-in" style={{ background:"rgba(16,16,18,.40)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:780,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+          <div className="slide-in" style={{ background:"rgba(16,16,18,.25)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:780,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
             <h3 style={{ color:T.text,marginBottom:4,fontSize:15,fontWeight:700 }}>Предпросмотр автоматизации</h3>
             <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>РД распределены для достижения целевого СЧ платформы</p>
             {automationPreview.length===0?<p style={{ color:T.muted }}>Нет лидов для автоматизации</p>:(
@@ -1155,7 +1155,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {showGeoForm&&(
         <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-          <div className="slide-in" style={{ background:"rgba(16,16,18,.40)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+          <div className="slide-in" style={{ background:"rgba(16,16,18,.25)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
             <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>Добавить гео</h3>
             <div style={{ marginBottom:12 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Название *</label><input value={geoForm.name} onChange={e=>setGeoForm(f=>({...f,name:e.target.value}))} placeholder="Польша" style={IS}/></div>
             <div style={{ marginBottom:18 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Код (2 буквы)</label><input value={geoForm.code} onChange={e=>setGeoForm(f=>({...f,code:e.target.value}))} placeholder="PL" maxLength={3} style={IS}/></div>
@@ -1169,7 +1169,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {showPlatformForm&&(
         <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-          <div className="slide-in" style={{ background:"rgba(16,16,18,.40)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
+          <div className="slide-in" style={{ background:"rgba(16,16,18,.25)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
             <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>{editingPlatform?"Редактировать":"Добавить"} платформу</h3>
             {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Мин. депозит BLIK (€)","min_deposit_blik","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
               <div key={k} style={{ marginBottom:12 }}><label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
