@@ -36,7 +36,9 @@ export default async function handler(req, res) {
     }
 
     // 2) сообщения по диалогам (порциями, чтобы успеть в таймаут)
+    const DEBUG = req.query.debug === "1" || req.query.debug === "true";
     const users = {}; // uid -> [ts,...]
+    const dbg = {};   // uid -> [{conv, fetched, truncated, types:{}, outInWindow, sample:[...]}]
     const add = (uid, ts) => { if (uid == null) return; const k = String(uid); (users[k] || (users[k] = [])).push(ts); };
     let scannedMsgs = 0;
     const worker = async ({ id, uid }) => {
@@ -45,13 +47,26 @@ export default async function handler(req, res) {
         if (!r.ok) return;
         const j = await r.json();
         const msgs = j.data || [];
+        let outInWindow = 0; const sample = []; const types = {}; let minTs = Infinity, maxTs = -Infinity;
         for (const m of msgs) {
+          if (DEBUG) { types[m.type] = (types[m.type]||0)+1; const tt=Date.parse(m.created_at||0); if(!isNaN(tt)){ minTs=Math.min(minTs,tt); maxTs=Math.max(maxTs,tt); } }
           if (m.type !== "outgoing") continue;
           const t = Date.parse(m.created_at || 0);
           if (isNaN(t) || t < fromMs || t >= toMs) continue;
           const author = m.manager_id ?? m.user_id ?? m.created_by ?? (m.author && m.author.id);
+          const ak = String(author != null ? author : uid);
           add(author != null ? author : uid, m.created_at);
+          if (DEBUG){ outInWindow++; if(sample.length<60) sample.push({ at:m.created_at, author:ak }); }
           scannedMsgs++;
+        }
+        if (DEBUG) {
+          const k = String(uid);
+          (dbg[k] || (dbg[k] = [])).push({
+            conv:id, fetched:msgs.length, truncated:msgs.length>=50,
+            types, outInWindow,
+            spanFetched: (isFinite(minTs)?new Date(minTs).toISOString():null)+" … "+(isFinite(maxTs)?new Date(maxTs).toISOString():null),
+            sample
+          });
         }
       } catch (e) { /* пропускаем диалог при ошибке */ }
     };
@@ -59,7 +74,9 @@ export default async function handler(req, res) {
     for (let i = 0; i < convs.length; i += CONC) await Promise.all(convs.slice(i, i + CONC).map(worker));
 
     res.setHeader("Cache-Control", "no-store");
-    res.status(200).json({ ok:true, refreshed_at:new Date().toISOString(), conversations:convs.length, messages:scannedMsgs, users });
+    const out = { ok:true, refreshed_at:new Date().toISOString(), conversations:convs.length, messages:scannedMsgs, users };
+    if (DEBUG) { out.window = { from:new Date(fromMs).toISOString(), to:new Date(toMs).toISOString() }; out.debug = dbg; out.convAssign = convs.map(c=>({conv:c.id,uid:String(c.uid)})); }
+    res.status(200).json(out);
   } catch (e) {
     res.status(200).json({ ok:false, error:String((e&&e.message)||e), users:{} });
   }
