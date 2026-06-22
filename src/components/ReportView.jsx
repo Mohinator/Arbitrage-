@@ -6,6 +6,7 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
   const [fGeo, setFGeo] = useState("");
   const [fMgr, setFMgr] = useState("");
   const [expanded, setExpanded] = useState(()=>new Set());
+  const [viewMode, setViewMode] = useState("mgr"); // "mgr" | "plat"
   const toggleExpand=(id)=>setExpanded(prev=>{ const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
   const T = dark
     ? { border:"rgba(255,255,255,.08)",text:"#F0F0F2",sub:"#8B8B9A",muted:"#4A4A5A",thBg:"transparent",rowB:"rgba(255,255,255,.05)",inputBg:"rgba(255,255,255,.03)",card:"#101010" }
@@ -49,6 +50,33 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
         kidki:pp.filter(p=>p.status==="Кинул").length };
     }).filter(r=>r.deposits||r.redeps||r.neotbiv||r.kidki).sort((a,b)=>b.deposits-a.deposits);
   };
+  // ── По платформам (сводно по всем менеджерам) ──
+  const platRows=(()=>{
+    const platIds=[...new Set([...dayPlayers.map(p=>p.platform_id||"_none"), ...dayRds.map(r=>playerById(r.player_id)?.platform_id||"_none")])];
+    return platIds.map(pid=>{
+      const pp=dayPlayers.filter(p=>(p.platform_id||"_none")===pid);
+      return { id:pid, name:pid==="_none"?"Без платформы":(platforms.find(pl=>pl.id===pid)?.name||"—"),
+        deposits:pp.filter(p=>p.status==="Да").length,
+        redeps:dayRds.filter(r=>(playerById(r.player_id)?.platform_id||"_none")===pid).length,
+        neotbiv:pp.filter(p=>p.status==="Нет").length,
+        kidki:pp.filter(p=>p.status==="Кинул").length };
+    }).filter(r=>r.deposits||r.redeps||r.neotbiv||r.kidki).sort((a,b)=>b.deposits-a.deposits);
+  })();
+  const mgrBreakdown=(pid)=>{
+    const pp=dayPlayers.filter(p=>(p.platform_id||"_none")===pid);
+    const pr=dayRds.filter(r=>(playerById(r.player_id)?.platform_id||"_none")===pid);
+    const mids=[...new Set([...pp.map(p=>p.manager_id), ...pr.map(r=>playerById(r.player_id)?.manager_id)].filter(Boolean))];
+    return mids.map(mid=>{
+      const mp=pp.filter(p=>p.manager_id===mid);
+      return { id:mid, name:managers.find(x=>x.id===mid)?.name||"—",
+        deposits:mp.filter(p=>p.status==="Да").length,
+        redeps:pr.filter(r=>playerById(r.player_id)?.manager_id===mid).length,
+        neotbiv:mp.filter(p=>p.status==="Нет").length,
+        kidki:mp.filter(p=>p.status==="Кинул").length };
+    }).filter(r=>r.deposits||r.redeps||r.neotbiv||r.kidki).sort((a,b)=>b.deposits-a.deposits);
+  };
+  const activeRows = viewMode==="plat" ? platRows : rows;
+  const breakdownFor = viewMode==="plat" ? mgrBreakdown : platformBreakdown;
   return (
     <div>
       <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap" }}>
@@ -64,6 +92,11 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
           {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
         <input type="date" value={fDate} onChange={e=>setFDate(e.target.value)} style={sel}/>
+        <div style={{ display:"flex",border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden",marginLeft:"auto" }}>
+          {[["mgr","Менеджеры"],["plat","Платформы"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{ setViewMode(k); setExpanded(new Set()); }} style={{ background:viewMode===k?"linear-gradient(135deg,#F4924A 0%,#C9517A 50%,#9B5FD0 100%)":"transparent",color:viewMode===k?"#fff":T.sub,border:"none",padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Gilroy','Inter',system-ui,sans-serif" }}>{l}</button>
+          ))}
+        </div>
       </div>
       <div style={{ display:"flex",gap:12,flexWrap:"wrap",marginBottom:18 }}>
         {cards.map(([l,v,c])=>(
@@ -73,14 +106,14 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
           </div>
         ))}
       </div>
-      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>Менеджеры за {(([y,m,d])=>`${d}.${m}.${y}`)(fDate.split("-"))}</h3>
+      <h3 style={{ color:T.sub,fontSize:13,margin:"0 0 10px" }}>{viewMode==="plat"?"Платформы":"Менеджеры"} за {(([y,m,d])=>`${d}.${m}.${y}`)(fDate.split("-"))}</h3>
       <div style={{ border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
-        {rows.length===0&&<div style={{ padding:24,textAlign:"center",color:T.muted,fontSize:13 }}>В этот день никто не работал</div>}
-        {rows.map((r,i)=>{
+        {activeRows.length===0&&<div style={{ padding:24,textAlign:"center",color:T.muted,fontSize:13 }}>В этот день никто не работал</div>}
+        {activeRows.map((r,i)=>{
           const open=expanded.has(r.id);
-          const breakdown=open?platformBreakdown(r.id):[];
+          const breakdown=open?breakdownFor(r.id):[];
           return (
-            <div key={r.id} style={{ borderBottom:i<rows.length-1?`1px solid ${T.rowB}`:"none" }}>
+            <div key={r.id} style={{ borderBottom:i<activeRows.length-1?`1px solid ${T.rowB}`:"none" }}>
               <div className="row-hover" onClick={()=>toggleExpand(r.id)} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,padding:"14px 18px",flexWrap:"wrap",cursor:"pointer" }}>
                 <span style={{ color:T.text,fontWeight:700,fontSize:15,display:"flex",alignItems:"center",gap:8 }}>
                   <span style={{ color:T.muted,fontSize:11,transition:"transform .2s",display:"inline-block",transform:open?"rotate(90deg)":"none" }}>▶</span>
