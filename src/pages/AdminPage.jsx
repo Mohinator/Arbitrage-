@@ -264,23 +264,23 @@ export function AdminPage({ onLogout }) {
   })();
   const actionLabels={"lead_added":"Добавил лида","rd_added":"Внёс РД","rd_planned":"Запланировал РД","rd_marked_done":"Отметил РД","rd_reset":"Сбросил РД","status_changed":"Изменил статус","automation_applied":"Автоматизация"};
 
-  const S={th:{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:"1px solid #2d3148",background:"#151824"},td:{padding:"11px 12px",borderBottom:"1px solid #1a1d27"}};
-  const IS={background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 10px",borderRadius:7,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
+  const S={th:{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#4A4A5A",textTransform:"uppercase",letterSpacing:"0.07em",borderBottom:"1px solid rgba(255,255,255,.08)",background:"#101010"},td:{padding:"11px 12px",borderBottom:"1px solid #101010"}};
+  const IS={background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"8px 10px",borderRadius:7,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
 
   return (
-    <div style={{minHeight:"100vh",background:"#0f1117",color:"#e2e8f0",fontFamily:"'Inter',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F0F0F2",fontFamily:"'Inter',sans-serif"}}>
       <style>{CSS}</style>
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
 
       {showGeoForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div className="slide-in" style={{background:"#1a1d27",border:"1px solid #2d3148",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.7)"}}>
+          <div className="slide-in" style={{background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:14,padding:24,width:"100%",maxWidth:380,boxShadow:"0 24px 64px rgba(0,0,0,.7)"}}>
             <h3 style={{color:"#fff",marginBottom:18,fontSize:15,fontWeight:700}}>Добавить гео</h3>
-            <div style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#64748b",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Название *</label><input value={geoForm.name} onChange={e=>setGeoForm(f=>({...f,name:e.target.value}))} placeholder="Польша" style={IS}/></div>
-            <div style={{marginBottom:18}}><label style={{display:"block",fontSize:10,color:"#64748b",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Код (2 буквы)</label><input value={geoForm.code} onChange={e=>setGeoForm(f=>({...f,code:e.target.value}))} placeholder="PL" maxLength={3} style={IS}/></div>
+            <div style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Название *</label><input value={geoForm.name} onChange={e=>setGeoForm(f=>({...f,name:e.target.value}))} placeholder="Польша" style={IS}/></div>
+            <div style={{marginBottom:18}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Код (2 буквы)</label><input value={geoForm.code} onChange={e=>setGeoForm(f=>({...f,code:e.target.value}))} placeholder="PL" maxLength={3} style={IS}/></div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={createGeo} className="btn-p" style={{flex:1,padding:"10px",fontSize:14}}>Добавить</button>
-              <button onClick={()=>setShowGeoForm(false)} className="btn-g" style={{flex:1,border:"1px solid #2d3148",color:"#94a3b8",padding:"10px",borderRadius:8,cursor:"pointer"}}>Отмена</button>
+              <button onClick={()=>setShowGeoForm(false)} className="btn-g" style={{flex:1,border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"10px",borderRadius:8,cursor:"pointer"}}>Отмена</button>
             </div>
           </div>
         </div>
@@ -288,13 +288,13 @@ export function AdminPage({ onLogout }) {
 
       {showPlatformForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div className="slide-in" style={{background:"#1a1d27",border:"1px solid #2d3148",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.7)"}}>
+          <div className="slide-in" style={{background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:14,padding:24,width:"100%",maxWidth:460,boxShadow:"0 24px 64px rgba(0,0,0,.7)"}}>
             <h3 style={{color:"#fff",marginBottom:18,fontSize:15,fontWeight:700}}>{editingPlatform?"Редактировать":"Добавить"} платформу</h3>
             {[["Название *","name","text"],["Цель СЧ (€) *","target_avg_check","number"],["Мин. депозит (€)","min_deposit","number"],["Мин. депозит BLIK (€)","min_deposit_blik","number"],["Капа","cap","number"],["Дата добавления","date_added","date"]].map(([l,k,t])=>(
-              <div key={k} style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#64748b",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
+              <div key={k} style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>{l}</label><input type={t} value={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.value}))} style={IS}/></div>
             ))}
             <div style={{marginBottom:12}}>
-              <label style={{display:"block",fontSize:10,color:"#64748b",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Гео</label>
+              <label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Гео</label>
               <select value={pForm.geo_id} onChange={e=>setPForm(f=>({...f,geo_id:e.target.value}))} style={IS}>
                 <option value="">Без гео</option>
                 {geos.map(g=><option key={g.id} value={g.id}>{g.name} {g.code?`(${g.code})`:""}</option>)}
@@ -303,31 +303,31 @@ export function AdminPage({ onLogout }) {
             <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
               {[["is_active","Платформа активна"],["reset_monthly","Сбрасывать СЧ каждый месяц"]].map(([k,l])=>(
                 <label key={k} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                  <input type="checkbox" checked={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.checked}))} style={{width:14,height:14,accentColor:"#6366f1",cursor:"pointer"}}/>
-                  <span style={{color:"#94a3b8",fontSize:13}}>{l}</span>
+                  <input type="checkbox" checked={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.checked}))} style={{width:14,height:14,accentColor:"#9B5FD0",cursor:"pointer"}}/>
+                  <span style={{color:"#8B8B9A",fontSize:13}}>{l}</span>
                 </label>
               ))}
             </div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={savePlatform} className="btn-p" style={{flex:1,padding:"10px",fontSize:14}}>Сохранить</button>
-              <button onClick={()=>setShowPlatformForm(false)} className="btn-g" style={{flex:1,border:"1px solid #2d3148",color:"#94a3b8",padding:"10px",borderRadius:8,cursor:"pointer"}}>Отмена</button>
+              <button onClick={()=>setShowPlatformForm(false)} className="btn-g" style={{flex:1,border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"10px",borderRadius:8,cursor:"pointer"}}>Отмена</button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{background:"#101010",borderBottom:"1px solid rgba(255,255,255,.08)",padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#818cf8)",boxShadow:"0 0 8px rgba(99,102,241,.6)"}}/>
+          <div style={{width:8,height:8,borderRadius:"50%",background:"var(--grad)",boxShadow:"0 0 8px rgba(155,79,224,.6)"}}/>
           <span style={{fontWeight:800,fontSize:15,color:"#fff",letterSpacing:"0.05em"}}>АРБИТРАЖ</span>
-          <span style={{background:"linear-gradient(135deg,#6366f1,#818cf8)",color:"#fff",fontSize:10,padding:"1px 7px",borderRadius:4,fontWeight:700}}>ADMIN</span>
+          <span style={{background:"var(--grad-soft)",color:"#c8a8ff",fontSize:11,fontFamily:"var(--gilroy)",padding:"3px 9px",borderRadius:50,fontWeight:700,letterSpacing:".05em",border:"1px solid rgba(155,79,224,.3)"}}>ADMIN</span>
         </div>
-        <button onClick={onLogout} className="btn-g" style={{border:"1px solid #3d4268",color:"#94a3b8",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:13}}>Выйти</button>
+        <button onClick={onLogout} className="btn-g" style={{border:"1px solid rgba(255,255,255,.12)",color:"#8B8B9A",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:13}}>Выйти</button>
       </div>
 
-      <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"0 24px",display:"flex"}}>
-        {[["overview","Сводка"],["tasks",<span>Задачи{(()=>{ const t=new Date().toISOString().slice(0,10); const ids=new Set((plannedRds||[]).filter(r=>r&&r.date&&r.date<t).map(r=>r.player_id)); const c=players.filter(p=>p&&ids.has(p.id)).length; return c>0?<span style={{ color:"#ef4444",fontWeight:700,marginLeft:6 }}>{c}</span>:null; })()}</span>],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["report","Отчёт"],["history","История"],["leads","Лиды"],["backup","Бэкап"],["activity","Активность"]].map(([key,label])=>(
-          <button key={key} onClick={()=>setTab(key)} className="nb" style={{background:"transparent",border:"none",color:tab===key?"#6366f1":"#64748b",padding:"12px 18px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #6366f1":"2px solid transparent"}}>{label}</button>
+      <div style={{background:"#101010",borderBottom:"1px solid rgba(255,255,255,.08)",padding:"0 24px",display:"flex"}}>
+        {[["overview","Сводка"],["tasks",<span>Задачи{(()=>{ const t=new Date().toISOString().slice(0,10); const ids=new Set((plannedRds||[]).filter(r=>r&&r.date&&r.date<t).map(r=>r.player_id)); const c=players.filter(p=>p&&ids.has(p.id)).length; return c>0?<span style={{ color:"#F2706E",fontWeight:700,marginLeft:6 }}>{c}</span>:null; })()}</span>],["managers","Менеджеры"],["platforms","Платформы"],["geos","Гео"],["report","Отчёт"],["history","История"],["leads","Лиды"],["backup","Бэкап"],["activity","Активность"]].map(([key,label])=>(
+          <button key={key} onClick={()=>setTab(key)} className="nb" style={{background:"transparent",border:"none",color:tab===key?"#9B5FD0":"#4A4A5A",padding:"12px 18px",cursor:"pointer",fontSize:13,fontWeight:600,borderBottom:tab===key?"2px solid #9B5FD0":"2px solid transparent"}}>{label}</button>
         ))}
       </div>
 
@@ -336,7 +336,7 @@ export function AdminPage({ onLogout }) {
         {tab==="overview"&&(
           <div>
             <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Общий СЧ по платформам</h2>
-            <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden",marginBottom:32}}>
+            <div style={{border:"1px solid rgba(255,255,255,.08)",borderRadius:10,overflow:"hidden",marginBottom:32}}>
               <table style={{width:"100%",borderCollapse:"collapse"}}>
                 <thead><tr>{["Платформа","Гео","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Выполнено","BLIK","Период"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                 <tbody>
@@ -345,16 +345,16 @@ export function AdminPage({ onLogout }) {
                     const geo=geos.find(g=>g.id===p.geo_id);
                     return(
                       <tr key={p.id} className="row-hover">
-                        <td style={{...S.td,fontWeight:600,color:"#e2e8f0"}}>{p.name}</td>
-                        <td style={S.td}>{geo?<span style={{background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 7px",borderRadius:5,fontSize:11,fontWeight:600}}>{geo.name}</span>:"—"}</td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.totalCount}</td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.totalAmount.toFixed(0)}€</td>
-                        <td style={S.td}><span style={{background:p.totalCount===0?"#1e2235":ok?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#7f1d1d,#991b1b)",color:p.totalCount===0?"#64748b":ok?"#86efac":"#fca5a5",padding:"3px 9px",borderRadius:6,fontWeight:700,fontSize:12}}>{p.totalCount===0?"—":p.avgCheck.toFixed(1)+"€"}</span></td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.target_avg_check}€</td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.cap??"—"}</td>
-                        <td style={S.td}>{p.cap?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:40,background:"#0f1117",borderRadius:4,height:5,overflow:"hidden"}}><div className="progress-bar" style={{width:`${pct}%`,height:"100%",background:pct>=100?"linear-gradient(90deg,#ef4444,#f87171)":"linear-gradient(90deg,#6366f1,#818cf8)"}}/></div><span style={{color:pct>=100?"#fca5a5":pct>=80?"#f59e0b":"#94a3b8",fontSize:12}}>{p.totalCount}/{p.cap}</span></div>:"—"}</td>
-                        <td style={S.td}>{p.totalCount>0?<div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:44,background:"#0f1117",borderRadius:3,height:4,overflow:"hidden",display:"flex"}}><div className="progress-bar" style={{width:`${100-p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#818cf8)"}}/><div className="progress-bar" style={{width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#d97706,#f59e0b)"}}/></div><span style={{color:"#d97706",fontSize:11}}>{p.blikPct}%({p.blikCount})</span></div>:<span style={{color:"#475569"}}>—</span>}</td>
-                        <td style={S.td}><span style={{background:p.reset_monthly?"linear-gradient(135deg,#1e3a5f,#1e40af)":"#1e2235",color:p.reset_monthly?"#93c5fd":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>{p.reset_monthly?"Помесячно":"Накопит."}</span></td>
+                        <td style={{...S.td,fontWeight:600,color:"#F0F0F2"}}>{p.name}</td>
+                        <td style={S.td}>{geo?<span style={{background:"rgba(155,79,224,.15)",color:"#c8a8ff",padding:"2px 7px",borderRadius:5,fontSize:11,fontWeight:600}}>{geo.name}</span>:"—"}</td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.totalCount}</td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.totalAmount.toFixed(0)}€</td>
+                        <td style={S.td}><span style={{background:p.totalCount===0?"rgba(255,255,255,.05)":ok?"rgba(61,214,140,.13)":"rgba(242,112,110,.13)",color:p.totalCount===0?"#4A4A5A":ok?"#3DD68C":"#F2706E",padding:"3px 9px",borderRadius:6,fontWeight:700,fontSize:12}}>{p.totalCount===0?"—":p.avgCheck.toFixed(1)+"€"}</span></td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.target_avg_check}€</td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.cap??"—"}</td>
+                        <td style={S.td}>{p.cap?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:40,background:"#080808",borderRadius:4,height:5,overflow:"hidden"}}><div className="progress-bar" style={{width:`${pct}%`,height:"100%",background:pct>=100?"linear-gradient(90deg,#F2706E,#F2706E)":"var(--grad)"}}/></div><span style={{color:pct>=100?"#F2706E":pct>=80?"#F4924A":"#8B8B9A",fontSize:12}}>{p.totalCount}/{p.cap}</span></div>:"—"}</td>
+                        <td style={S.td}>{p.totalCount>0?<div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:44,background:"#080808",borderRadius:3,height:4,overflow:"hidden",display:"flex"}}><div className="progress-bar" style={{width:`${100-p.blikPct}%`,height:"100%",background:"var(--grad)"}}/><div className="progress-bar" style={{width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#F4B740,#F4924A)"}}/></div><span style={{color:"#F4924A",fontSize:11}}>{p.blikPct}%({p.blikCount})</span></div>:<span style={{color:"#4A4A5A"}}>—</span>}</td>
+                        <td style={S.td}><span style={{background:p.reset_monthly?"rgba(176,123,245,.13)":"rgba(255,255,255,.05)",color:p.reset_monthly?"#B07BF5":"#4A4A5A",padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>{p.reset_monthly?"Помесячно":"Накопит."}</span></td>
                       </tr>
                     );
                   })}
@@ -364,14 +364,14 @@ export function AdminPage({ onLogout }) {
             <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>По менеджерам</h2>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {managerStats.map(m=>(
-                <div key={m.id} style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
-                  <div style={{padding:"12px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:m.byPlatform.length>0?"1px solid #2d3148":"none",background:"#1a1d27"}}>
+                <div key={m.id} style={{border:"1px solid rgba(255,255,255,.08)",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{padding:"12px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:m.byPlatform.length>0?"1px solid rgba(255,255,255,.08)":"none",background:"#101010"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{fontWeight:700,color:"#fff",fontSize:14}}>{m.name}</span>
-                      <span style={{background:m.role==="team_lead"?"linear-gradient(135deg,#0f766e,#14b8a6)":"rgba(99,102,241,.15)",color:m.role==="team_lead"?"#fff":"#a5b4fc",fontSize:10,padding:"1px 7px",borderRadius:4,fontWeight:700}}>{m.role==="team_lead"?"Тим лид":"Менеджер"}</span>
-                      {m.geos.map(g=><span key={g.id} style={{background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:10,padding:"1px 6px",borderRadius:4}}>{g.name}</span>)}
+                      <span style={{background:m.role==="team_lead"?"rgba(155,79,224,.18)":"rgba(155,79,224,.15)",color:m.role==="team_lead"?"#fff":"#c8a8ff",fontSize:10,padding:"1px 7px",borderRadius:4,fontWeight:700}}>{m.role==="team_lead"?"Тим лид":"Менеджер"}</span>
+                      {m.geos.map(g=><span key={g.id} style={{background:"rgba(155,79,224,.1)",color:"#c8a8ff",fontSize:10,padding:"1px 6px",borderRadius:4}}>{g.name}</span>)}
                     </div>
-                    <div style={{display:"flex",gap:20}}><span style={{color:"#64748b",fontSize:12}}>Лидов: <strong style={{color:"#94a3b8"}}>{m.totalCount}</strong></span><span style={{color:"#64748b",fontSize:12}}>Сумма: <strong style={{color:"#94a3b8"}}>{m.totalAmount.toFixed(0)}€</strong></span></div>
+                    <div style={{display:"flex",gap:20}}><span style={{color:"#4A4A5A",fontSize:12}}>Лидов: <strong style={{color:"#8B8B9A"}}>{m.totalCount}</strong></span><span style={{color:"#4A4A5A",fontSize:12}}>Сумма: <strong style={{color:"#8B8B9A"}}>{m.totalAmount.toFixed(0)}€</strong></span></div>
                   </div>
                   {m.byPlatform.length>0&&(
                     <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -381,19 +381,19 @@ export function AdminPage({ onLogout }) {
                           const ok=p.avg>=p.target_avg_check;
                           return(
                             <tr key={p.id} className="row-hover">
-                              <td style={{padding:"9px 18px",color:"#cbd5e1",fontSize:12,borderBottom:"1px solid #1e2235"}}>{p.name}</td>
-                              <td style={{padding:"9px 18px",color:"#94a3b8",fontSize:12,borderBottom:"1px solid #1e2235"}}>{p.cnt}</td>
-                              <td style={{padding:"9px 18px",color:"#94a3b8",fontSize:12,borderBottom:"1px solid #1e2235"}}>{p.amt.toFixed(0)}€</td>
-                              <td style={{padding:"9px 18px",borderBottom:"1px solid #1e2235"}}>{p.cnt>0?<div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:36,background:"#0f1117",borderRadius:3,height:4,overflow:"hidden",display:"flex"}}><div style={{width:`${100-p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#818cf8)"}}/><div style={{width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#d97706,#f59e0b)"}}/></div><span style={{color:"#d97706",fontSize:11}}>{p.blik}({p.blikPct}%)</span></div>:"—"}</td>
-                              <td style={{padding:"9px 18px",color:"#94a3b8",fontSize:12,borderBottom:"1px solid #1e2235"}}>{p.target_avg_check}€</td>
-                              <td style={{padding:"9px 18px",borderBottom:"1px solid #1e2235"}}><span style={{background:ok?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#7f1d1d,#991b1b)",color:ok?"#86efac":"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11}}>{p.avg.toFixed(1)}€</span></td>
+                              <td style={{padding:"9px 18px",color:"rgba(255,255,255,.1)",fontSize:12,borderBottom:"1px solid rgba(255,255,255,.05)"}}>{p.name}</td>
+                              <td style={{padding:"9px 18px",color:"#8B8B9A",fontSize:12,borderBottom:"1px solid rgba(255,255,255,.05)"}}>{p.cnt}</td>
+                              <td style={{padding:"9px 18px",color:"#8B8B9A",fontSize:12,borderBottom:"1px solid rgba(255,255,255,.05)"}}>{p.amt.toFixed(0)}€</td>
+                              <td style={{padding:"9px 18px",borderBottom:"1px solid rgba(255,255,255,.05)"}}>{p.cnt>0?<div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:36,background:"#080808",borderRadius:3,height:4,overflow:"hidden",display:"flex"}}><div style={{width:`${100-p.blikPct}%`,height:"100%",background:"var(--grad)"}}/><div style={{width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#F4B740,#F4924A)"}}/></div><span style={{color:"#F4924A",fontSize:11}}>{p.blik}({p.blikPct}%)</span></div>:"—"}</td>
+                              <td style={{padding:"9px 18px",color:"#8B8B9A",fontSize:12,borderBottom:"1px solid rgba(255,255,255,.05)"}}>{p.target_avg_check}€</td>
+                              <td style={{padding:"9px 18px",borderBottom:"1px solid rgba(255,255,255,.05)"}}><span style={{background:ok?"rgba(61,214,140,.13)":"rgba(242,112,110,.13)",color:ok?"#3DD68C":"#F2706E",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11}}>{p.avg.toFixed(1)}€</span></td>
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
                   )}
-                  {m.byPlatform.length===0&&<div style={{padding:"12px 18px",color:"#475569",fontSize:12}}>Нет данных</div>}
+                  {m.byPlatform.length===0&&<div style={{padding:"12px 18px",color:"#4A4A5A",fontSize:12}}>Нет данных</div>}
                 </div>
               ))}
             </div>
@@ -403,17 +403,17 @@ export function AdminPage({ onLogout }) {
         {tab==="managers"&&(
           <div>
             <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Менеджеры</h2>
-            <div style={{background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:20,marginBottom:24}}>
+            <div style={{background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:10,padding:20,marginBottom:24}}>
               <div style={{display:"flex",gap:10,marginBottom:0}}>
-                <input value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createManager()} placeholder="Имя менеджера" style={{flex:1,background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}/>
-                <select value={newRole} onChange={e=>setNewRole(e.target.value)} style={{background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}>
+                <input value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createManager()} placeholder="Имя менеджера" style={{flex:1,background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}/>
+                <select value={newRole} onChange={e=>setNewRole(e.target.value)} style={{background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}>
                   <option value="manager">Менеджер</option>
                   <option value="team_lead">Тим лид</option>
                 </select>
                 <button onClick={createManager} className="btn-p" style={{padding:"9px 20px",fontSize:13,borderRadius:8}}>+ Создать</button>
               </div>
             </div>
-            <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
+            <div style={{border:"1px solid rgba(255,255,255,.08)",borderRadius:10,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse"}}>
                 <thead><tr>{["Имя","Токен","Роль","Keitaro","Гео","Статус","Лидов","Действия"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                 <tbody>
@@ -423,32 +423,32 @@ export function AdminPage({ onLogout }) {
                     return(
                       <>
                         <tr key={m.id} className="row-hover">
-                          <td style={{...S.td,fontWeight:600,color:"#e2e8f0"}}>{m.name}</td>
-                          <td style={S.td}><code style={{background:"#0f1117",border:"1px solid #2d3148",padding:"3px 8px",borderRadius:5,fontSize:12,color:"#a5b4fc",letterSpacing:"0.1em"}}>{m.token}</code></td>
-                          <td style={S.td}><span onClick={()=>toggleManagerRole(m)} style={{background:m.role==="team_lead"?"linear-gradient(135deg,#0f766e,#14b8a6)":"rgba(99,102,241,.15)",color:m.role==="team_lead"?"#fff":"#a5b4fc",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",userSelect:"none"}} title="Нажми для смены роли">{m.role==="team_lead"?"Тим лид":"Менеджер"}</span></td>
-                          <td style={S.td}><input defaultValue={m.keitaro_names||""} onBlur={async e=>{ const v=e.target.value.trim(); if(v!==(m.keitaro_names||"")){ await supabase.from("managers").update({keitaro_names:v}).eq("id",m.id); showToast("Имена Keitaro сохранены"); load(); } }} placeholder="Viktor, Vik" title="Имена менеджера в кампаниях Keitaro, через запятую" style={{background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"4px 8px",borderRadius:6,fontSize:12,outline:"none",width:130}}/></td>
+                          <td style={{...S.td,fontWeight:600,color:"#F0F0F2"}}>{m.name}</td>
+                          <td style={S.td}><code style={{background:"#080808",border:"1px solid rgba(255,255,255,.08)",padding:"3px 8px",borderRadius:5,fontSize:12,color:"#c8a8ff",letterSpacing:"0.1em"}}>{m.token}</code></td>
+                          <td style={S.td}><span onClick={()=>toggleManagerRole(m)} style={{background:m.role==="team_lead"?"rgba(155,79,224,.18)":"rgba(155,79,224,.15)",color:m.role==="team_lead"?"#fff":"#c8a8ff",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",userSelect:"none"}} title="Нажми для смены роли">{m.role==="team_lead"?"Тим лид":"Менеджер"}</span></td>
+                          <td style={S.td}><input defaultValue={m.keitaro_names||""} onBlur={async e=>{ const v=e.target.value.trim(); if(v!==(m.keitaro_names||"")){ await supabase.from("managers").update({keitaro_names:v}).eq("id",m.id); showToast("Имена Keitaro сохранены"); load(); } }} placeholder="Viktor, Vik" title="Имена менеджера в кампаниях Keitaro, через запятую" style={{background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"4px 8px",borderRadius:6,fontSize:12,outline:"none",width:130}}/></td>
                           <td style={S.td}>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-                              {mGeos.map(g=><span key={g.id} style={{background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:11,padding:"1px 7px",borderRadius:5,fontWeight:600}}>{g.name}</span>)}
-                              <button onClick={()=>setAssigningManager(isAssigning?null:m.id)} style={{background:"transparent",border:"1px dashed #3d4268",color:"#64748b",padding:"1px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ гео</button>
+                              {mGeos.map(g=><span key={g.id} style={{background:"rgba(155,79,224,.1)",color:"#c8a8ff",fontSize:11,padding:"1px 7px",borderRadius:5,fontWeight:600}}>{g.name}</span>)}
+                              <button onClick={()=>setAssigningManager(isAssigning?null:m.id)} style={{background:"transparent",border:"1px dashed rgba(255,255,255,.12)",color:"#4A4A5A",padding:"1px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ гео</button>
                             </div>
                           </td>
-                          <td style={S.td}><span style={{background:m.is_active?"linear-gradient(135deg,#14532d,#166534)":"#1e2235",color:m.is_active?"#86efac":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{m.is_active?"Активен":"Отключён"}</span></td>
-                          <td style={{...S.td,color:"#94a3b8"}}>{players.filter(p=>p.manager_id===m.id).length}</td>
+                          <td style={S.td}><span style={{background:m.is_active?"rgba(61,214,140,.13)":"rgba(255,255,255,.05)",color:m.is_active?"#3DD68C":"#4A4A5A",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{m.is_active?"Активен":"Отключён"}</span></td>
+                          <td style={{...S.td,color:"#8B8B9A"}}>{players.filter(p=>p.manager_id===m.id).length}</td>
                           <td style={{...S.td,display:"flex",gap:6}}>
-                            <button onClick={()=>toggleManager(m)} className="btn-g" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.is_active?"Откл":"Вкл"}</button>
-                            <button onClick={()=>deleteManager(m.id)} className="btn-g btn-danger" style={{border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>Удалить</button>
+                            <button onClick={()=>toggleManager(m)} className="btn-g" style={{border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>{m.is_active?"Откл":"Вкл"}</button>
+                            <button onClick={()=>deleteManager(m.id)} className="btn-g btn-danger" style={{border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>Удалить</button>
                           </td>
                         </tr>
                         {isAssigning&&(
                           <tr key={`assign-${m.id}`}>
-                            <td colSpan={8} style={{padding:"10px 18px",background:"#151824",borderBottom:"1px solid #2d3148"}}>
+                            <td colSpan={8} style={{padding:"10px 18px",background:"#101010",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
                               <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                                <span style={{color:"#64748b",fontSize:12}}>Назначить гео:</span>
+                                <span style={{color:"#4A4A5A",fontSize:12}}>Назначить гео:</span>
                                 {geos.map(g=>{
                                   const hasGeo=userGeos.some(ug=>ug.manager_id===m.id&&ug.geo_id===g.id);
                                   return(
-                                    <button key={g.id} onClick={()=>toggleUserGeo(m.id,g.id)} style={{background:hasGeo?"linear-gradient(135deg,#6366f1,#818cf8)":"#1e2235",color:hasGeo?"#fff":"#94a3b8",border:`1px solid ${hasGeo?"#6366f1":"#2d3148"}`,padding:"4px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all .15s"}}>
+                                    <button key={g.id} onClick={()=>toggleUserGeo(m.id,g.id)} style={{background:hasGeo?"var(--grad)":"rgba(255,255,255,.05)",color:hasGeo?"#fff":"#8B8B9A",border:`1px solid ${hasGeo?"#9B5FD0":"rgba(255,255,255,.08)"}`,padding:"4px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all .15s"}}>
                                       {hasGeo?"✓ ":""}{g.name}{g.code?` (${g.code})`:""}
                                     </button>
                                   );
@@ -472,7 +472,7 @@ export function AdminPage({ onLogout }) {
               <h2 style={{color:"#fff",fontSize:18,margin:0}}>Платформы</h2>
               <button onClick={()=>openPlatformForm()} className="btn-p" style={{padding:"8px 18px",fontSize:13,borderRadius:8}}>+ Добавить</button>
             </div>
-            <div style={{border:"1px solid #2d3148",borderRadius:10,overflow:"hidden"}}>
+            <div style={{border:"1px solid rgba(255,255,255,.08)",borderRadius:10,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse"}}>
                 <thead><tr>{["Платформа","Гео","Дата","Мин. деп","Цель СЧ","Капа","Период","Статус","Действия"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                 <tbody>
@@ -480,19 +480,19 @@ export function AdminPage({ onLogout }) {
                     const isActive=p.is_active!==false,geo=geos.find(g=>g.id===p.geo_id);
                     return(
                       <tr key={p.id} className="row-hover" style={{opacity:isActive?1:0.5}}>
-                        <td style={{...S.td,fontWeight:600,color:"#e2e8f0"}}>{p.name}</td>
-                        <td style={S.td}>{geo?<span style={{background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 7px",borderRadius:5,fontSize:11,fontWeight:600}}>{geo.name}</span>:"—"}</td>
-                        <td style={{...S.td,color:"#94a3b8",fontSize:12}}>{p.date_added||"—"}</td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.min_deposit||"—"}€</td>
-                        <td style={S.td}><span style={{background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11}}>{p.target_avg_check}€</span></td>
-                        <td style={{...S.td,color:"#94a3b8"}}>{p.cap||"—"}</td>
-                        <td style={S.td}><span style={{background:p.reset_monthly?"linear-gradient(135deg,#1e3a5f,#1e40af)":"#1e2235",color:p.reset_monthly?"#93c5fd":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>{p.reset_monthly?"Помесячно":"Накопит."}</span></td>
-                        <td style={S.td}><span style={{background:isActive?"linear-gradient(135deg,#14532d,#166534)":"#1e2235",color:isActive?"#86efac":"#64748b",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{isActive?"Активна":"Скрыта"}</span></td>
+                        <td style={{...S.td,fontWeight:600,color:"#F0F0F2"}}>{p.name}</td>
+                        <td style={S.td}>{geo?<span style={{background:"rgba(155,79,224,.15)",color:"#c8a8ff",padding:"2px 7px",borderRadius:5,fontSize:11,fontWeight:600}}>{geo.name}</span>:"—"}</td>
+                        <td style={{...S.td,color:"#8B8B9A",fontSize:12}}>{p.date_added||"—"}</td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.min_deposit||"—"}€</td>
+                        <td style={S.td}><span style={{background:"rgba(176,123,245,.13)",color:"#B07BF5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11}}>{p.target_avg_check}€</span></td>
+                        <td style={{...S.td,color:"#8B8B9A"}}>{p.cap||"—"}</td>
+                        <td style={S.td}><span style={{background:p.reset_monthly?"rgba(176,123,245,.13)":"rgba(255,255,255,.05)",color:p.reset_monthly?"#B07BF5":"#4A4A5A",padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>{p.reset_monthly?"Помесячно":"Накопит."}</span></td>
+                        <td style={S.td}><span style={{background:isActive?"rgba(61,214,140,.13)":"rgba(255,255,255,.05)",color:isActive?"#3DD68C":"#4A4A5A",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600}}>{isActive?"Активна":"Скрыта"}</span></td>
                         <td style={{...S.td,display:"flex",gap:6}}>
-                          <button onClick={()=>openPlatformForm(p)} className="btn-g" style={{border:"1px solid #2d3148",color:"#94a3b8",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <button onClick={()=>openPlatformForm(p)} className="btn-g" style={{border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
-                          <button onClick={()=>deletePlatform(p.id)} className="btn-g btn-danger" style={{border:"1px solid #7f1d1d",color:"#fca5a5",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <button onClick={()=>deletePlatform(p.id)} className="btn-g btn-danger" style={{border:"1px solid rgba(242,112,110,.4)",color:"#F2706E",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                           </button>
                         </td>
@@ -516,19 +516,19 @@ export function AdminPage({ onLogout }) {
                 const geoPlatforms=platforms.filter(p=>p.geo_id===g.id);
                 const geoManagers2=userGeos.filter(ug=>ug.geo_id===g.id).map(ug=>managers.find(m=>m.id===ug.manager_id)).filter(Boolean);
                 return(
-                  <div key={g.id} style={{background:"#1a1d27",border:`1px solid ${g.is_active===false?"#7f1d1d":"#2d3148"}`,borderRadius:10,padding:16,opacity:g.is_active===false?0.6:1}}>
+                  <div key={g.id} style={{background:"#101010",border:`1px solid ${g.is_active===false?"rgba(242,112,110,.4)":"rgba(255,255,255,.08)"}`,borderRadius:10,padding:16,opacity:g.is_active===false?0.6:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                      {g.code&&<span style={{background:"linear-gradient(135deg,#6366f1,#818cf8)",color:"#fff",padding:"2px 8px",borderRadius:6,fontSize:12,fontWeight:700}}>{g.code}</span>}
+                      {g.code&&<span style={{background:"var(--grad)",color:"#fff",padding:"2px 8px",borderRadius:6,fontSize:12,fontWeight:700}}>{g.code}</span>}
                       <span style={{color:"#fff",fontWeight:700,fontSize:14,flex:1}}>{g.name}</span>
                       <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                        <button onClick={async()=>{ await supabase.from("geos").update({is_active:g.is_active===false?true:false}).eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>{g.is_active===false?"Показать":"Скрыть"}</button>
-                        <button onClick={async()=>{ if(!confirm(`Удалить гео "${g.name}"?`)) return; await supabase.from("geos").delete().eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Удалить</button>
+                        <button onClick={async()=>{ await supabase.from("geos").update({is_active:g.is_active===false?true:false}).eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>{g.is_active===false?"Показать":"Скрыть"}</button>
+                        <button onClick={async()=>{ if(!confirm(`Удалить гео "${g.name}"?`)) return; await supabase.from("geos").delete().eq("id",g.id); loadAdmin(); }} style={{background:"transparent",border:"1px solid rgba(242,112,110,.4)",color:"#F2706E",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Удалить</button>
                       </div>
                     </div>
-                    <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>Платформ: <strong style={{color:"#94a3b8"}}>{geoPlatforms.length}</strong></div>
-                    <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>Менеджеров: <strong style={{color:"#94a3b8"}}>{geoManagers2.length}</strong></div>
+                    <div style={{fontSize:12,color:"#4A4A5A",marginBottom:4}}>Платформ: <strong style={{color:"#8B8B9A"}}>{geoPlatforms.length}</strong></div>
+                    <div style={{fontSize:12,color:"#4A4A5A",marginBottom:8}}>Менеджеров: <strong style={{color:"#8B8B9A"}}>{geoManagers2.length}</strong></div>
                     <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {geoManagers2.map(m=><span key={m.id} style={{background:"rgba(99,102,241,.1)",color:"#a5b4fc",fontSize:10,padding:"1px 6px",borderRadius:4}}>{m.name}</span>)}
+                      {geoManagers2.map(m=><span key={m.id} style={{background:"rgba(155,79,224,.1)",color:"#c8a8ff",fontSize:10,padding:"1px 6px",borderRadius:4}}>{m.name}</span>)}
                     </div>
                   </div>
                 );
@@ -572,26 +572,26 @@ export function AdminPage({ onLogout }) {
                   {managers.filter(m=>!taskGeo||userGeos.some(ug=>ug.geo_id===taskGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
                 <input type="date" value={taskDateFilter} onChange={e=>setTaskDateFilter(e.target.value)} style={{...IS,width:"auto",colorScheme:"dark"}}/>
-                {taskDateFilter&&<button onClick={()=>setTaskDateFilter("")} style={{background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"0 12px",borderRadius:7,cursor:"pointer",fontSize:12}}>Сегодня</button>}
+                {taskDateFilter&&<button onClick={()=>setTaskDateFilter("")} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"0 12px",borderRadius:7,cursor:"pointer",fontSize:12}}>Сегодня</button>}
               </div>
               <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
-                  <h3 style={{ color:"#a5b4fc",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {taskDateFilter? new Date(taskDateFilter+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
-                  {tasks.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>}
+                  <h3 style={{ color:"#c8a8ff",fontSize:14,margin:"0 0 10px" }}>📋 Задачи на {taskDateFilter? new Date(taskDateFilter+"T00:00:00").toLocaleDateString("ru",{day:"2-digit",month:"2-digit"}) : "сегодня"}</h3>
+                  {tasks.length===0&&<div style={{ color:"#8B8B9A",fontSize:13,padding:"16px 0" }}>Задач на этот день нет</div>}
                   {tasks.map(({player,plat,mgr,rdNum,amount},idx)=>(
                     <div key={`t-${player.id}-${rdNum}-${idx}`} onClick={()=>goToLead(player)} className="row-hover" style={card}>
-                      <div style={{ width:8,height:8,borderRadius:"50%",background:"#6366f1",flexShrink:0 }}/>
+                      <div style={{ width:8,height:8,borderRadius:"50%",background:"#9B5FD0",flexShrink:0 }}/>
                       <div style={{ flex:1 }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
-                        <div style={{ fontSize:12,color:"#7b8290" }}>{plat?.name||"—"} · РД{rdNum}</div>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#c8a8ff",background:"rgba(155,79,224,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
+                        <div style={{ fontSize:12,color:"#8B8B9A" }}>{plat?.name||"—"} · РД{rdNum}</div>
                       </div>
-                      {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:"#a5b4fc" }}>{amount}€</div>}
+                      {amount!=null&&<div style={{ fontSize:14,fontWeight:700,color:"#c8a8ff" }}>{amount}€</div>}
                     </div>
                   ))}
                 </div>
                 <div style={{ flex:"1 1 360px",minWidth:300 }}>
-                  <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
-                  {overdue.length===0&&<div style={{ color:"#7b8290",fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>}
+                  <h3 style={{ color:"#F2706E",fontSize:14,margin:"0 0 10px" }}>⚠️ Просроченные</h3>
+                  {overdue.length===0&&<div style={{ color:"#8B8B9A",fontSize:13,padding:"16px 0" }}>✅ Нет просроченных РД</div>}
                   {overdue.map(player=>{
                     const plat=platforms.find(p=>p.id===player.platform_id);
                     const mgr=managers.find(m=>m.id===player.manager_id);
@@ -599,15 +599,15 @@ export function AdminPage({ onLogout }) {
                     const days=Math.floor((new Date(today)-new Date(od))/(1000*60*60*24));
                     const planned=plannedRds.filter(r=>r&&r.player_id===player.id&&r.date<today).sort((a,b)=>a.rd_number-b.rd_number)[0];
                     return(
-                      <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ ...card,background:"rgba(239,68,68,.07)",border:"1px solid #7f1d1d" }}>
-                        <div style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }}/>
+                      <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ ...card,background:"rgba(239,68,68,.07)",border:"1px solid rgba(242,112,110,.4)" }}>
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:"#F2706E",flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
-                          <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#a5b4fc",background:"rgba(99,102,241,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
-                          <div style={{ fontSize:12,color:"#7b8290" }}>{plat?.name||"—"}{planned?` · РД${planned.rd_number}`:""} · {od?(([y,m,d])=>`${d}.${m}`)(od.split("-")):""}</div>
+                          <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#c8a8ff",background:"rgba(155,79,224,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
+                          <div style={{ fontSize:12,color:"#8B8B9A" }}>{plat?.name||"—"}{planned?` · РД${planned.rd_number}`:""} · {od?(([y,m,d])=>`${d}.${m}`)(od.split("-")):""}</div>
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2 }}>
-                          {planned&&<span style={{ fontSize:13,fontWeight:700,color:"#fca5a5" }}>{planned.amount}€</span>}
-                          <span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
+                          {planned&&<span style={{ fontSize:13,fontWeight:700,color:"#F2706E" }}>{planned.amount}€</span>}
+                          <span style={{ background:"rgba(242,112,110,.13)",color:"#F2706E",padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
                         </div>
                       </div>
                     );
@@ -642,7 +642,7 @@ export function AdminPage({ onLogout }) {
               return geoManagers.map(mgr=>(
                 <div key={mgr.id} style={{marginBottom:32}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                    <div style={{width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#6366f1"}}/>
+                    <div style={{width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#9B5FD0"}}/>
                     <span style={{color:"#fff",fontWeight:700,fontSize:15}}>{mgr.name}</span>
                     {mgr.role==="team_lead"&&<span style={{background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
                   </div>
@@ -661,19 +661,19 @@ export function AdminPage({ onLogout }) {
         {tab==="backup"&&(
           <div style={{ maxWidth:760 }}>
             <h2 style={{color:"#fff",marginBottom:6,fontSize:18}}>Бэкап и восстановление</h2>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:20 }}>Резервные копии всех таблиц отправляются на вебхук. Хранится одна (самая свежая) точка восстановления.</p>
+            <p style={{ color:"#4A4A5A",fontSize:12,marginBottom:20 }}>Резервные копии всех таблиц отправляются на вебхук. Хранится одна (самая свежая) точка восстановления.</p>
 
-            <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,padding:20,marginBottom:16 }}>
-              <h3 style={{ color:"#e2e8f0",fontSize:14,margin:"0 0 6px" }}>💾 Резервная копия</h3>
-              <p style={{ color:"#64748b",fontSize:12,margin:"0 0 14px" }}>Читает все таблицы и отправляет JSON на вебхук. Авто-бэкап каждый день в 08:00 настраивается на стороне n8n (расписание).</p>
-              <button onClick={doBackup} disabled={backupBusy} style={{ background:backupBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"10px 18px",borderRadius:9,cursor:backupBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{backupBusy?"Отправляю…":"Сделать бэкап сейчас"}</button>
-              {lastBackupAt&&<span style={{ color:"#86efac",fontSize:12,marginLeft:12 }}>Последний: {lastBackupAt}</span>}
+            <div style={{ background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:20,marginBottom:16 }}>
+              <h3 style={{ color:"#F0F0F2",fontSize:14,margin:"0 0 6px" }}>💾 Резервная копия</h3>
+              <p style={{ color:"#4A4A5A",fontSize:12,margin:"0 0 14px" }}>Читает все таблицы и отправляет JSON на вебхук. Авто-бэкап каждый день в 08:00 настраивается на стороне n8n (расписание).</p>
+              <button onClick={doBackup} disabled={backupBusy} style={{ background:backupBusy?"rgba(255,255,255,.1)":"var(--grad)",border:"none",color:"#fff",padding:"10px 18px",borderRadius:9,cursor:backupBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{backupBusy?"Отправляю…":"Сделать бэкап сейчас"}</button>
+              {lastBackupAt&&<span style={{ color:"#3DD68C",fontSize:12,marginLeft:12 }}>Последний: {lastBackupAt}</span>}
             </div>
 
-            <div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:12,padding:20 }}>
-              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 6px" }}>↘ Восстановление</h3>
-              <p style={{ color:"#64748b",fontSize:12,margin:"0 0 14px" }}>Загружает последнюю точку, показывает все таблицы для просмотра, даёт выбрать какие восстановить. Данные дополняются (merge по id). Перед применением сохраняется локальная точка отката — пока не подтвердишь, можно откатить назад.</p>
-              <button onClick={openRestorePreview} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #f87171",color:"#fca5a5",padding:"10px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Загружаю…":"Загрузить точку восстановления"}</button>
+            <div style={{ background:"#101010",border:"1px solid rgba(242,112,110,.4)",borderRadius:12,padding:20 }}>
+              <h3 style={{ color:"#F2706E",fontSize:14,margin:"0 0 6px" }}>↘ Восстановление</h3>
+              <p style={{ color:"#4A4A5A",fontSize:12,margin:"0 0 14px" }}>Загружает последнюю точку, показывает все таблицы для просмотра, даёт выбрать какие восстановить. Данные дополняются (merge по id). Перед применением сохраняется локальная точка отката — пока не подтвердишь, можно откатить назад.</p>
+              <button onClick={openRestorePreview} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #F2706E",color:"#F2706E",padding:"10px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Загружаю…":"Загрузить точку восстановления"}</button>
             </div>
           </div>
         )}
@@ -683,29 +683,29 @@ export function AdminPage({ onLogout }) {
           const isToday=dayDate===P.todayStr();
           const optionUsers=crmPresence.length?crmPresence.map(u=>({crm_user_id:u.id,crm_user_name:u.full_name+(u.username?" ("+u.username+")":"")})):(crmUsers.length?crmUsers:[]);
           const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
-          const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:"#64748b"}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); const txt=isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""); return { txt, c:isTd?"#86efac":days>=3?"#fca5a5":"#cbd5e1", blocked:u.status&&u.status!=="active"?u.status:null }; };
+          const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:"#4A4A5A"}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); const txt=isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""); return { txt, c:isTd?"#3DD68C":days>=3?"#F2706E":"rgba(255,255,255,.1)", blocked:u.status&&u.status!=="active"?u.status:null }; };
           const liveNow=(m)=>{ if(!isToday) return false; const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; return ts&&((now-new Date(ts).getTime())/60000<=15); };
           const dayFor=(m)=>{ const ev=[...((m.crm_user_id&&dayData[String(m.crm_user_id)])||[]), ...((dayTracker[m.id])||[])]; return P.computeSessions(ev,20); };
           const assigned=new Set(managers.map(m=>m.crm_user_id).filter(Boolean).map(String));
           const unmatched=optionUsers.filter(a=>!assigned.has(String(a.crm_user_id)));
           const teamMgrs=managers.filter(m=>m.role!=="admin");
-          const th={ padding:"8px 10px",textAlign:"left",color:"#94a3b8",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" };
-          const td={ padding:"10px 10px",borderBottom:"1px solid #23262f",fontSize:13,color:"#e2e8f0" };
+          const th={ padding:"8px 10px",textAlign:"left",color:"#8B8B9A",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid rgba(255,255,255,.08)",whiteSpace:"nowrap" };
+          const td={ padding:"10px 10px",borderBottom:"1px solid #161616",fontSize:13,color:"#F0F0F2" };
           return (
           <div style={{ maxWidth:1080 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
               <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
-              <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
-              {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
-              <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?"#334155":"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
-              {dayInfo&&!dayInfo.err&&<span style={{ color:"#64748b",fontSize:12 }}>диалогов: {dayInfo.conversations} · сообщений: {dayInfo.messages}</span>}
+              <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
+              {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
+              <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?"rgba(255,255,255,.1)":"var(--grad)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
+              {dayInfo&&!dayInfo.err&&<span style={{ color:"#4A4A5A",fontSize:12 }}>диалогов: {dayInfo.conversations} · сообщений: {dayInfo.messages}</span>}
             </div>
-            <p style={{ color:"#64748b",fontSize:12,marginBottom:18 }}>«Отработал» — суммарное активное время (по исходящим сообщениям в CRM + действиям в трекере), окно — от первой до последней активности, разрыв ≥20 мин считается отсутствием. Нажми на ячейку «Отсутствие», чтобы увидеть интервалы.</p>
+            <p style={{ color:"#4A4A5A",fontSize:12,marginBottom:18 }}>«Отработал» — суммарное активное время (по исходящим сообщениям в CRM + действиям в трекере), окно — от первой до последней активности, разрыв ≥20 мин считается отсутствием. Нажми на ячейку «Отсутствие», чтобы увидеть интервалы.</p>
 
-            {dayInfo&&dayInfo.err&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{dayInfo.err}. Проверь KEYCRM_SESSION_TOKEN в Vercel.</div>}
-            {crmPresenceErr&&<div style={{ background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"12px 16px",color:"#fca5a5",fontSize:13,marginBottom:16 }}>{crmPresenceErr}. Проверь переменную KEYCRM_SESSION_TOKEN в Vercel.</div>}
+            {dayInfo&&dayInfo.err&&<div style={{ background:"#101010",border:"1px solid rgba(242,112,110,.4)",borderRadius:10,padding:"12px 16px",color:"#F2706E",fontSize:13,marginBottom:16 }}>{dayInfo.err}. Проверь KEYCRM_SESSION_TOKEN в Vercel.</div>}
+            {crmPresenceErr&&<div style={{ background:"#101010",border:"1px solid rgba(242,112,110,.4)",borderRadius:10,padding:"12px 16px",color:"#F2706E",fontSize:13,marginBottom:16 }}>{crmPresenceErr}. Проверь переменную KEYCRM_SESSION_TOKEN в Vercel.</div>}
 
-            <div style={{ background:"#1a1d27",border:"1px solid #2d3148",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
+            <div style={{ background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,overflow:"hidden",marginBottom:24 }}>
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
                 <thead><tr>{["Менеджер","CRM-пользователь","Отработал","Первая","Последняя","Отсутствие","Вход в CRM"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                 <tbody>
@@ -714,24 +714,24 @@ export function AdminPage({ onLogout }) {
                     return (
                       <Fragment key={m.id}>
                       <tr className="row-hover">
-                        <td style={{...td,fontWeight:600}}>{m.name} {live&&<span style={{ color:"#86efac",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} <span style={{ color:"#64748b",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
+                        <td style={{...td,fontWeight:600}}>{m.name} {live&&<span style={{ color:"#3DD68C",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} <span style={{ color:"#4A4A5A",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
                         <td style={td}>
-                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:230 }}>
+                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:230 }}>
                             <option value="">— не сопоставлен —</option>
                             {optionUsers.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
                           </select>
                         </td>
-                        <td style={{...td,color:s.activeMin>0?"#86efac":"#64748b",fontWeight:700}}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
-                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(s.first)}</td>
-                        <td style={{...td,color:"#cbd5e1"}}>{P.fmtTime(s.last)}</td>
-                        <td style={{...td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#fbbf24":"#64748b"}} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
-                        <td style={{...td,color:li.c,fontSize:12}}>{li.txt}{li.blocked&&<span style={{ color:"#fca5a5",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>
+                        <td style={{...td,color:s.activeMin>0?"#3DD68C":"#4A4A5A",fontWeight:700}}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
+                        <td style={{...td,color:"rgba(255,255,255,.1)"}}>{P.fmtTime(s.first)}</td>
+                        <td style={{...td,color:"rgba(255,255,255,.1)"}}>{P.fmtTime(s.last)}</td>
+                        <td style={{...td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#F4B740":"#4A4A5A"}} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
+                        <td style={{...td,color:li.c,fontSize:12}}>{li.txt}{li.blocked&&<span style={{ color:"#F2706E",fontSize:10,marginLeft:6 }}>{li.blocked}</span>}</td>
                       </tr>
                       {open&&s.gaps.length>0&&(
-                        <tr><td colSpan={7} style={{ background:"#15171f",borderBottom:"1px solid #23262f",padding:"10px 16px" }}>
-                          <div style={{ color:"#94a3b8",fontSize:12,marginBottom:6 }}>Интервалы отсутствия ({m.name}):</div>
+                        <tr><td colSpan={7} style={{ background:"#15171f",borderBottom:"1px solid #161616",padding:"10px 16px" }}>
+                          <div style={{ color:"#8B8B9A",fontSize:12,marginBottom:6 }}>Интервалы отсутствия ({m.name}):</div>
                           <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
-                            {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(251,191,36,.08)",border:"1px solid #7f5d1d",color:"#fcd34d",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
+                            {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(251,191,36,.08)",border:"1px solid rgba(244,183,64,.4)",color:"#F4B740",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
                           </div>
                         </td></tr>
                       )}
@@ -743,11 +743,11 @@ export function AdminPage({ onLogout }) {
             </div>
 
             {unmatched.length>0&&(
-              <div style={{ background:"#1a1d27",border:"1px solid #7f5d1d",borderRadius:12,padding:"14px 16px" }}>
-                <div style={{ color:"#fbbf24",fontSize:13,fontWeight:700,marginBottom:8 }}>CRM-пользователи без привязки ({unmatched.length})</div>
-                <p style={{ color:"#64748b",fontSize:12,margin:"0 0 10px" }}>Есть в CRM, но не сопоставлены с менеджером трекера. Выбери их в выпадающих списках выше.</p>
+              <div style={{ background:"#101010",border:"1px solid rgba(244,183,64,.4)",borderRadius:12,padding:"14px 16px" }}>
+                <div style={{ color:"#F4B740",fontSize:13,fontWeight:700,marginBottom:8 }}>CRM-пользователи без привязки ({unmatched.length})</div>
+                <p style={{ color:"#4A4A5A",fontSize:12,margin:"0 0 10px" }}>Есть в CRM, но не сопоставлены с менеджером трекера. Выбери их в выпадающих списках выше.</p>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
-                  {unmatched.map(a=><span key={a.crm_user_id} style={{ background:"rgba(251,191,36,.1)",border:"1px solid #7f5d1d",color:"#fcd34d",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{a.crm_user_name||a.crm_user_id}</span>)}
+                  {unmatched.map(a=><span key={a.crm_user_id} style={{ background:"rgba(251,191,36,.1)",border:"1px solid rgba(244,183,64,.4)",color:"#F4B740",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{a.crm_user_name||a.crm_user_id}</span>)}
                 </div>
               </div>
             )}
@@ -765,38 +765,38 @@ export function AdminPage({ onLogout }) {
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
               <div>
                 <h3 style={{ color:"#fff",margin:0,fontSize:16 }}>Просмотр точки восстановления</h3>
-                <span style={{ color:"#64748b",fontSize:12 }}>создана: {restorePreview?.created_at? new Date(restorePreview.created_at).toLocaleString("ru"):"—"}</span>
+                <span style={{ color:"#4A4A5A",fontSize:12 }}>создана: {restorePreview?.created_at? new Date(restorePreview.created_at).toLocaleString("ru"):"—"}</span>
               </div>
-              <button onClick={()=>setRestorePreview(null)} style={{ background:"#1a1d27",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13 }}>Закрыть</button>
+              <button onClick={()=>setRestorePreview(null)} style={{ background:"#101010",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13 }}>Закрыть</button>
             </div>
             <div style={{ flex:1,display:"flex",gap:14,minHeight:0 }}>
-              <div style={{ width:230,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,padding:10,overflowY:"auto" }}>
-                <div style={{ color:"#64748b",fontSize:10,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8 }}>Таблицы для восстановления</div>
+              <div style={{ width:230,background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:10,padding:10,overflowY:"auto" }}>
+                <div style={{ color:"#4A4A5A",fontSize:10,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8 }}>Таблицы для восстановления</div>
                 {tbls.map(t=>(
-                  <div key={t} onClick={()=>{ setPreviewTable(t); setPreviewMgr(null); }} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:7,cursor:"pointer",background:previewTable===t?"rgba(99,102,241,.15)":"transparent",marginBottom:2 }}>
-                    <input type="checkbox" checked={restoreSel.includes(t)} onChange={()=>toggle(t)} onClick={e=>e.stopPropagation()} style={{ accentColor:"#6366f1" }}/>
-                    <span style={{ color:"#e2e8f0",fontSize:12,flex:1 }}>{Backup.TABLE_LABELS[t]||t}</span>
-                    <span style={{ color:"#64748b",fontSize:11 }}>{(restorePreview.tables[t]||[]).length}</span>
+                  <div key={t} onClick={()=>{ setPreviewTable(t); setPreviewMgr(null); }} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:7,cursor:"pointer",background:previewTable===t?"rgba(155,79,224,.15)":"transparent",marginBottom:2 }}>
+                    <input type="checkbox" checked={restoreSel.includes(t)} onChange={()=>toggle(t)} onClick={e=>e.stopPropagation()} style={{ accentColor:"#9B5FD0" }}/>
+                    <span style={{ color:"#F0F0F2",fontSize:12,flex:1 }}>{Backup.TABLE_LABELS[t]||t}</span>
+                    <span style={{ color:"#4A4A5A",fontSize:11 }}>{(restorePreview.tables[t]||[]).length}</span>
                   </div>
                 ))}
                 <div style={{ display:"flex",gap:6,marginTop:8 }}>
-                  <button onClick={()=>setRestoreSel(tbls)} style={{ flex:1,background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Все</button>
-                  <button onClick={()=>setRestoreSel([])} style={{ flex:1,background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Снять</button>
+                  <button onClick={()=>setRestoreSel(tbls)} style={{ flex:1,background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Все</button>
+                  <button onClick={()=>setRestoreSel([])} style={{ flex:1,background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"4px 6px",borderRadius:6,cursor:"pointer",fontSize:11 }}>Снять</button>
                 </div>
               </div>
-              <div style={{ flex:1,background:"#1a1d27",border:"1px solid #2d3148",borderRadius:10,overflow:"auto",minWidth:0 }}>
+              <div style={{ flex:1,background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:10,overflow:"auto",minWidth:0 }}>
                 {(()=>{
                   const T = restorePreview.tables;
                   const renderTable = (data,onRowClick)=>{
-                    if(!data||data.length===0) return <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Нет данных</div>;
+                    if(!data||data.length===0) return <div style={{ padding:20,color:"#4A4A5A",fontSize:13 }}>Нет данных</div>;
                     const cs = Object.keys(data[0]);
                     return (
                       <table style={{ borderCollapse:"collapse",fontSize:11,width:"100%" }}>
-                        <thead><tr>{cs.map(c=><th key={c} style={{ position:"sticky",top:0,background:"#13151c",color:"#94a3b8",padding:"7px 10px",textAlign:"left",borderBottom:"1px solid #2d3148",whiteSpace:"nowrap" }}>{c}</th>)}</tr></thead>
+                        <thead><tr>{cs.map(c=><th key={c} style={{ position:"sticky",top:0,background:"#0C0C0C",color:"#8B8B9A",padding:"7px 10px",textAlign:"left",borderBottom:"1px solid rgba(255,255,255,.08)",whiteSpace:"nowrap" }}>{c}</th>)}</tr></thead>
                         <tbody>
                           {data.slice(0,200).map((r,i)=>(
                             <tr key={i} onClick={onRowClick?()=>onRowClick(r):undefined} style={onRowClick?{ cursor:"pointer" }:undefined} className={onRowClick?"row-hover":undefined}>
-                              {cs.map(c=><td key={c} style={{ color:"#cbd5e1",padding:"6px 10px",borderBottom:"1px solid #23262f",whiteSpace:"nowrap",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis" }}>{r[c]==null?"—":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}
+                              {cs.map(c=><td key={c} style={{ color:"rgba(255,255,255,.1)",padding:"6px 10px",borderBottom:"1px solid #161616",whiteSpace:"nowrap",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis" }}>{r[c]==null?"—":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}
                             </tr>
                           ))}
                         </tbody>
@@ -808,58 +808,58 @@ export function AdminPage({ onLogout }) {
                     const full=buildMgrPlan(previewMgr, T);
                     return (
                       <div>
-                        <div style={{ position:"sticky",top:0,background:"#13151c",borderBottom:"1px solid #2d3148",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,zIndex:2 }}>
-                          <button onClick={()=>setPreviewMgr(null)} style={{ background:"transparent",border:"1px solid #2d3148",color:"#94a3b8",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>← Назад</button>
+                        <div style={{ position:"sticky",top:0,background:"#0C0C0C",borderBottom:"1px solid rgba(255,255,255,.08)",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,zIndex:2 }}>
+                          <button onClick={()=>setPreviewMgr(null)} style={{ background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12 }}>← Назад</button>
                           <span style={{ color:"#fff",fontWeight:700,fontSize:14 }}>{previewMgr.name}</span>
-                          <span style={{ color:"#64748b",fontSize:11 }}>{previewMgr.role}</span>
-                          <span style={{ color:"#64748b",fontSize:11,marginLeft:"auto" }}>Отметь разделы для восстановления ↓</span>
+                          <span style={{ color:"#4A4A5A",fontSize:11 }}>{previewMgr.role}</span>
+                          <span style={{ color:"#4A4A5A",fontSize:11,marginLeft:"auto" }}>Отметь разделы для восстановления ↓</span>
                         </div>
                         {MGR_SECTIONS.map(([key,title])=>{
                           const data=full[key]||[];
                           return (
-                            <div key={key} style={{ padding:"12px 14px",borderBottom:"1px solid #23262f" }}>
+                            <div key={key} style={{ padding:"12px 14px",borderBottom:"1px solid #161616" }}>
                               <label style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer" }}>
-                                <input type="checkbox" checked={mgrSel.includes(key)} onChange={()=>setMgrSel(s=>s.includes(key)?s.filter(x=>x!==key):[...s,key])} style={{ accentColor:"#6366f1" }}/>
-                                <span style={{ color:"#a5b4fc",fontSize:12,fontWeight:700 }}>{title} <span style={{ color:"#64748b",fontWeight:400 }}>({data.length})</span></span>
+                                <input type="checkbox" checked={mgrSel.includes(key)} onChange={()=>setMgrSel(s=>s.includes(key)?s.filter(x=>x!==key):[...s,key])} style={{ accentColor:"#9B5FD0" }}/>
+                                <span style={{ color:"#c8a8ff",fontSize:12,fontWeight:700 }}>{title} <span style={{ color:"#4A4A5A",fontWeight:400 }}>({data.length})</span></span>
                               </label>
                               <div style={{ overflowX:"auto" }}>{renderTable(data)}</div>
                             </div>
                           );
                         })}
-                        <div style={{ position:"sticky",bottom:0,background:"#13151c",borderTop:"1px solid #7f1d1d",padding:"12px 14px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",zIndex:2 }}>
-                          <span style={{ color:"#fca5a5",fontSize:12,fontWeight:600 }}>Восстановить выбранные разделы для {previewMgr.name} (merge, откат возможен)</span>
-                          <input value={mgrConfirm} onChange={e=>setMgrConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:190 }}/>
-                          <button onClick={runMgrRestore} disabled={restoreBusy} style={{ background:restoreBusy?"#334155":"linear-gradient(135deg,#dc2626,#b91c1c)",border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"…":"Восстановить"}</button>
+                        <div style={{ position:"sticky",bottom:0,background:"#0C0C0C",borderTop:"1px solid rgba(242,112,110,.4)",padding:"12px 14px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",zIndex:2 }}>
+                          <span style={{ color:"#F2706E",fontSize:12,fontWeight:600 }}>Восстановить выбранные разделы для {previewMgr.name} (merge, откат возможен)</span>
+                          <input value={mgrConfirm} onChange={e=>setMgrConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:190 }}/>
+                          <button onClick={runMgrRestore} disabled={restoreBusy} style={{ background:restoreBusy?"rgba(255,255,255,.1)":"rgba(242,112,110,.95)",border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"…":"Восстановить"}</button>
                         </div>
                       </div>
                     );
                   }
                   return rows.length===0
-                    ? <div style={{ padding:20,color:"#64748b",fontSize:13 }}>Таблица пустая</div>
+                    ? <div style={{ padding:20,color:"#4A4A5A",fontSize:13 }}>Таблица пустая</div>
                     : <>
-                        {previewTable==="managers"&&<div style={{ padding:"8px 14px",color:"#64748b",fontSize:11,borderBottom:"1px solid #23262f" }}>Кликни на менеджера, чтобы открыть его данные и восстановить выборочно</div>}
+                        {previewTable==="managers"&&<div style={{ padding:"8px 14px",color:"#4A4A5A",fontSize:11,borderBottom:"1px solid #161616" }}>Кликни на менеджера, чтобы открыть его данные и восстановить выборочно</div>}
                         {renderTable(rows, previewTable==="managers"?(m)=>{ setPreviewMgr(m); setMgrSel(MGR_SECTIONS.map(s=>s[0])); setMgrConfirm(""); }:undefined)}
-                        {rows.length>200&&<div style={{ padding:10,color:"#64748b",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
+                        {rows.length>200&&<div style={{ padding:10,color:"#4A4A5A",fontSize:11 }}>…показаны первые 200 из {rows.length}</div>}
                       </>;
                 })()}
               </div>
             </div>
-            <div style={{ marginTop:14,background:"#1a1d27",border:"1px solid #7f1d1d",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap" }}>
-              <span style={{ color:"#fca5a5",fontSize:12,fontWeight:600 }}>Выбрано таблиц: {restoreSel.length}. Данные дополнятся (merge). Откат возможен до подтверждения.</span>
-              <input value={restoreConfirm} onChange={e=>setRestoreConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#0f1117",border:"1px solid #2d3148",color:"#e2e8f0",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:200 }}/>
-              <button onClick={runRestore} disabled={restoreBusy} style={{ background:restoreBusy?"#334155":"linear-gradient(135deg,#dc2626,#b91c1c)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Восстанавливаю…":"Восстановить выбранное"}</button>
+            <div style={{ marginTop:14,background:"#101010",border:"1px solid rgba(242,112,110,.4)",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap" }}>
+              <span style={{ color:"#F2706E",fontSize:12,fontWeight:600 }}>Выбрано таблиц: {restoreSel.length}. Данные дополнятся (merge). Откат возможен до подтверждения.</span>
+              <input value={restoreConfirm} onChange={e=>setRestoreConfirm(e.target.value)} placeholder="Впишите: ВОССТАНОВИТЬ" style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",marginLeft:"auto",width:200 }}/>
+              <button onClick={runRestore} disabled={restoreBusy} style={{ background:restoreBusy?"rgba(255,255,255,.1)":"rgba(242,112,110,.95)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>{restoreBusy?"Восстанавливаю…":"Восстановить выбранное"}</button>
             </div>
           </div>
           );
         })()}
 
         {pendingRestore&&(
-          <div style={{ position:"fixed",left:0,right:0,bottom:0,zIndex:8000,background:"#1a1d27",borderTop:"2px solid #f59e0b",padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",boxShadow:"0 -8px 32px rgba(0,0,0,.5)" }}>
-            <span style={{ color:"#fbbf24",fontWeight:700,fontSize:13 }}>⚠ Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
-            <span style={{ color:"#64748b",fontSize:12 }}>{pendingRestore.scope?pendingRestore.scope+" · ":""}{(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
+          <div style={{ position:"fixed",left:0,right:0,bottom:0,zIndex:8000,background:"#101010",borderTop:"2px solid #F4924A",padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",boxShadow:"0 -8px 32px rgba(0,0,0,.5)" }}>
+            <span style={{ color:"#F4B740",fontWeight:700,fontSize:13 }}>⚠ Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
+            <span style={{ color:"#4A4A5A",fontSize:12 }}>{pendingRestore.scope?pendingRestore.scope+" · ":""}{(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
             <div style={{ marginLeft:"auto",display:"flex",gap:10 }}>
               <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>✓ Подтвердить</button>
-              <button onClick={rollbackRestore} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #f87171",color:"#fca5a5",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>↺ Откатить</button>
+              <button onClick={rollbackRestore} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #F2706E",color:"#F2706E",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>↺ Откатить</button>
             </div>
           </div>
         )}
