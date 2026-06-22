@@ -148,6 +148,31 @@ tr.tag-hot td,tr.tag-warm td,tr.tag-cold td,tr.tag-problem td{background:transpa
   border:1px solid rgba(155,79,224,.3);
 }
 
+/* ── glass modals (v3) ── */
+.glass-overlay{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(8,8,8,.45);
+  -webkit-backdrop-filter:blur(8px) saturate(120%);
+  backdrop-filter:blur(8px) saturate(120%);
+}
+.glass-modal{
+  position:relative;
+  background:rgba(20,20,22,.72);
+  -webkit-backdrop-filter:blur(28px) saturate(150%);
+  backdrop-filter:blur(28px) saturate(150%);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;
+  box-shadow:0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.glass-modal::before{
+  content:'';position:absolute;inset:0;border-radius:18px;padding:1px;pointer-events:none;
+  background:var(--grad-border);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  opacity:.5;
+}
+
 /* ── сайдбар-тултип (мгновенный) ── */
 .sb-tip{position:relative;}
 .sb-tip::after{
