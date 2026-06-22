@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "../supabaseClient";
-import { STATUSES, LEAD_COLORS } from "../constants";
+import { STATUSES, LEAD_COLORS, THEME } from "../constants";
 import { getStatusStyle, StatusBadge, StatusPopup, ColorPopup } from "./common";
 
 export function PlayersTable({ players, redeposits, plannedRds, platforms, manager, dark, readonly, onReload, showToast, excludedIds: _excludedIds, setExcludedIds: _setExcludedIds, isPoland=true, highlightId=null }) {
@@ -220,8 +220,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   localPlayers.filter(p=>p&&p.id).forEach(p=>{ const mk=getMonthKey(p.date); if(!playersByMonth[mk]) playersByMonth[mk]=[]; playersByMonth[mk].push(p); });
   const months = Object.keys(playersByMonth).sort().reverse();
 
-  const T = dark ? { border:"#2d3148",text:"#e2e8f0",muted:"#64748b",sub:"#94a3b8",inputBg:"#0f1117",thBg:"#151824",rowBorder:"#1e2235",rdPlan:"#3d4268",rdFact:"#e2e8f0",monthHdr:"#1a1d27",surface:"#1a1d27" }
-    : { border:"#dde1ea",text:"#1e293b",muted:"#94a3b8",sub:"#64748b",inputBg:"#e8eaf0",thBg:"#e8eaf0",rowBorder:"#e2e6ef",rdPlan:"#b0b8cc",rdFact:"#1e293b",monthHdr:"#e8eaf0",surface:"#f5f6fa" };
+  const T = { border:"rgba(255,255,255,.08)",text:"#F0F0F2",muted:"#4A4A5A",sub:"#8B8B9A",inputBg:"rgba(255,255,255,.03)",thBg:"transparent",rowBorder:"rgba(255,255,255,.05)",rdPlan:"#4A4A5A",rdFact:"#F0F0F2",monthHdr:"transparent",surface:"#101010" };
   const IS = { background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"8px 10px",borderRadius:7,fontSize:13,outline:"none",width:"100%",boxSizing:"border-box" };
   const S = {
     th:{ padding:"8px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:".07em",borderBottom:`1px solid ${T.border}`,background:T.thBg,whiteSpace:"nowrap" },
@@ -237,7 +236,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
 
       {rdInputPopup&&(()=>{
         const openUp=rdInputPopup.y+100>window.innerHeight-20;
-        const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
+        const Tb={bg:"#101010",border:"rgba(255,255,255,.08)",text:"#F0F0F2",muted:"#4A4A5A"};
         return(
           <div ref={rdInputRef} style={{ position:"fixed",left:Math.min(rdInputPopup.x-10,window.innerWidth-160),top:openUp?rdInputPopup.y-90:rdInputPopup.y+8,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:8,padding:"8px 10px",zIndex:5000,boxShadow:"0 4px 20px rgba(0,0,0,.5)",width:150,opacity:rdShow?1:0,transform:rdShow?"scale(1)":"scale(.96)",transformOrigin:openUp?"bottom left":"top left",transition:"opacity .09s ease,transform .09s ease" }}
             onMouseDown={e=>e.stopPropagation()}>
@@ -259,12 +258,12 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
         const platList=platforms.filter(p=>(!geoId||p.geo_id===geoId)&&!p.is_hidden);
         const popupH=platList.length*32+16;
         const openUp=platformPopup.y+popupH>window.innerHeight-20;
-        const Tb=dark?{bg:"#1a1d27",border:"#2d3148",text:"#e2e8f0",muted:"#64748b"}:{bg:"#f1f5f9",border:"#cbd5e1",text:"#1e293b",muted:"#64748b"};
+        const Tb={bg:"#101010",border:"rgba(255,255,255,.08)",text:"#F0F0F2",muted:"#4A4A5A"};
         return(
           <div className="fade-in" style={{ position:"fixed",left:platformPopup.x,top:openUp?platformPopup.y-popupH:platformPopup.y,background:Tb.bg,border:`1px solid ${Tb.border}`,borderRadius:10,padding:6,zIndex:5000,boxShadow:"0 8px 32px rgba(0,0,0,.4)",minWidth:180,maxHeight:280,overflowY:"auto" }}
             onMouseDown={e=>e.stopPropagation()}>
             <div style={{ fontSize:10,color:Tb.muted,padding:"4px 10px 6px",fontWeight:700,textTransform:"uppercase" }}>Сменить платформу</div>
-            {platList.map(p=><div key={p.id} onClick={()=>updatePlatform(platformPopup.playerId,p.id)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",fontSize:12,color:Tb.text,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(99,102,241,.12)":"rgba(99,102,241,.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{p.name}</div>)}
+            {platList.map(p=><div key={p.id} onClick={()=>updatePlatform(platformPopup.playerId,p.id)} style={{ padding:"6px 10px",borderRadius:6,cursor:"pointer",fontSize:12,color:Tb.text,transition:"background .15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{p.name}</div>)}
           </div>
         );
       })()}
@@ -303,7 +302,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
         </div>
       )}
 
-      <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:10 }}>
+      <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:18,background:T.surface }}>
         <table style={{ width:"100%",borderCollapse:"collapse" }}>
           <thead>
             <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+18+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
@@ -351,19 +350,19 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                     const colorInfo=LEAD_COLORS.find(c=>c.key===player.color)||LEAD_COLORS[0];
                     const globalIdx=localPlayers.indexOf(player);
                     return (
-                      <tr key={player.id} className="row-hover"
+                      <tr key={player.id} className={`row-hover tag-${player.color||"none"}`}
                         ref={el=>{ if(el&&highlightId===player.id) el.scrollIntoView({behavior:"smooth",block:"center"}); }}
                         draggable={!readonly} onDragStart={()=>handleDragStart(globalIdx)} onDragOver={e=>handleDragOver(e,globalIdx)} onDragEnd={handleDragEnd}
-                        style={{ background:highlightId===player.id?(dark?"rgba(99,102,241,.35)":"rgba(99,102,241,.22)"):(colorInfo.bg||"transparent"),boxShadow:highlightId===player.id?"inset 0 0 0 2px #6366f1":"none",transition:"background .4s,box-shadow .4s" }}>
+                        style={{ background:highlightId===player.id?"rgba(155,79,224,.28)":undefined,boxShadow:highlightId===player.id?"inset 0 0 0 2px #9B5FD0":"none",transition:"background .4s,box-shadow .4s" }}>
                         <td style={{ ...S.td,color:T.muted,fontSize:10,textAlign:"center" }}>{globalIdx+1}</td>
                         {!readonly && <td style={S.td}><span className="drag-handle" title="Перетащи">⠿</span></td>}
                         {!readonly && <td style={{ ...S.td,textAlign:"center" }}>
-                          <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#6366f1",cursor:"pointer" }}/>
+                          <input type="checkbox" checked={excludedIds.has(player.id)} onChange={()=>setExcludedIds(s=>{ const n=new Set(s); n.has(player.id)?n.delete(player.id):n.add(player.id); return n; })} title="Исключить из автоматизации" style={{ width:13,height:13,accentColor:"#9B5FD0",cursor:"pointer" }}/>
                         </td>}
                         <td style={{ ...S.td,color:T.muted,fontSize:11,cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:()=>setDateEdit(player.id)}>
                           {dateEdit===player.id&&!readonly
                             ?<input autoFocus type="date" defaultValue={player.date} onBlur={async e=>{ await supabase.from("players").update({date:e.target.value}).eq("id",player.id); setDateEdit(null); onReload(); }} onKeyDown={e=>{ if(e.key==="Escape") setDateEdit(null); }} style={{ ...IS,fontSize:11,padding:"2px 4px",width:120 }}/>
-                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.date?(([y,m,d])=>`${d}.${m}.${y}`)(player.date.split("-")):"—"}</span>}
+                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}`,color:"#fff",fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums" }}>{player.date?(([y,m,d])=>`${d}.${m}.${y}`)(player.date.split("-")):"—"}</span>}
                         </td>
                         <td style={{ ...S.td,color:T.text,fontSize:11,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",cursor:readonly?"default":"pointer" }} onClick={readonly?undefined:e=>setPlatformPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})} title={readonly?"":plat?.name}>{plat?.name||"—"}</td>
                         <td style={{ ...S.td,fontSize:12,fontWeight:500 }}>
@@ -376,7 +375,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                         <td style={{ ...S.td,color:T.muted,fontSize:10,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&copyToClipboard(player.sub18)} title="Скопировать">
                           <span style={{ borderBottom:`1px dashed ${T.border}` }}>{player.sub18||"—"}</span>
                         </td>
-                        <td style={{ ...S.td,color:T.text,fontWeight:600 }}>{player.deposit}€</td>
+                        <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums" }}>{player.deposit}€</td>
                         {rdArr.map((rd,i)=>{
                           const isToday=rd&&!rd.isFact&&rd.date===today;
                           const rdColor=rd?(rd.isFact?T.rdFact:T.rdPlan):T.border;
@@ -408,9 +407,9 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                             </td>
                           );
                         })}
-                        <td style={{ ...S.td,color:T.text,fontWeight:700 }}>{total}€</td>
+                        <td style={{ ...S.td,color:"#fff",fontWeight:700,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums" }}>{total}€</td>
                         <td style={S.td}><StatusBadge status={player.status} dark={dark} onClick={readonly?undefined:e=>setStatusPopup({playerId:player.id,x:e.clientX-10,y:e.clientY+8})}/></td>
-                        {isPoland&&<td style={S.td}>{player.is_blik&&<span style={{ background:dark?"linear-gradient(135deg,#451a03,#78350f)":"linear-gradient(135deg,#fef3c7,#fde68a)",color:dark?"#d97706":"#92400e",padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:700 }}>BLIK</span>}</td>}
+                        {isPoland&&<td style={S.td}>{player.is_blik&&<span style={{ background:"rgba(244,183,64,.13)",color:"#F4B740",padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:700 }}>BLIK</span>}</td>}
                         <td style={{ ...S.td,maxWidth:140 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:4 }}>
                           {commentEdit===player.id&&!readonly?(
