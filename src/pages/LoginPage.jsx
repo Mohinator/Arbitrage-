@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { ADMIN_PASSWORD, CSS, THEME } from "../constants";
+
 export function LoginPage({ onLogin }) {
   const [token, setToken] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [mode, setMode] = useState("manager");
   const login = async () => {
