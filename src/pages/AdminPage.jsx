@@ -858,7 +858,7 @@ export function AdminPage({ onLogout }) {
             <span style={{ color:"#F4B740",fontWeight:700,fontSize:13 }}>Восстановление применено{pendingRestore.at?` (${new Date(pendingRestore.at).toLocaleString("ru")})`:""}. Проверьте данные.</span>
             <span style={{ color:"#4A4A5A",fontSize:12 }}>{pendingRestore.scope?pendingRestore.scope+" · ":""}{(pendingRestore.tables||[]).map(t=>Backup.TABLE_LABELS[t]||t).join(", ")}</span>
             <div style={{ marginLeft:"auto",display:"flex",gap:10 }}>
-              <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>✓ Подтвердить</button>
+              <button onClick={confirmRestore} disabled={restoreBusy} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",color:"#fff",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontSize:13,fontWeight:700 }}>Подтвердить</button>
               <button onClick={rollbackRestore} disabled={restoreBusy} style={{ background:"transparent",border:"1px solid #F2706E",color:"#F2706E",padding:"9px 18px",borderRadius:9,cursor:restoreBusy?"default":"pointer",fontSize:13,fontWeight:700 }}>↺ Откатить</button>
             </div>
           </div>

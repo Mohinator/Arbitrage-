@@ -281,10 +281,10 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
             ))}
             {showEditRd.isPlanned?(
               <>
-                <button onClick={async()=>{ const c=showEditRd; setShowEditRd(null); await markPlannedAsDone(c.playerId,c.rdNumber,c.amount,c.date||today); }} className="btn-p" style={{ width:"100%",padding:"11px",fontSize:14,marginBottom:10 }}>✓ Подтвердить</button>
+                <button onClick={async()=>{ const c=showEditRd; setShowEditRd(null); await markPlannedAsDone(c.playerId,c.rdNumber,c.amount,c.date||today); }} className="btn-p" style={{ width:"100%",padding:"11px",fontSize:14,marginBottom:10 }}>Подтвердить</button>
                 <div style={{ display:"flex",gap:10 }}>
                   <button onClick={savePlannedEdit} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Сохранить план</button>
-                  <button onClick={()=>resetPlanned(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Удалить</button>
+                  <button onClick={()=>resetPlanned(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"rgba(242,112,110,.13)",color:"#F2706E",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600 }}>Удалить</button>
                   <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
                 </div>
               </>
@@ -292,7 +292,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
               <>
                 <div style={{ display:"flex",gap:10 }}>
                   <button onClick={editRd} className="btn-p" style={{ flex:1,padding:"10px",fontSize:14 }}>Сохранить</button>
-                  <button onClick={()=>resetRd(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:700 }}>Сбросить</button>
+                  <button onClick={()=>resetRd(showEditRd.playerId,showEditRd.rdNumber)} style={{ background:"rgba(242,112,110,.13)",color:"#F2706E",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600 }}>Сбросить</button>
                   <button onClick={()=>setShowEditRd(null)} className="btn-g" style={{ flex:1,border:`1px solid ${T.border}`,color:T.sub,padding:"10px",borderRadius:8,cursor:"pointer" }}>Отмена</button>
                 </div>
                 <button onClick={()=>{ revertRdToPlanned(showEditRd.playerId,showEditRd.rdNumber,showEditRd.amount,showEditRd.date); setShowEditRd(null); }} style={{ marginTop:10,width:"100%",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px",borderRadius:8,cursor:"pointer",fontSize:12 }}>↩ Вернуть в плановый</button>
