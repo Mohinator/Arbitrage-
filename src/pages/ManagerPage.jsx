@@ -712,7 +712,7 @@ export function ManagerPage({ manager, onLogout }) {
                   <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
                   <div style={{ display:"flex",gap:7,alignItems:"center",flexWrap:"wrap" }}>
                     <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avgFact.toFixed(1)}€</span>
-                    <span style={{ fontSize:11,color:T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                    <span style={{ fontSize:11,color:plannedAvg<(plat.target_avg_check||0)-1?"#F4B740":T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                     <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                   </div>
                   {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
@@ -1020,7 +1020,7 @@ export function ManagerPage({ manager, onLogout }) {
                             <div style={{ fontSize:11,fontWeight:700,color:T.text }}>{plat.name}</div>
                             <div style={{ display:"flex",gap:7,alignItems:"center",flexWrap:"wrap" }}>
                               <span style={{ fontSize:12,color:ok?"#86efac":"#fca5a5",fontWeight:700 }}>факт {avg.toFixed(1)}€</span>
-                              <span style={{ fontSize:11,color:T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
+                              <span style={{ fontSize:11,color:plannedAvg<(plat.target_avg_check||0)-1?"#F4B740":T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                               <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                             </div>
                             {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
