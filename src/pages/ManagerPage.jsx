@@ -1426,7 +1426,9 @@ export function ManagerPage({ manager, onLogout }) {
         const liveNow=(m)=>{ if(!isToday) return false; const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; return ts&&((now-new Date(ts).getTime())/60000<=15); };
         const dayFor=(m)=>{ const ev=[...((m.crm_user_id&&dayData[String(m.crm_user_id)])||[]), ...((dayTracker[m.id])||[])]; return P.computeSessions(ev,20); };
         const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byPres[k]&&byPres[k].full_name)||(byUser[k]&&byUser[k].crm_user_name)||k; };
-        const teamMgrs=allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id));
+        const myGeoIds=new Set(myGeos.map(g=>g.id));
+        const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
+        const teamMgrs=allManagers.filter(m=>accessibleMgrIds.has(m.id));
         return (
         <div style={{ padding:"16px 20px",maxWidth:1040 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
