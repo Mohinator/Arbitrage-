@@ -501,7 +501,7 @@ export function ManagerPage({ manager, onLogout }) {
             ...(isTeamLead?[["activity","Активность","P22 12 18 12 15 21 9 3 6 12 2 12"]]:[])
           ].map(([key,label,_ico])=>{
             const on=tab===key;
-            const capaPlayers = isTeamLead ? allPlayers : players;
+            const capaPlayers = allPlayers;
             const capaPlatCount = key==="capa" ? platforms.filter(p=>p.geo_id===activeGeo&&p.cap&&p.is_active!==false&&!p.is_hidden&&(p.cap-(capaPlayers.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))<=5&&(p.cap-(capaPlayers.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))>=0).length : 0;
             const badge=(key==="tasks"&&overdueRds.length>0)?overdueRds.length:(key==="capa"&&capaPlatCount>0)?capaPlatCount:null;
             return (
@@ -1274,7 +1274,7 @@ export function ManagerPage({ manager, onLogout }) {
       {tab==="capa"&&(
         <CapaView
           platforms={platforms}
-          players={isTeamLead ? allPlayers : players}
+          players={allPlayers}
           managers={allManagers}
           myGeos={myGeos}
           activeGeo={activeGeo}
