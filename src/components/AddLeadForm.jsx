@@ -1,3 +1,4 @@
+import { Select, DatePicker } from "./ui";
 import { STATUSES } from "../constants";
 import { StatusBadge } from "./common";
 
@@ -13,6 +14,8 @@ export function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, 
               <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
               {t==="select"
                 ?<Select value={leadForm[k]} onChange={v=>setLeadForm(f=>({...f,[k]:v}))} style={{...IS,width:"100%"}} options={[{value:"",label:"— Без платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
+                :t==="date"
+                ?<DatePicker value={leadForm[k]} onChange={v=>setLeadForm(f=>({...f,[k]:v}))} style={{...IS,width:"100%"}}/>
                 :<input type={t==="number"?"text":t} inputMode={t==="number"?"numeric":undefined} value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}/>}
             </div>
           ))}
