@@ -14,7 +14,7 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
     const { data } = await supabase
       .from("cap_queue")
       .select("*")
-      .in("status", ["pending","confirmed"])
+      .in("status", ["pending"])
       .order("created_at", { ascending: true });
     setQueue(data || []);
     setLoading(false);
@@ -43,8 +43,30 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
     return { plat, totalCount, remaining, bookedSlots, freeSlots, platQueue };
   }).filter(({ remaining }) => remaining <= THRESHOLD && remaining >= 0);
 
-  // What the current manager has booked (pending/confirmed)
+  // Count a manager's "Да" deposits on a platform
+  const depCount = (mgrId, platId) => players.filter(p => p.manager_id === mgrId && p.platform_id === platId && p.status === "Да").length;
+
+  // What the current manager has booked (pending)
   const myEntry = (platId) => queue.find(q => q.platform_id === platId && q.manager_id === managerId);
+
+  // An entry is fulfilled when the manager made a NEW "Да" deposit since booking
+  const isFulfilled = (entry) => depCount(entry.manager_id, entry.platform_id) > (entry.deposit_baseline ?? 0);
+
+  // Auto-remove bookings whose manager has made their deposit
+  useEffect(() => {
+    if (!queue.length || !players.length) return;
+    const toClose = queue.filter(e => e.status === "pending" && isFulfilled(e));
+    if (!toClose.length) return;
+    (async () => {
+      for (const e of toClose) {
+        await supabase.from("cap_queue")
+          .update({ status: "fulfilled", confirmed_at: new Date().toISOString() })
+          .eq("id", e.id).eq("status", "pending");
+      }
+      loadQueue();
+    })();
+    // eslint-disable-next-line
+  }, [queue, players]);
 
   const handleTake = async (plat, slots = 1) => {
     const existing = myEntry(plat.id);
@@ -52,19 +74,14 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
     const stat = platStats.find(s => s.plat.id === plat.id);
     if (!stat || stat.freeSlots < slots) { showToast?.("Нет свободных мест"); return; }
     setBusy(b => ({ ...b, [plat.id]: true }));
+    const baseline = depCount(managerId, plat.id);
     const { error } = await supabase.from("cap_queue").insert({
       platform_id: plat.id, manager_id: managerId,
-      geo_id: activeGeo, slots, status: "pending"
+      geo_id: activeGeo, slots, status: "pending", deposit_baseline: baseline
     });
     if (error) showToast?.("Ошибка: " + error.message);
     else showToast?.(`Забронировано ${slots} место${slots > 1 ? "а" : ""} на ${plat.name}`);
     setBusy(b => ({ ...b, [plat.id]: false }));
-    await loadQueue();
-  };
-
-  const handleConfirm = async (entryId, platName) => {
-    await supabase.from("cap_queue").update({ status: "confirmed", confirmed_at: new Date().toISOString() }).eq("id", entryId);
-    showToast?.("Депозит подтверждён на " + platName);
     await loadQueue();
   };
 
@@ -144,29 +161,20 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
                 {platQueue.map((entry, i) => {
                   const mgr = managers.find(m => m.id === entry.manager_id);
                   const isMe = entry.manager_id === managerId;
-                  const isPending = entry.status === "pending";
-                  const isConfirmed = entry.status === "confirmed";
                   return (
                     <div key={entry.id} style={{ ...S.entry, borderBottom: i < platQueue.length - 1 ? "1px solid rgba(255,255,255,.05)" : "none" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: isConfirmed ? "#3DD68C" : "#F4B740", flexShrink: 0 }}/>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#F4B740", flexShrink: 0 }}/>
                         <span style={{ color: isMe ? "#F0F0F2" : "#8B8B9A", fontWeight: isMe ? 700 : 500, fontSize: 13 }}>
                           {mgr?.name || "—"}
                           {entry.slots === 2 && <span style={{ marginLeft: 6, fontSize: 10, background: "rgba(167,139,250,.2)", color: "#A78BFA", padding: "1px 6px", borderRadius: 4 }}>×2</span>}
                         </span>
-                        <span style={{ fontSize: 11, color: isConfirmed ? "#3DD68C" : "#F4B740" }}>
-                          {isConfirmed ? "подтверждён" : "ждёт"}
-                        </span>
+                        <span style={{ fontSize: 11, color: "#F4B740" }}>ждёт депозит</span>
                       </div>
 
-                      {/* Manager: confirm own slot */}
-                      {isMe && isPending && (
-                        <button onClick={() => handleConfirm(entry.id, plat.name)} style={S.btn(THEME.grad || "linear-gradient(135deg,#F4924A,#C9517A,#9B5FD0)", false)}>
-                          Подтвердить
-                        </button>
-                      )}
+                      {/* own booking: cancel */}
                       {isMe && (
-                        <button onClick={() => handleCancel(entry.id)} style={{ ...S.btn("rgba(242,112,110,.13)", false), color: "#F2706E", marginLeft: 4 }}>
+                        <button onClick={() => handleCancel(entry.id)} style={{ ...S.btn("rgba(242,112,110,.13)", false), color: "#F2706E" }}>
                           Отмена
                         </button>
                       )}
@@ -174,7 +182,7 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
                       {/* Teamlead controls */}
                       {isTeamLead && !isMe && (
                         <div style={{ display: "flex", gap: 6 }}>
-                          {isPending && !entry.allow_two && freeSlots >= 2 && (
+                          {!entry.allow_two && freeSlots >= 1 && (
                             <button onClick={() => handleAllowTwo(entry.id, mgr?.name)} style={S.btn("rgba(167,139,250,.15)", false)} title="Разрешить взять 2 депозита">
                               <span style={{ color: "#A78BFA" }}>+2</span>
                             </button>
