@@ -12,7 +12,7 @@ export function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, 
             <div key={k} style={{ gridColumn:k==="name"?"1/-1":undefined }}>
               <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>
               {t==="select"
-                ?<select value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}><option value="">— Без платформы</option>{geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                ?<Select value={leadForm[k]} onChange={v=>setLeadForm(f=>({...f,[k]:v}))} style={{...IS,width:"100%"}} options={[{value:"",label:"— Без платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
                 :<input type={t==="number"?"text":t} inputMode={t==="number"?"numeric":undefined} value={leadForm[k]} onChange={e=>setLeadForm(f=>({...f,[k]:e.target.value}))} style={IS}/>}
             </div>
           ))}

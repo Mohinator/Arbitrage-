@@ -1,3 +1,4 @@
+import { Select, DatePicker } from "./ui";
 import { useState } from "react";
 
 export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick }) {
@@ -31,21 +32,12 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
       <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap" }}>
         <h2 style={{ color:T.text,fontSize:18,margin:0 }}>История действий</h2>
         {geos&&geos.length>1&&(
-          <select value={fGeo} onChange={e=>{ setFGeo(e.target.value); setFMgr(""); }} style={sel}>
-            <option value="">Все гео</option>
-            {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
+          <Select value={fGeo} onChange={v=>{ setFGeo(v); setFMgr(""); }} style={sel} options={[{value:"",label:"Все гео"},...(geos||[]).map(g=>({value:g.id,label:g.name}))]}/>
         )}
-        <select value={fMgr} onChange={e=>setFMgr(e.target.value)} style={sel}>
-          <option value="">Все менеджеры</option>
-          {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        <select value={fAction} onChange={e=>setFAction(e.target.value)} style={sel}>
-          <option value="">Все действия</option>
-          {actions.map(a=><option key={a} value={a}>{actionLabels[a]||a}</option>)}
-        </select>
-        <input type="date" value={fFrom} onChange={e=>setFFrom(e.target.value)} style={sel} title="С даты"/>
-        <input type="date" value={fTo} onChange={e=>setFTo(e.target.value)} style={sel} title="По дату"/>
+        <Select value={fMgr} onChange={v=>setFMgr(v)} style={sel} options={[{value:"",label:"Все менеджеры"},...(managers||[]).map(m=>({value:m.id,label:m.name}))]}/>
+        <Select value={fAction} onChange={v=>setFAction(v)} style={sel} options={[{value:"",label:"Все действия"},{value:"created",label:"Создан"},{value:"status_changed",label:"Статус"},{value:"rd_added",label:"РД добавлен"},{value:"rd_moved",label:"РД перенесён"},{value:"deleted",label:"Удалён"}]}/>
+        <DatePicker value={fFrom} onChange={v=>setFFrom(v)} style={sel}/>
+        <DatePicker value={fTo} onChange={v=>setFTo(v)} style={sel}/>
         <input type="text" placeholder="Поиск: лид / менеджер" value={fSearch} onChange={e=>setFSearch(e.target.value)} style={{...sel,minWidth:180}}/>
         {(fGeo||fMgr||fAction||fFrom||fTo||fSearch)&&<button onClick={()=>{ setFGeo("");setFMgr("");setFAction("");setFFrom("");setFTo("");setFSearch(""); }} style={{...sel,cursor:"pointer",color:T.bad||"#F2706E"}}>Сбросить</button>}
         <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>{filtered.length}</span>

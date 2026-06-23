@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { supabase } from "../supabaseClient";
 import { STATUSES, LEAD_COLORS, CSS, THEME } from "../constants";
 import { getStatusStyle, StatusBadge, StatusPopup, ColorPopup, Toast } from "../components/common";
+import { Select, DatePicker } from "../components/ui";
 import { PlayersTable } from "../components/PlayersTable";
 import { AddLeadForm } from "../components/AddLeadForm";
 import { HistoryView } from "../components/HistoryView";
@@ -779,14 +780,8 @@ export function ManagerPage({ manager, onLogout }) {
           )}
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
             <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
-            <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все статусы</option>
-              {STATUSES.map(s=><option key={s}>{s}</option>)}
-            </select>
+            <Select value={filterPlatform} onChange={v=>setFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={filterStatus} onChange={v=>setFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
           <PlayersTable players={sortedPlayers} redeposits={redeposits} plannedRds={plannedRds} platforms={platforms} manager={manager} dark={dark} readonly={false} onReload={load} showToast={showToast} excludedIds={excludedIds} setExcludedIds={setExcludedIds} isPoland={myGeos.find(g=>g.id===activeGeo)?.code==='PL'} highlightId={highlightId}/>
@@ -798,17 +793,11 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи и просрочки</h2>
-            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
-              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-                <option value="">Все менеджеры</option>
-                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
-            <input type="date" value={todoDate} onChange={e=>setTodoDate(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
+            <DatePicker value={todoDate||""} onChange={v=>setTodoDate(v||null)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }}/>
             {todoDate&&<button onClick={()=>setTodoDate("")} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
             <span style={{ color:T.muted,fontSize:11 }}>Клик по лиду → переход к таблице</span>
           </div>
@@ -895,15 +884,9 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи на сегодня</h2>
-            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
-              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-                <option value="">Все менеджеры</option>
-                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
           </div>
           {(()=>{
@@ -1041,14 +1024,8 @@ export function ManagerPage({ manager, onLogout }) {
                     </div>
                     <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
                       <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
-                      <select value={teamFilterPlatform} onChange={e=>setTeamFilterPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-                        <option value="">Все платформы</option>
-                        {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                      <select value={teamFilterStatus} onChange={e=>setTeamFilterStatus(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-                        <option value="">Все статусы</option>
-                        {STATUSES.map(s=><option key={s}>{s}</option>)}
-                      </select>
+                      <Select value={teamFilterPlatform} onChange={v=>setTeamFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+                      <Select value={teamFilterStatus} onChange={v=>setTeamFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
                       {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
                     </div>
                     <PlayersTable
@@ -1076,15 +1053,9 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Просроченные РД</h2>
-            <select value={todoPlatFilter} onChange={e=>setTodoPlatFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
-              <select value={todoMgrFilter} onChange={e=>setTodoMgrFilter(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-                <option value="">Все менеджеры</option>
-                {allManagers.filter(m=>userGeos.some(ug=>ug.geo_id===activeGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
           </div>
           {(()=>{
@@ -1179,10 +1150,7 @@ export function ManagerPage({ manager, onLogout }) {
             ))}
             <div style={{ marginBottom:12 }}>
               <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>Гео</label>
-              <select value={pForm.geo_id} onChange={e=>setPForm(f=>({...f,geo_id:e.target.value}))} style={IS}>
-                <option value="">Без гео</option>
-                {geos.map(g=><option key={g.id} value={g.id}>{g.name}{g.code?` (${g.code})`:""}</option>)}
-              </select>
+              <Select value={pForm.geo_id} onChange={v=>setPForm(f=>({...f,geo_id:v}))} style={{...IS,width:"100%"}} options={[{value:"",label:"— Выбери гео"},...myGeos.map(g=>({value:g.id,label:g.name}))]}/>
             </div>
             <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
               {[["is_active","Платформа активна"],["reset_monthly","Сбрасывать СЧ каждый месяц"]].map(([k,l])=>(
@@ -1205,14 +1173,8 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Платформы</h2>
-            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все месяцы</option>
-              {allMonths.map(mk=>{ const[yr,mo]=mk.split("-"); return<option key={mk} value={mk}>{new Date(Number(yr),Number(mo)-1,1).toLocaleString("ru",{month:"long",year:"numeric"})}</option>; })}
-            </select>
-            <select value={statPlatform} onChange={e=>setStatPlatform(e.target.value)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12,outline:"none" }}>
-              <option value="">Все платформы</option>
-              {geoPlatforms.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select value={filterMonth} onChange={v=>setFilterMonth(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все месяцы"},...Array.from({length:12},(_,idx)=>({value:String(idx+1).padStart(2,"0"),label:["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"][idx]}))]} />
+            <Select value={statPlatform} onChange={v=>setStatPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
             {[
@@ -1449,7 +1411,7 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px",maxWidth:1040 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
-            <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
+            <DatePicker value={dayDate} onChange={v=>{setDayDate(v);setExpandedId&&setExpandedId(null);loadDay(v);}} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12 }}/>
             {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
             <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?T.border:THEME.grad,border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
           </div>

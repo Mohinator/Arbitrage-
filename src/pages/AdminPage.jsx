@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Select, DatePicker } from "../components/ui";
 import { supabase } from "../supabaseClient";
 import { STATUSES, LEAD_COLORS, CSS } from "../constants";
 import { getStatusStyle, StatusBadge, StatusPopup, ColorPopup, Toast } from "../components/common";
@@ -295,10 +296,7 @@ export function AdminPage({ onLogout }) {
             ))}
             <div style={{marginBottom:12}}>
               <label style={{display:"block",fontSize:10,color:"#4A4A5A",marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Гео</label>
-              <select value={pForm.geo_id} onChange={e=>setPForm(f=>({...f,geo_id:e.target.value}))} style={IS}>
-                <option value="">Без гео</option>
-                {geos.map(g=><option key={g.id} value={g.id}>{g.name} {g.code?`(${g.code})`:""}</option>)}
-              </select>
+              <Select value={pForm.geo_id} onChange={v=>setPForm(f=>({...f,geo_id:v}))} style={{...IS,width:"100%"}} options={[{value:"",label:"— Выбери гео"},...geos.map(g=>({value:g.id,label:g.name}))]}/>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
               {[["is_active","Платформа активна"],["reset_monthly","Сбрасывать СЧ каждый месяц"]].map(([k,l])=>(
@@ -406,10 +404,7 @@ export function AdminPage({ onLogout }) {
             <div style={{background:"#101010",border:"1px solid rgba(255,255,255,.08)",borderRadius:10,padding:20,marginBottom:24}}>
               <div style={{display:"flex",gap:10,marginBottom:0}}>
                 <input value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createManager()} placeholder="Имя менеджера" style={{flex:1,background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}/>
-                <select value={newRole} onChange={e=>setNewRole(e.target.value)} style={{background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}}>
-                  <option value="manager">Менеджер</option>
-                  <option value="team_lead">Тим лид</option>
-                </select>
+                <Select value={newRole} onChange={v=>setNewRole(v)} style={{background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"9px 12px",borderRadius:8,fontSize:13,outline:"none"}} options={[{value:"manager",label:"Менеджер"},{value:"team_lead",label:"Тим лид"}]}/>
                 <button onClick={createManager} className="btn-p" style={{padding:"9px 20px",fontSize:13,borderRadius:8}}>+ Создать</button>
               </div>
             </div>
@@ -559,19 +554,10 @@ export function AdminPage({ onLogout }) {
             <div>
               <h2 style={{color:"#fff",marginBottom:16,fontSize:18}}>Задачи и просрочки</h2>
               <div style={{ display:"flex",gap:10,marginBottom:16,flexWrap:"wrap" }}>
-                <select value={taskGeo} onChange={e=>{ setTaskGeo(e.target.value); setTaskPlat(""); setTaskMgr(""); }} style={{...IS,width:"auto",minWidth:140}}>
-                  <option value="">Все гео</option>
-                  {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-                <select value={taskPlat} onChange={e=>setTaskPlat(e.target.value)} style={{...IS,width:"auto",minWidth:140}}>
-                  <option value="">Все платформы</option>
-                  {platforms.filter(p=>!taskGeo||p.geo_id===taskGeo).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <select value={taskMgr} onChange={e=>setTaskMgr(e.target.value)} style={{...IS,width:"auto",minWidth:140}}>
-                  <option value="">Все менеджеры</option>
-                  {managers.filter(m=>!taskGeo||userGeos.some(ug=>ug.geo_id===taskGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-                <input type="date" value={taskDateFilter} onChange={e=>setTaskDateFilter(e.target.value)} style={{...IS,width:"auto",colorScheme:"dark"}}/>
+                <Select value={taskGeo} onChange={v=>{ setTaskGeo(v); setTaskPlat(""); setTaskMgr(""); }} style={{...IS,width:"auto",minWidth:140}} options={[{value:"",label:"Все гео"},...geos.map(g=>({value:g.id,label:g.name}))]}/>
+                <Select value={taskPlat} onChange={v=>setTaskPlat(v)} style={{...IS,width:"auto",minWidth:140}} options={[{value:"",label:"Все платформы"},...platforms.filter(p=>!taskGeo||p.geo_id===taskGeo).map(p=>({value:p.id,label:p.name}))]}/>
+                <Select value={taskMgr} onChange={v=>setTaskMgr(v)} style={{...IS,width:"auto",minWidth:140}} options={[{value:"",label:"Все менеджеры"},...managers.filter(m=>!taskGeo||userGeos.some(ug=>ug.geo_id===taskGeo&&ug.manager_id===m.id)).map(m=>({value:m.id,label:m.name}))]}/>
+                <DatePicker value={taskDateFilter} onChange={v=>setTaskDateFilter(v)} style={{...IS,width:"auto",minWidth:140}}/>
                 {taskDateFilter&&<button onClick={()=>setTaskDateFilter("")} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"0 12px",borderRadius:7,cursor:"pointer",fontSize:12}}>Сегодня</button>}
               </div>
               <div style={{ display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start" }}>
@@ -621,15 +607,9 @@ export function AdminPage({ onLogout }) {
           <div>
             <h2 style={{color:"#fff",marginBottom:20,fontSize:18}}>Лиды менеджеров</h2>
             <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-              <select value={adminViewGeo||""} onChange={e=>{ setAdminViewGeo(e.target.value||null); setAdminViewManager(null); }} style={{...IS,width:"auto",minWidth:160}}>
-                <option value="">Выбери гео</option>
-                {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
+              <Select value={adminViewGeo||""} onChange={v=>{ setAdminViewGeo(v||null); setAdminViewManager(null); }} style={{...IS,width:"auto",minWidth:160}} options={[{value:"",label:"Все гео"},...geos.map(g=>({value:g.id,label:g.name}))]}/>
               {adminViewGeo&&(
-                <select value={adminViewManager||""} onChange={e=>setAdminViewManager(e.target.value||null)} style={{...IS,width:"auto",minWidth:160}}>
-                  <option value="">Все менеджеры</option>
-                  {managers.filter(m=>userGeos.some(ug=>ug.geo_id===adminViewGeo&&ug.manager_id===m.id)).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <Select value={adminViewManager||""} onChange={v=>setAdminViewManager(v||null)} style={{...IS,width:"auto",minWidth:160}} options={[{value:"",label:"Все менеджеры"},...managers.filter(m=>!adminViewGeo||userGeos.some(ug=>ug.geo_id===adminViewGeo&&ug.manager_id===m.id)).map(m=>({value:m.id,label:m.name}))]}/>
               )}
             </div>
             {adminViewGeo&&(()=>{
@@ -695,7 +675,7 @@ export function AdminPage({ onLogout }) {
           <div style={{ maxWidth:1080 }}>
             <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
               <h2 style={{color:"#fff",margin:0,fontSize:18}}>Активность менеджеров</h2>
-              <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:"dark" }}/>
+              <DatePicker value={dayDate} onChange={v=>{setDayDate(v);setExpandedId&&setExpandedId(null);loadDay(v);}} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"6px 10px",borderRadius:8,fontSize:12 }}/>
               {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#8B8B9A",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
               <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?"rgba(255,255,255,.1)":"var(--grad)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
               {dayInfo&&!dayInfo.err&&<span style={{ color:"#4A4A5A",fontSize:12 }}>диалогов: {dayInfo.conversations} · сообщений: {dayInfo.messages}</span>}
@@ -716,10 +696,7 @@ export function AdminPage({ onLogout }) {
                       <tr className="row-hover">
                         <td style={{...td,fontWeight:600}}>{m.name} {live&&<span style={{ color:"#3DD68C",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} <span style={{ color:"#4A4A5A",fontSize:11,fontWeight:400 }}>{m.role==="team_lead"?"тимлид":""}</span></td>
                         <td style={td}>
-                          <select value={m.crm_user_id||""} onChange={e=>mapCrmUser(m.id,e.target.value)} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:230 }}>
-                            <option value="">— не сопоставлен —</option>
-                            {optionUsers.map(c=><option key={c.crm_user_id} value={c.crm_user_id}>{c.crm_user_name||c.crm_user_id}</option>)}
-                          </select>
+                          <Select value={m.crm_user_id||""} onChange={v=>mapCrmUser(m.id,v)} style={{ background:"#080808",border:"1px solid rgba(255,255,255,.08)",color:"#F0F0F2",padding:"5px 8px",borderRadius:6,fontSize:12,outline:"none",maxWidth:230 }} options={[{value:"",label:"— не выбран"},...(crmUsers||[]).map(u=>({value:String(u.id),label:u.name||u.email||String(u.id)}))]}/>
                         </td>
                         <td style={{...td,color:s.activeMin>0?"#3DD68C":"#4A4A5A",fontWeight:700}}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
                         <td style={{...td,color:"rgba(255,255,255,.1)"}}>{P.fmtTime(s.first)}</td>

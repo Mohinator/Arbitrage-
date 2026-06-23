@@ -1,3 +1,4 @@
+import { Select, DatePicker } from "./ui";
 import { useState } from "react";
 
 export function ReportView({ players, redeposits, platforms, managers, geos, userGeos, dark }) {
@@ -84,15 +85,9 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
       <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap" }}>
         <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Отчёт</h2>
         {geos&&geos.length>1&&(
-          <select value={fGeo} onChange={e=>{ setFGeo(e.target.value); setFMgr(""); }} style={sel}>
-            <option value="">Все гео</option>
-            {geos.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
+          <Select value={fGeo} onChange={v=>{ setFGeo(v); setFMgr(""); }} style={sel} options={[{value:"",label:"Все гео"},...(geos||[]).map(g=>({value:g.id,label:g.name}))]}/>
         )}
-        <select value={fMgr} onChange={e=>setFMgr(e.target.value)} style={sel}>
-          <option value="">Все менеджеры</option>
-          {mgrOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
+        <Select value={fMgr} onChange={v=>setFMgr(v)} style={sel} options={[{value:"",label:"Все менеджеры"},...(managers||[]).map(m=>({value:m.id,label:m.name}))]}/>
         <div style={{ display:"flex",border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden" }}>
           {[["day","День"],["month","Месяц"],["all","Всё время"]].map(([k,l])=>(
             <button key={k} onClick={()=>{ setPeriod(k); setExpanded(new Set()); }} style={{ background:period===k?"linear-gradient(135deg,#F4924A 0%,#C9517A 50%,#9B5FD0 100%)":"transparent",color:period===k?"#fff":T.sub,border:"none",padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Gilroy','Inter',system-ui,sans-serif" }}>{l}</button>

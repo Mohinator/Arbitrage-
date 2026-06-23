@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { DatePicker } from "./ui";
 import { supabase } from "../supabaseClient";
 import { STATUSES, LEAD_COLORS, THEME } from "../constants";
 import { getStatusStyle, StatusBadge, StatusPopup, ColorPopup } from "./common";
@@ -307,8 +308,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
               style={{ background:"transparent",border:"none",borderBottom:`1px solid ${Tb.border}`,color:Tb.text,padding:"2px 0",fontSize:14,outline:"none",width:"100%",marginBottom:6,fontWeight:600 }}/>
             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
               <span style={{ fontSize:10,color:Tb.muted }}></span>
-              <input type="date" value={rdInputDate} onChange={e=>setRdInputDate(e.target.value)}
-                style={{ background:"transparent",border:"none",color:Tb.muted,fontSize:11,outline:"none",flex:1,cursor:"pointer" }}/>
+              <DatePicker value={rdInputDate} onChange={v=>setRdInputDate(v)} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"8px 10px",borderRadius:7,fontSize:12,width:"100%",boxSizing:"border-box" }}/>
             </div>
           </div>
         );
