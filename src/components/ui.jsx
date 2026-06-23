@@ -9,7 +9,7 @@ const T = THEME;
    Renders via React Portal directly into document.body
    so it's never clipped by overflow:hidden/auto parents
 ───────────────────────────────────────────── */
-function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
+function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0, maxHeight: 260 });
 
   useEffect(() => {
@@ -33,6 +33,7 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
 
   return createPortal(
     <div
+      ref={innerRef}
       style={{
         position: "fixed", zIndex: 99999,
         top: pos.top, left: pos.left, width: pos.width,
@@ -46,7 +47,6 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
         overflow: "hidden",
         pointerEvents: "auto",
       }}
-      onMouseDown={e => e.stopPropagation()}
     >
       {children}
     </div>,
@@ -62,18 +62,19 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
 export function Select({ value, onChange, options=[], placeholder="—", style={}, disabled=false, minWidth }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const skipClose = useRef(false);
+  const ddRef = useRef(null);
 
   // normalise options
   const opts = options.map(o => typeof o === "string" ? {value:o,label:o} : {value:o.value??o.id??"",label:o.label??o.name??""});
   const selected = opts.find(o => String(o.value) === String(value));
 
-  // close on outside click — but not when clicking inside the portal dropdown
+  // close on outside click — check BOTH the trigger ref and the portal dropdown ref
   useEffect(() => {
     if (!open) return;
     const fn = (e) => {
-      if (skipClose.current) { skipClose.current = false; return; }
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      const inTrigger = ref.current && ref.current.contains(e.target);
+      const inDropdown = ddRef.current && ddRef.current.contains(e.target);
+      if (!inTrigger && !inDropdown) setOpen(false);
     };
     document.addEventListener("mousedown", fn, true);
     return () => document.removeEventListener("mousedown", fn, true);
@@ -100,12 +101,11 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
         </svg>
       </div>
 
-      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={minWidth}>
+      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={minWidth} innerRef={ddRef}>
         {opts.map((o, i) => {
           const isSel = String(o.value) === String(value);
           return (
             <div key={i}
-              onMouseDown={() => { skipClose.current = true; }}
               onClick={() => { onChange(o.value); setOpen(false); }}
               style={{
                 padding: "10px 14px", fontSize: 13, cursor: "pointer",
@@ -152,7 +152,7 @@ function fmtDisplay(str) {
 
 export function DatePicker({ value, onChange, placeholder="Выбрать дату", style={}, disabled=false }) {
   const [open, setOpen] = useState(false);
-  const skipClose = useRef(false);
+  const ddRef = useRef(null);
   const [view, setView] = useState(() => {
     const d = value ? toLocal(value) : new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -162,8 +162,9 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
   useEffect(() => {
     if (!open) return;
     const fn = (e) => {
-      if (skipClose.current) { skipClose.current = false; return; }
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      const inTrigger = ref.current && ref.current.contains(e.target);
+      const inDropdown = ddRef.current && ddRef.current.contains(e.target);
+      if (!inTrigger && !inDropdown) setOpen(false);
     };
     document.addEventListener("mousedown", fn, true);
     return () => document.removeEventListener("mousedown", fn, true);
@@ -216,13 +217,13 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
         </svg>
       </div>
 
-      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={280}>
+      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={280} innerRef={ddRef}>
         <div style={{ padding:"14px 14px 10px", minWidth:280 }}>
           {/* Month/year nav */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={prevMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>←</button>
+            <button onClick={prevMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>←</button>
             <span style={{ color:T.text, fontSize:13, fontWeight:700 }}>{RU_MONTHS[month]} {year}</span>
-            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={nextMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>→</button>
+            <button onClick={nextMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>→</button>
           </div>
           {/* Day headers */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
@@ -238,7 +239,7 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
               const isSel = str===value;
               const isToday = str===today;
               return (
-                <div key={i} onMouseDown={()=>{ skipClose.current=true; }} onClick={()=>selectDay(d)}
+                <div key={i} onClick={()=>selectDay(d)}
                   style={{
                     textAlign:"center", padding:"6px 2px", borderRadius:6, fontSize:12, cursor:"pointer",
                     fontWeight: isSel||isToday ? 700 : 400,
@@ -255,8 +256,8 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
           </div>
           {/* Footer */}
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:8, borderTop:"1px solid rgba(255,255,255,.06)" }}>
-            {value && <button onMouseDown={()=>{ skipClose.current=true; }} onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
-            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
+            {value && <button onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
+            <button onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
           </div>
         </div>
       </Dropdown>
