@@ -80,7 +80,7 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
   };
 
   const S = {
-    card: { background: "rgba(16,16,18,.55)", backdropFilter: "blur(20px) saturate(140%)", WebkitBackdropFilter: "blur(20px) saturate(140%)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 22px", marginBottom: 14 },
+    card: { background: "rgba(16,16,18,.55)", backdropFilter: "blur(20px) saturate(140%)", WebkitBackdropFilter: "blur(20px) saturate(140%)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "16px 18px", marginBottom: 12, maxWidth: 620 },
     badge: (col, bg) => ({ background: bg, color: col, padding: "2px 9px", borderRadius: 6, fontSize: 11, fontWeight: 600, display: "inline-flex", alignItems: "center" }),
     entry: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.05)" },
     btn: (grad, disabled) => ({ background: disabled ? "rgba(255,255,255,.06)" : grad, color: disabled ? "#4A4A5A" : "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer", transition: "all .15s" }),
@@ -120,22 +120,22 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
         return (
           <div key={plat.id} style={S.card}>
             {/* Platform header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-              <span style={{ color: "#F0F0F2", fontWeight: 700, fontSize: 16 }}>{plat.name}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+              <span style={{ color: "#F0F0F2", fontWeight: 700, fontSize: 15 }}>{plat.name}</span>
               <span style={{ color: "#8B8B9A", fontSize: 12 }}>{totalCount}/{plat.cap}</span>
 
-              {/* Cap bar */}
-              <div style={{ flex: 1, minWidth: 80, background: "rgba(255,255,255,.07)", borderRadius: 4, height: 5, position: "relative" }}>
-                <div style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "#F2706E" : pct >= 80 ? "#F4B740" : "#A78BFA", borderRadius: 4, transition: "width .3s" }}/>
-              </div>
-
               {/* Slot counters */}
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                 <span style={S.badge("#F0F0F2", "rgba(255,255,255,.08)")}>{remaining} осталось</span>
-                {bookedSlots > 0 && <span style={S.badge("#F4B740", "rgba(244,183,64,.13)")}>{bookedSlots} забронировано</span>}
+                {bookedSlots > 0 && <span style={S.badge("#F4B740", "rgba(244,183,64,.13)")}>{bookedSlots} занято</span>}
                 {freeSlots > 0 && <span style={S.badge("#3DD68C", "rgba(61,214,140,.13)")}>{freeSlots} свободно</span>}
                 {freeSlots === 0 && <span style={S.badge("#F2706E", "rgba(242,112,110,.13)")}>Мест нет</span>}
               </div>
+            </div>
+
+            {/* Cap bar */}
+            <div style={{ width: 220, maxWidth: "100%", background: "rgba(255,255,255,.07)", borderRadius: 4, height: 5, marginBottom: 14 }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "#F2706E" : pct >= 80 ? "#F4B740" : "#A78BFA", borderRadius: 4, transition: "width .3s" }}/>
             </div>
 
             {/* Queue list */}
