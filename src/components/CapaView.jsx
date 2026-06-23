@@ -115,7 +115,6 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
       {/* Platform cards */}
       {platStats.map(({ plat, totalCount, remaining, bookedSlots, freeSlots, platQueue }) => {
         const myE = myEntry(plat.id);
-        const canTakeTwo = myE?.allow_two && myE?.slots === 2;
         const pct = Math.round((totalCount / plat.cap) * 100);
 
         return (

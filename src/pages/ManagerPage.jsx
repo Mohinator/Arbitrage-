@@ -1315,7 +1315,7 @@ export function ManagerPage({ manager, onLogout }) {
           managers={allManagers}
           myGeos={myGeos}
           activeGeo={activeGeo}
-          managerId={managerId}
+          managerId={manager.id}
           isTeamLead={isTeamLead}
           showToast={showToast}
         />
