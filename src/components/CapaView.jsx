@@ -41,7 +41,7 @@ export default function CapaView({ platforms=[], players=[], managers=[], myGeos
     const bookedSlots = platQueue.reduce((s, q) => s + q.slots, 0);
     const freeSlots = Math.max(0, remaining - bookedSlots);
     return { plat, totalCount, remaining, bookedSlots, freeSlots, platQueue };
-  }).filter(({ remaining }) => remaining <= THRESHOLD && remaining > 0);
+  }).filter(({ remaining }) => remaining <= THRESHOLD && remaining >= 0);
 
   // What the current manager has booked (pending/confirmed)
   const myEntry = (platId) => queue.find(q => q.platform_id === platId && q.manager_id === managerId);

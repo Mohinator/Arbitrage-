@@ -500,7 +500,7 @@ export function ManagerPage({ manager, onLogout }) {
             ...(isTeamLead?[["activity","Активность","P22 12 18 12 15 21 9 3 6 12 2 12"]]:[])
           ].map(([key,label,_ico])=>{
             const on=tab===key;
-            const capaPlatCount = key==="capa" ? platforms.filter(p=>p.geo_id===activeGeo&&p.cap&&p.is_active!==false&&!p.is_hidden&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))<=5&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))>0).length : 0;
+            const capaPlatCount = key==="capa" ? platforms.filter(p=>p.geo_id===activeGeo&&p.cap&&p.is_active!==false&&!p.is_hidden&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))<=5&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))>=0).length : 0;
             const badge=(key==="tasks"&&overdueRds.length>0)?overdueRds.length:(key==="capa"&&capaPlatCount>0)?capaPlatCount:null;
             return (
               <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="sb-tip" data-tip={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
