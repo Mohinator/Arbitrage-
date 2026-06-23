@@ -40,9 +40,10 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
         background: "rgba(14,14,16,.97)",
         backdropFilter: "blur(24px) saturate(150%)",
         WebkitBackdropFilter: "blur(24px) saturate(150%)",
-        border: "1px solid rgba(255,255,255,.12)",
-        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,.1)",
+        borderRadius: 8,
         boxShadow: "0 20px 56px rgba(0,0,0,.7)",
+        overflow: "hidden",
         pointerEvents: "auto",
       }}
       onMouseDown={e => e.stopPropagation()}
@@ -107,15 +108,14 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
               onMouseDown={() => { skipClose.current = true; }}
               onClick={() => { onChange(o.value); setOpen(false); }}
               style={{
-                padding: "9px 14px", fontSize: 13, cursor: "pointer",
-                color: isSel ? "#fff" : T.sub,
-                background: isSel ? T.gradSoft : "transparent",
-                borderBottom: i < opts.length-1 ? "1px solid rgba(255,255,255,.05)" : "none",
+                padding: "10px 14px", fontSize: 13, cursor: "pointer",
+                color: isSel ? "#fff" : "#c8c8d4",
+                background: isSel ? T.grad : "transparent",
+                fontWeight: isSel ? 600 : 400,
                 transition: "background .1s",
               }}
-              onMouseEnter={e => { if(!isSel) e.currentTarget.style.background="rgba(255,255,255,.04)"; }}
+              onMouseEnter={e => { if(!isSel) e.currentTarget.style.background="rgba(255,255,255,.07)"; }}
               onMouseLeave={e => { if(!isSel) e.currentTarget.style.background="transparent"; }}>
-              {isSel && <span style={{ marginRight: 6, background: T.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>✓</span>}
               {o.label}
             </div>
           );
