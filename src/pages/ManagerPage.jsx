@@ -1213,10 +1213,10 @@ export function ManagerPage({ manager, onLogout }) {
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
             {[
-              ["Всего лидов",getStatPlayers().length,`из ${cardBase.filter(p=>p.status==="Да").length} всего`,"#6366f1"],
-              ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#14b8a6"],
-              ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#d97706"],
-              ["Нужно добрать",(statPlatform?(platformStats.find(p=>p.id===statPlatform)?.needMore||0):platformStats.reduce((s,p)=>s+p.needMore,0)).toFixed(0)+"€","до цели СЧ","#f59e0b"],
+              ["Всего лидов",getStatPlayers().length,`из ${cardBase.filter(p=>p.status==="Да").length} всего`,"#A78BFA"],
+              ["Сумма",getStatPlayers().reduce((s,p)=>s+calcEffectiveTotal(p),0).toFixed(0)+"€","деп + редепы","#3DD68C"],
+              ["BLIK",getStatPlayers().filter(p=>p.is_blik).length,`${getStatPlayers().length>0?Math.round(getStatPlayers().filter(p=>p.is_blik).length/getStatPlayers().length*100):0}% от активных`,"#F4924A"],
+              ["Нужно добрать",(statPlatform?(platformStats.find(p=>p.id===statPlatform)?.needMore||0):platformStats.reduce((s,p)=>s+p.needMore,0)).toFixed(0)+"€","до цели СЧ","#F4B740"],
             ].map(([l,v,s,a])=>(
               <div key={l} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",borderLeft:`3px solid ${a}` }}>
                 <div style={{ fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:4 }}>{l}</div>
@@ -1233,8 +1233,8 @@ export function ManagerPage({ manager, onLogout }) {
                   <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
                   <XAxis dataKey="date" tick={{ fill:T.muted,fontSize:10 }}/>
                   <YAxis tick={{ fill:T.muted,fontSize:10 }}/>
-                  <Tooltip contentStyle={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:8 }} labelStyle={{ color:T.text }} itemStyle={{ color:"#818cf8" }}/>
-                  <Line type="monotone" dataKey="sch" stroke="#6366f1" strokeWidth={2} dot={false} name="СЧ"/>
+                  <Tooltip contentStyle={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:8 }} labelStyle={{ color:T.text }} itemStyle={{ color:"#A78BFA" }}/>
+                  <Line type="monotone" dataKey="sch" stroke="#A78BFA" strokeWidth={2} dot={false} name="СЧ"/>
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -1244,7 +1244,7 @@ export function ManagerPage({ manager, onLogout }) {
             return(
               <div key={geo.id} style={{ marginBottom:28 }}>
               <div style={{ display:"flex",justifyContent:"flex-end",gap:8,marginBottom:10 }}>
-                  <span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"3px 12px",borderRadius:6,fontSize:13,fontWeight:700,display:"flex",alignItems:"center" }}>{geo.name}</span>
+                  <span className="badge-role" style={{ fontSize:13,display:"flex",alignItems:"center" }}>{geo.name}</span>
                   <div style={{ flex:1 }}/>
                   {isTeamLead&&<button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Гео</button>}
                   {isTeamLead&&<button onClick={()=>{ setPForm(f=>({...f,geo_id:geo.id})); openPlatformForm(); }} className="btn-p" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Добавить</button>}
@@ -1264,24 +1264,24 @@ export function ManagerPage({ manager, onLogout }) {
                             </td>
                             <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{p.date_added||"—"}</td>
                             <td style={{ ...S.td,color:T.sub }}>{p.min_deposit||"—"}€</td>
-                            <td style={{ ...S.td,color:"#d97706" }}>{p.min_deposit_blik?p.min_deposit_blik+"€":"—"}</td>
-                            <td style={S.td}><span style={{ background:"linear-gradient(135deg,#1e3a5f,#1e40af)",color:"#93c5fd",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.target_avg_check}€</span></td>
+                            <td style={{ ...S.td,color:"#F4924A" }}>{p.min_deposit_blik?p.min_deposit_blik+"€":"—"}</td>
+                            <td style={S.td}><span style={{ background:"rgba(176,123,245,.13)",color:"#B07BF5",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.target_avg_check}€</span></td>
                             <td style={{ ...S.td,color:T.sub }}>{p.cap||"—"}</td>
-                            <td style={{ ...S.td,color:dark?"#a5b4fc":"#4f46e5",fontWeight:700 }}>{p.totalCount}</td>
+                            <td style={{ ...S.td,color:T.text,fontWeight:700 }}>{p.totalCount}</td>
                             <td style={{ ...S.td,color:T.sub }}>{p.totalAmount.toFixed(0)}€</td>
-                            <td style={S.td}>{p.totalCount>0?<span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>{p.avgCheck.toFixed(1)}€</span>:<span style={{ color:T.muted }}>—</span>}</td>
-                            <td style={S.td}>{p.totalCount>0?<div style={{ display:"flex",alignItems:"center",gap:5 }}><div style={{ width:44,background:T.rowBorder,borderRadius:3,height:4,overflow:"hidden",display:"flex" }}><div className="progress-bar" style={{ width:`${100-p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#818cf8)" }}/><div className="progress-bar" style={{ width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#d97706,#f59e0b)" }}/></div><span style={{ color:"#d97706",fontSize:11 }}>{p.blikCount}({p.blikPct}%)</span></div>:<span style={{ color:T.muted }}>—</span>}</td>
-                            <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
+                            <td style={S.td}>{p.totalCount>0?<span style={{ background:ok?THEME.okSoft:THEME.badSoft,color:ok?THEME.ok:THEME.bad,padding:"3px 10px",borderRadius:THEME.rChip,fontWeight:600,fontSize:12 }}>{p.avgCheck.toFixed(1)}€</span>:<span style={{ color:T.muted }}>—</span>}</td>
+                            <td style={S.td}>{p.totalCount>0?<div style={{ display:"flex",alignItems:"center",gap:5 }}><div style={{ width:44,background:T.rowBorder,borderRadius:3,height:4,overflow:"hidden",display:"flex" }}><div className="progress-bar" style={{ width:`${100-p.blikPct}%`,height:"100%",background:THEME.grad }}/><div className="progress-bar" style={{ width:`${p.blikPct}%`,height:"100%",background:"linear-gradient(90deg,#F4B740,#F4924A)" }}/></div><span style={{ color:"#F4924A",fontSize:11 }}>{p.blikCount}({p.blikPct}%)</span></div>:<span style={{ color:T.muted }}>—</span>}</td>
+                            <td style={{ ...S.td,color:"#F4924A",fontWeight:700 }}>{p.totalCount>0?p.needMore.toFixed(0)+"€":"—"}</td>
                             <td style={S.td}>
                               {p.is_hidden
                                 ? <span style={{ background:"rgba(100,116,139,.18)",color:"#94a3b8",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Скрыто</span>
                                 : p.is_active===false
-                                  ? <span style={{ background:"rgba(245,158,11,.15)",color:"#f59e0b",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Стоп</span>
-                                  : <span style={{ background:"rgba(34,197,94,.15)",color:"#86efac",padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Активно</span>}
+                                  ? <span style={{ background:THEME.warnSoft,color:THEME.warn,padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Стоп</span>
+                                  : <span style={{ background:THEME.okSoft,color:THEME.ok,padding:"2px 9px",borderRadius:6,fontWeight:700,fontSize:11 }}>Активно</span>}
                             </td>
                             {isTeamLead&&<td style={{ ...S.td,display:"flex",gap:6 }}>
-                              <button onClick={()=>togglePlatformActive(p)} title={p.is_active===false?"Включить (Активно)":"Поставить на Стоп"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_active===false?"#f59e0b":"#86efac",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>{p.is_active===false?"▶":"⏸"}</button>
-                              <button onClick={()=>togglePlatformHidden(p)} title={p.is_hidden?"Показать везде":"Скрыть (кроме отчётов)"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_hidden?"#a5b4fc":T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                              <button onClick={()=>togglePlatformActive(p)} title={p.is_active===false?"Включить (Активно)":"Поставить на Стоп"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_active===false?"#F4B740":"#3DD68C",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>{p.is_active===false?"▶":"⏸"}</button>
+                              <button onClick={()=>togglePlatformHidden(p)} title={p.is_hidden?"Показать везде":"Скрыть (кроме отчётов)"} className="btn-g" style={{ border:`1px solid ${T.border}`,color:p.is_hidden?"#A78BFA":T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                                 {p.is_hidden
                                   ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                   : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>}
@@ -1289,7 +1289,7 @@ export function ManagerPage({ manager, onLogout }) {
                               <button onClick={()=>openPlatformForm(p)} className="btn-g" style={{ border:`1px solid ${T.border}`,color:T.sub,width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button onClick={()=>deletePlatform(p.id)} className="btn-g btn-danger" style={{ border:"1px solid #7f1d1d",color:"#fca5a5",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                              <button onClick={()=>deletePlatform(p.id)} className="btn-g btn-danger" style={{ border:"1px solid rgba(242,112,110,.3)",color:"#F2706E",width:28,height:28,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                               </button>
                             </td>}
