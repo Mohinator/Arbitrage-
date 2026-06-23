@@ -1,43 +1,55 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { THEME } from "../constants";
 
 const T = THEME;
 
 /* ─────────────────────────────────────────────
    SHARED DROPDOWN PORTAL
-   renders options list using position:fixed so
-   it never clips inside overflow:hidden parents
+   Renders via React Portal directly into document.body
+   so it's never clipped by overflow:hidden/auto parents
 ───────────────────────────────────────────── */
-function Dropdown({ anchorRef, open, children, minWidth }) {
-  const [pos, setPos] = useState({});
+function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0, maxHeight: 260 });
+
   useEffect(() => {
     if (!open || !anchorRef.current) return;
-    const r = anchorRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - r.bottom;
-    const height = Math.min(260, spaceBelow - 8);
-    setPos({
-      top: r.bottom + 4,
-      left: r.left,
-      width: Math.max(r.width, minWidth || 0),
-      maxHeight: height,
-    });
+    const update = () => {
+      const r = anchorRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const spaceBelow = window.innerHeight - r.bottom - 8;
+      const spaceAbove = r.top - 8;
+      const maxH = Math.min(260, Math.max(spaceBelow, spaceAbove));
+      const top = spaceBelow >= spaceAbove ? r.bottom + 4 : r.top - Math.min(260, spaceAbove) - 4;
+      setPos({ top, left: r.left, width: Math.max(r.width, minWidth || 0), maxHeight: maxH });
+    };
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("scroll", update, true); window.removeEventListener("resize", update); };
   }, [open, anchorRef, minWidth]);
 
   if (!open) return null;
-  return (
-    <div style={{
-      position: "fixed", zIndex: 9999,
-      top: pos.top, left: pos.left, width: pos.width,
-      maxHeight: pos.maxHeight, overflowY: "auto",
-      background: "rgba(14,14,16,.96)",
-      backdropFilter: "blur(24px) saturate(150%)",
-      WebkitBackdropFilter: "blur(24px) saturate(150%)",
-      border: "1px solid rgba(255,255,255,.1)",
-      borderRadius: 10,
-      boxShadow: "0 16px 48px rgba(0,0,0,.6)",
-    }}>
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed", zIndex: 99999,
+        top: pos.top, left: pos.left, width: pos.width,
+        maxHeight: pos.maxHeight, overflowY: "auto",
+        background: "rgba(14,14,16,.97)",
+        backdropFilter: "blur(24px) saturate(150%)",
+        WebkitBackdropFilter: "blur(24px) saturate(150%)",
+        border: "1px solid rgba(255,255,255,.12)",
+        borderRadius: 10,
+        boxShadow: "0 20px 56px rgba(0,0,0,.7)",
+        pointerEvents: "auto",
+      }}
+      onMouseDown={e => e.stopPropagation()}
+    >
       {children}
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -54,10 +66,13 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
   const opts = options.map(o => typeof o === "string" ? {value:o,label:o} : {value:o.value??o.id??"",label:o.label??o.name??""});
   const selected = opts.find(o => String(o.value) === String(value));
 
-  // close on outside click
+  // close on outside click — portal is outside ref so we check both
   useEffect(() => {
     if (!open) return;
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const fn = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    // use capture so we get it before React's bubbling
     document.addEventListener("mousedown", fn, true);
     return () => document.removeEventListener("mousedown", fn, true);
   }, [open]);
@@ -83,7 +98,7 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
         </svg>
       </div>
 
-      <Dropdown anchorRef={ref} open={open} minWidth={minWidth}>
+      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={minWidth}>
         {opts.map((o, i) => {
           const isSel = String(o.value) === String(value);
           return (
@@ -142,7 +157,9 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
 
   useEffect(() => {
     if (!open) return;
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setClose(); };
+    const fn = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", fn, true);
     return () => document.removeEventListener("mousedown", fn, true);
   }, [open]);
@@ -155,9 +172,15 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
     }
   }, [value]);
 
-  const setClose = () => setOpen(false);
+  const selectDay = (d) => {
+    const str = toStr(new Date(year, month, d));
+    onChange(str);
+    setOpen(false);
+  };
 
-  // build calendar grid
+  const prevMonth = () => setView(v => v.month === 0 ? {year:v.year-1,month:11} : {year:v.year,month:v.month-1});
+  const nextMonth = () => setView(v => v.month === 11 ? {year:v.year+1,month:0} : {year:v.year,month:v.month+1});
+  const goToday   = () => { const n=new Date(); setView({year:n.getFullYear(),month:n.getMonth()}); onChange(today); setOpen(false); };
   const { year, month } = view;
   const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
   const firstMon = (firstDay + 6) % 7; // shift so Mon=0
@@ -167,16 +190,6 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
   for (let i = 0; i < firstMon; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
-
-  const selectDay = (d) => {
-    const str = toStr(new Date(year, month, d));
-    onChange(str);
-    setClose();
-  };
-
-  const prevMonth = () => setView(v => v.month === 0 ? {year:v.year-1,month:11} : {year:v.year,month:v.month-1});
-  const nextMonth = () => setView(v => v.month === 11 ? {year:v.year+1,month:0} : {year:v.year,month:v.month+1});
-  const goToday   = () => { const n=new Date(); setView({year:n.getFullYear(),month:n.getMonth()}); onChange(today); setClose(); };
 
   const trigger = {
     display:"flex", alignItems:"center", justifyContent:"space-between", gap:6,
@@ -198,7 +211,7 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
         </svg>
       </div>
 
-      <Dropdown anchorRef={ref} open={open} minWidth={280}>
+      <Dropdown anchorRef={ref} open={open} onClose={()=>setOpen(false)} minWidth={280}>
         <div style={{ padding:"14px 14px 10px", minWidth:280 }}>
           {/* Month/year nav */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
@@ -237,7 +250,7 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
           </div>
           {/* Footer */}
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:8, borderTop:"1px solid rgba(255,255,255,.06)" }}>
-            {value && <button onClick={()=>{onChange("");setClose();}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
+            {value && <button onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
             <button onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
           </div>
         </div>
