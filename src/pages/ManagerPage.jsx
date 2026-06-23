@@ -8,6 +8,7 @@ import { AddLeadForm } from "../components/AddLeadForm";
 import { HistoryView } from "../components/HistoryView";
 import { ReportView } from "../components/ReportView";
 import * as P from "../presence";
+import CapaView from "../components/CapaView";
 
 function SbIcon({ name }) {
   const c = { width:18, height:18, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:1.8, strokeLinecap:"round", strokeLinejoin:"round" };
@@ -15,7 +16,7 @@ function SbIcon({ name }) {
     case "main": return <svg {...c}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
     case "team": return <svg {...c}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
     case "tasks": return <svg {...c}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
-    case "platforms": return <svg {...c}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
+    case "capa": return <svg {...c}><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>;
     case "report": return <svg {...c}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
     case "history": return <svg {...c}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
     case "overview": return <svg {...c}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
@@ -492,13 +493,15 @@ export function ManagerPage({ manager, onLogout }) {
             ["tasks","Задачи","M9 11l3 3L22 4|M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"],
             ["team","Команда","M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|9,7,4|M23 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75"],
             ["platforms","Платформы","R2,3,20,14,2|M8 21h8M12 17v4"],
+            ["capa","Капа","capa"],
             ["report","Отчёт","L18,20,18,10|L12,20,12,4|L6,20,6,14"],
             ["history","История","C12,12,10|P12 6 12 12 16 14"],
             ["overview","Сводка","R3,3,7,7|R14,3,7,7|R14,14,7,7|R3,14,7,7"],
             ...(isTeamLead?[["activity","Активность","P22 12 18 12 15 21 9 3 6 12 2 12"]]:[])
           ].map(([key,label,_ico])=>{
             const on=tab===key;
-            const badge=key==="tasks"&&overdueRds.length>0?overdueRds.length:null;
+            const capaPlatCount = key==="capa" ? platforms.filter(p=>p.geo_id===activeGeo&&p.cap&&p.is_active!==false&&!p.is_hidden&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))<=5&&(p.cap-(players.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))>0).length : 0;
+            const badge=(key==="tasks"&&overdueRds.length>0)?overdueRds.length:(key==="capa"&&capaPlatCount>0)?capaPlatCount:null;
             return (
               <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="sb-tip" data-tip={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
                 <SbIcon name={key}/>
@@ -1303,6 +1306,19 @@ export function ManagerPage({ manager, onLogout }) {
             );
           })}
         </div>
+      )}
+
+      {tab==="capa"&&(
+        <CapaView
+          platforms={platforms}
+          players={players}
+          managers={allManagers}
+          myGeos={myGeos}
+          activeGeo={activeGeo}
+          managerId={managerId}
+          isTeamLead={isTeamLead}
+          showToast={showToast}
+        />
       )}
 
       {tab==="overview"&&(
