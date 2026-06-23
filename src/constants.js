@@ -104,8 +104,8 @@ input[type=number]{-moz-appearance:textfield;}
 .btn-g:hover{background:rgba(255,255,255,.1);color:var(--text);border-color:rgba(255,255,255,.18);}
 
 /* акцент (старый .btn-a — оставлен для совместимости) */
-.btn-a{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s;box-shadow:0 2px 8px rgba(20,184,166,.3);}
-.btn-a:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(20,184,166,.5);filter:brightness(1.1);}
+.btn-a{background:linear-gradient(135deg,#F4924A 0%,#C9517A 50%,#9B5FD0 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s;box-shadow:0 2px 8px rgba(155,79,208,.3);}
+.btn-a:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(155,79,208,.4);filter:brightness(1.1);}
 
 .btn-danger:hover{background:rgba(242,112,110,.15)!important;color:#F2706E!important;}
 .nb{transition:color .15s,border-color .15s;}

@@ -32,7 +32,7 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
   }).sort((a,b)=>b.deposits-a.deposits);
   const totals=rows.reduce((a,r)=>({deposits:a.deposits+r.deposits,redeps:a.redeps+r.redeps,neotbiv:a.neotbiv+r.neotbiv,kidki:a.kidki+r.kidki}),{deposits:0,redeps:0,neotbiv:0,kidki:0});
   const mgrOptions=(fGeo? managers.filter(m=>userGeos.some(ug=>ug.geo_id===fGeo&&ug.manager_id===m.id)) : managers);
-  const cards=[["Депозиты",totals.deposits,"#a5b4fc"],["Редепозиты",totals.redeps,"#6ee7b7"],["Неотбивы (Нет)",totals.neotbiv,"#94a3b8"],["Кидки",totals.kidki,"#fca5a5"]];
+  const cards=[["Депозиты",totals.deposits,"#A78BFA"],["Редепозиты",totals.redeps,"#3DD68C"],["Неотбивы (Нет)",totals.neotbiv,"#8B8B9A"],["Кидки",totals.kidki,"#fca5a5"]];
   const metric=(label,val,color)=>(
     <div style={{ display:"flex",flexDirection:"column",alignItems:"center",minWidth:56 }}>
       <span style={{ fontSize:18,fontWeight:800,color }}>{val}</span>
@@ -127,10 +127,10 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
                   {r.name}
                 </span>
                 <div style={{ display:"flex",gap:18,alignItems:"center" }}>
-                  {metric("Депозиты",r.deposits,"#a5b4fc")}
+                  {metric("Депозиты",r.deposits,"#A78BFA")}
                   {metric("Редеп",r.redeps,"#6ee7b7")}
                   {metric("Нет",r.neotbiv,T.sub)}
-                  {metric("Кинул",r.kidki,"#fca5a5")}
+                  {metric("Кинул",r.kidki,"#F2706E")}
                 </div>
               </div>
               {open&&(
@@ -140,10 +140,10 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
                     <div key={b.id} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,padding:"8px 0",borderBottom:`1px solid ${T.rowB}`,flexWrap:"wrap" }}>
                       <span style={{ color:T.sub,fontSize:13,fontWeight:600 }}>{b.name}</span>
                       <div style={{ display:"flex",gap:18,alignItems:"center",fontSize:13 }}>
-                        <span style={{ minWidth:56,textAlign:"center",color:"#a5b4fc",fontWeight:700 }}>{b.deposits}</span>
+                        <span style={{ minWidth:56,textAlign:"center",color:"#A78BFA",fontWeight:700 }}>{b.deposits}</span>
                         <span style={{ minWidth:56,textAlign:"center",color:"#6ee7b7",fontWeight:700 }}>{b.redeps}</span>
                         <span style={{ minWidth:56,textAlign:"center",color:T.sub }}>{b.neotbiv}</span>
-                        <span style={{ minWidth:56,textAlign:"center",color:"#fca5a5" }}>{b.kidki}</span>
+                        <span style={{ minWidth:56,textAlign:"center",color:"#F2706E" }}>{b.kidki}</span>
                       </div>
                     </div>
                   ))}

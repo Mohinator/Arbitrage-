@@ -599,7 +599,7 @@ export function AdminPage({ onLogout }) {
                     const days=Math.floor((new Date(today)-new Date(od))/(1000*60*60*24));
                     const planned=plannedRds.filter(r=>r&&r.player_id===player.id&&r.date<today).sort((a,b)=>a.rd_number-b.rd_number)[0];
                     return(
-                      <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ ...card,background:"rgba(239,68,68,.07)",border:"1px solid rgba(242,112,110,.4)" }}>
+                      <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ ...card,background:"rgba(242,112,110,.07)",border:"1px solid rgba(242,112,110,.4)" }}>
                         <div style={{ width:8,height:8,borderRadius:"50%",background:"#F2706E",flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:8 }}><span style={{ fontWeight:700,color:"#fff",fontSize:14 }}>{player.name}</span>{mgr&&<span style={{ fontSize:11,color:"#c8a8ff",background:"rgba(155,79,224,.1)",padding:"1px 6px",borderRadius:4 }}>{mgr.name}</span>}</div>
@@ -642,9 +642,9 @@ export function AdminPage({ onLogout }) {
               return geoManagers.map(mgr=>(
                 <div key={mgr.id} style={{marginBottom:32}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                    <div style={{width:7,height:7,borderRadius:"50%",background:mgr.role==="team_lead"?"#14b8a6":"#9B5FD0"}}/>
+                    <div style={{width:7,height:7,borderRadius:"50%",background:THEME.grad}}/>
                     <span style={{color:"#fff",fontWeight:700,fontSize:15}}>{mgr.name}</span>
-                    {mgr.role==="team_lead"&&<span style={{background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
+                    {mgr.role==="team_lead"&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700}}>ТЛ</span>}
                   </div>
                   <PlayersTable
                     players={players.filter(p=>p&&p.id&&p.manager_id===mgr.id&&(geoPlatformIds.has(p.platform_id)||!p.platform_id))}

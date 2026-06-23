@@ -47,7 +47,7 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
         <input type="date" value={fFrom} onChange={e=>setFFrom(e.target.value)} style={sel} title="С даты"/>
         <input type="date" value={fTo} onChange={e=>setFTo(e.target.value)} style={sel} title="По дату"/>
         <input type="text" placeholder="Поиск: лид / менеджер" value={fSearch} onChange={e=>setFSearch(e.target.value)} style={{...sel,minWidth:180}}/>
-        {(fGeo||fMgr||fAction||fFrom||fTo||fSearch)&&<button onClick={()=>{ setFGeo("");setFMgr("");setFAction("");setFFrom("");setFTo("");setFSearch(""); }} style={{...sel,cursor:"pointer",color:"#f87171"}}>Сбросить</button>}
+        {(fGeo||fMgr||fAction||fFrom||fTo||fSearch)&&<button onClick={()=>{ setFGeo("");setFMgr("");setFAction("");setFFrom("");setFTo("");setFSearch(""); }} style={{...sel,cursor:"pointer",color:T.bad||"#F2706E"}}>Сбросить</button>}
         <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>{filtered.length}</span>
       </div>
       <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto" }}>
@@ -58,8 +58,8 @@ export function HistoryView({ logs, managers, geos, userGeos, dark, onLeadClick 
               <tr key={log.id} className="row-hover">
                 <td style={{...TD,color:T.muted,fontSize:11,whiteSpace:"nowrap"}}>{new Date(log.created_at).toLocaleString("ru",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</td>
                 <td style={{...TD,color:T.text,fontWeight:500}}>{log.managers?.name||"—"}</td>
-                <td style={TD}><span style={{ background:"rgba(99,102,241,.15)",color:"#a5b4fc",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600 }}>{actionLabels[log.action]||log.action}</span></td>
-                <td style={{...TD,fontSize:12}}>{log.player_id&&onLeadClick? <span onClick={()=>onLeadClick(log.player_id)} className="row-hover" style={{ color:"#a5b4fc",cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2 }}>{log.players?.name||"—"}</span> : <span style={{ color:T.sub }}>{log.players?.name||"—"}</span>}</td>
+                <td style={TD}><span style={{ background:"rgba(167,139,250,.13)",color:"#A78BFA",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600 }}>{actionLabels[log.action]||log.action}</span></td>
+                <td style={{...TD,fontSize:12}}>{log.player_id&&onLeadClick? <span onClick={()=>onLeadClick(log.player_id)} className="row-hover" style={{ color:"#A78BFA",cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2 }}>{log.players?.name||"—"}</span> : <span style={{ color:T.sub }}>{log.players?.name||"—"}</span>}</td>
                 <td style={{...TD,color:T.muted,fontSize:11}}>{log.details&&Object.keys(log.details).length>0?Object.entries(log.details).map(([k,v])=>`${k}: ${v}`).join(", "):"—"}</td>
               </tr>
             ))}

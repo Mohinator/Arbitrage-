@@ -530,14 +530,14 @@ export function ManagerPage({ manager, onLogout }) {
             </div>
             <p style={{ color:T.muted,fontSize:12,margin:"0 0 16px" }}>Гео: {myGeos.find(g=>g.id===activeGeo)?.name||"—"} · за текущий месяц · только депозиты (Sale){sverkaData&&!sverkaData.error?` · ${sverkaData.scope==="свои"?"мои лиды":"всё гео"}`:""}</p>
             {sverkaLoading&&<div style={{ color:T.muted,fontSize:13,padding:"24px 0",textAlign:"center" }}>Запрашиваю Keitaro…</div>}
-            {!sverkaLoading&&sverkaData?.error&&<div style={{ color:"#fca5a5",fontSize:13,padding:"16px",background:"rgba(239,68,68,.08)",border:"1px solid #7f1d1d",borderRadius:8 }}>Ошибка: {sverkaData.error}</div>}
+            {!sverkaLoading&&sverkaData?.error&&<div style={{ color:"#fca5a5",fontSize:13,padding:"16px",background:"rgba(242,112,110,.08)",border:"1px solid rgba(242,112,110,.35)",borderRadius:8 }}>Ошибка: {sverkaData.error}</div>}
             {!sverkaLoading&&sverkaData&&!sverkaData.error&&(()=>{
               const card={ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:16 };
               return (
                 <div>
                   <div style={{ color:T.muted,fontSize:11,marginBottom:14 }}>Конверсий из Keitaro за период: {sverkaData.total}</div>
                   <div style={card}>
-                    <div style={{ padding:"10px 14px",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontWeight:700,fontSize:13 }}>Не заведён в трекере ({sverkaData.notInTracker.length})</div>
+                    <div style={{ padding:"10px 14px",background:"rgba(242,112,110,.08)",color:"#fca5a5",fontWeight:700,fontSize:13 }}>Не заведён в трекере ({sverkaData.notInTracker.length})</div>
                     {sverkaData.notInTracker.length===0&&<div style={{ padding:"12px 14px",color:T.muted,fontSize:12 }}>Все депозиты из Keitaro заведены </div>}
                     {sverkaData.notInTracker.map((c,i)=>(
                       <div key={i} style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12 }}>
@@ -595,7 +595,7 @@ export function ManagerPage({ manager, onLogout }) {
                   )}
                   {sverkaData.statusMismatch&&sverkaData.statusMismatch.length>0&&(
                     <div style={card}>
-                      <div style={{ padding:"10px 14px",background:"rgba(34,197,94,.1)",color:"#86efac",fontWeight:700,fontSize:13 }}>Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
+                      <div style={{ padding:"10px 14px",background:THEME.okSoft,color:THEME.ok,fontWeight:700,fontSize:13 }}>Есть деп, но статус не «Да» ({sverkaData.statusMismatch.length})</div>
                       <div style={{ padding:"6px 14px",color:T.muted,fontSize:11 }}>В Keitaro деп подтверждён, а в трекере статус другой — обнови</div>
                       {sverkaData.statusMismatch.map((p,i)=>(
                         <div key={i} onClick={()=>sverkaGoToLead(p.pid,p.mgrId)} className="row-hover" style={{ display:"flex",justifyContent:"space-between",gap:12,padding:"9px 14px",borderTop:`1px solid ${T.rowB}`,flexWrap:"wrap",fontSize:12,cursor:"pointer" }}>
@@ -664,8 +664,8 @@ export function ManagerPage({ manager, onLogout }) {
                         <tr key={item.player.id}>
                           <td style={{ padding:"7px 8px",color:T.text,fontSize:12,fontWeight:500,borderBottom:`1px solid ${T.rowBorder}` }}>{item.player.name}</td>
                           <td style={{ padding:"7px 8px",color:T.sub,fontSize:11,borderBottom:`1px solid ${T.rowBorder}` }}>{item.plat.name}</td>
-                          {rdArr.map((rd,i)=><td key={i} style={{ padding:"5px 4px",textAlign:"center",fontSize:11,borderBottom:`1px solid ${T.rowBorder}`,color:rd?"#818cf8":T.border }}>{rd?<div><div style={{ fontWeight:600 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted }}>{rd.date?(([y,m,d])=>`${d}.${m}`)(rd.date.split("-")):"—"}</div></div>:"—"}</td>)}
-                          <td style={{ padding:"7px 8px",borderBottom:`1px solid ${T.rowBorder}` }}><span style={{ background:ok?(dark?"linear-gradient(135deg,#14532d,#166534)":"linear-gradient(135deg,#bbf7d0,#86efac)"):(dark?"linear-gradient(135deg,#7f1d1d,#991b1b)":"linear-gradient(135deg,#fecaca,#f87171)"),color:ok?(dark?"#86efac":"#14532d"):(dark?"#fca5a5":"#7f1d1d"),padding:"2px 7px",borderRadius:5,fontWeight:700,fontSize:11 }}>{newSch.toFixed(1)}€</span></td>
+                          {rdArr.map((rd,i)=><td key={i} style={{ padding:"5px 4px",textAlign:"center",fontSize:11,borderBottom:`1px solid ${T.rowBorder}`,color:rd?THEME.lead:T.border }}>{rd?<div><div style={{ fontWeight:600 }}>{rd.amount}€</div><div style={{ fontSize:9,color:T.muted }}>{rd.date?(([y,m,d])=>`${d}.${m}`)(rd.date.split("-")):"—"}</div></div>:"—"}</td>)}
+                          <td style={{ padding:"7px 8px",borderBottom:`1px solid ${T.rowBorder}` }}><span style={{ background:ok?THEME.okSoft:THEME.badSoft,color:ok?THEME.ok:THEME.bad,padding:"3px 10px",borderRadius:THEME.rChip,fontWeight:600,fontSize:11 }}>{newSch.toFixed(1)}€</span></td>
                         </tr>
                       );
                     })}
@@ -715,7 +715,7 @@ export function ManagerPage({ manager, onLogout }) {
                     <span style={{ fontSize:11,color:plannedAvg<(plat.target_avg_check||0)-1?"#F4B740":T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                     <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                   </div>
-                  {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
+                  {needMore>0&&<div style={{ fontSize:11,color:"#F4B740" }}>↑ {needMore.toFixed(0)}€</div>}
                   <div style={{ marginTop:1 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                       <span>Капа</span><span>{capCount}{plat.cap?`/${plat.cap}`:""}</span>
@@ -745,7 +745,7 @@ export function ManagerPage({ manager, onLogout }) {
                 <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:300,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:10,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,.4)" }}>
                   {geoPlatforms.map(p=>(
                     <label key={p.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 4px",cursor:"pointer" }}>
-                      <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>updatePinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#6366f1",cursor:"pointer" }}/>
+                      <input type="checkbox" checked={pinnedPlatforms.includes(p.id)} onChange={()=>updatePinnedPlatforms(prev=>prev.includes(p.id)?prev.filter(id=>id!==p.id):[...prev,p.id])} style={{ accentColor:"#A78BFA",cursor:"pointer" }}/>
                       <span style={{ fontSize:13,color:T.text }}>{p.name}</span>
                     </label>
                   ))}
@@ -763,11 +763,11 @@ export function ManagerPage({ manager, onLogout }) {
           {todayRds.length>0&&(
             <div style={{ background:T.alertBg,border:`1px solid ${T.alertBorder}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap" }}>
               <span className="alert-pulse" style={{ fontSize:18 }}></span>
-              <span style={{ color:"#d97706",fontWeight:700,fontSize:13,marginRight:2 }}>Сегодня нужно сделать РД:</span>
+              <span style={{ color:"#F4924A",fontWeight:700,fontSize:13,marginRight:2 }}>Сегодня нужно сделать РД:</span>
               {todayRds.flatMap(p=>{
                 const plat=platforms.find(pl=>pl.id===p.platform_id);
                 return (plannedRds||[]).filter(r=>r&&r.player_id===p.id&&r.date===today).map(r=>(
-                  <span key={`${p.id}-${r.rd_number}`} onClick={()=>goToLead(p)} className="row-hover" title="Перейти к лиду" style={{ cursor:"pointer",color:dark?"#fbbf24":"#92400e",fontSize:12,fontWeight:600,background:"rgba(217,119,6,.12)",border:"1px solid rgba(217,119,6,.35)",borderRadius:6,padding:"2px 8px" }}>
+                  <span key={`${p.id}-${r.rd_number}`} onClick={()=>goToLead(p)} className="row-hover" title="Перейти к лиду" style={{ cursor:"pointer",color:"#F4B740",fontSize:12,fontWeight:600,background:"rgba(244,183,64,.12)",border:"1px solid rgba(244,183,64,.35)",borderRadius:6,padding:"2px 8px" }}>
                     {p.name} · {plat?.name||"—"} · РД{r.rd_number}{r.amount!=null?` · ${r.amount}€`:""}
                   </span>
                 ));
@@ -846,7 +846,7 @@ export function ManagerPage({ manager, onLogout }) {
             </div>
             {/* ПРАВО: просроченные */}
             <div style={{ flex:"1 1 360px",minWidth:300 }}>
-              <h3 style={{ color:"#fca5a5",fontSize:14,margin:"0 0 10px" }}>Просроченные</h3>
+              <h3 style={{ color:"#F2706E",fontSize:14,margin:"0 0 10px" }}>Просроченные</h3>
               {(()=>{
                 const source=(isTeamLead
                   ? allPlayers.filter(p=>p&&overdueDatesByPlayer[p.id]&&p.status==="Да"&&userGeos.filter(ug=>ug.geo_id===activeGeo).map(ug=>ug.manager_id).includes(p.manager_id))
@@ -865,7 +865,7 @@ export function ManagerPage({ manager, onLogout }) {
                   const days=Math.floor((new Date(today)-new Date(od))/(1000*60*60*24));
                   const planned=plannedRds.filter(r=>r&&r.player_id===player.id&&r.date<today).sort((a,b)=>a.rd_number-b.rd_number)[0];
                   return(
-                    <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:dark?"rgba(239,68,68,.06)":"rgba(239,68,68,.04)",border:"1px solid #7f1d1d",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
+                    <div key={`o-${player.id}`} onClick={()=>goToLead(player)} className="row-hover" style={{ background:dark?"rgba(242,112,110,.06)":"rgba(242,112,110,.04)",border:"1px solid rgba(242,112,110,.35)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer" }}>
                       <div style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }}/>
                       <div style={{ flex:1 }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -876,7 +876,7 @@ export function ManagerPage({ manager, onLogout }) {
                       </div>
                       <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2 }}>
                         {planned&&<span style={{ fontSize:13,fontWeight:700,color:"#fca5a5" }}>{planned.amount}€</span>}
-                        <span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
+                        <span style={{ background:THEME.badSoft,color:THEME.bad,padding:"1px 7px",borderRadius:6,fontWeight:700,fontSize:11 }}>{days} дн.</span>
                       </div>
                     </div>
                   );
@@ -936,7 +936,7 @@ export function ManagerPage({ manager, onLogout }) {
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 {filtered.length===0&&<div style={{ color:T.muted,fontSize:14,padding:"20px 0" }}>Нет задач по фильтру</div>}
                 {filtered.map(({player,plat,mgr,rdNum,date,isOverdue},idx)=>(
-                  <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"#7f1d1d":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                  <div key={`${player.id}-${rdNum}-${idx}`} style={{ background:T.surface,border:`1px solid ${isOverdue?"rgba(242,112,110,.35)":T.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:isOverdue?"#ef4444":THEME.grad,flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:3 }}>
@@ -948,7 +948,7 @@ export function ManagerPage({ manager, onLogout }) {
                     </div>
                     <div style={{ textAlign:"right" }}>
                       {(()=>{ const pRd=plannedRds.find(r=>r&&r.player_id===player.id&&r.rd_number===rdNum); return pRd?<div style={{ fontSize:14,fontWeight:700,color:T.text,marginBottom:2 }}>{pRd.amount}€</div>:null; })()}
-                      <div style={{ fontSize:12,color:isOverdue?"#fca5a5":"#a5b4fc",fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
+                      <div style={{ fontSize:12,color:isOverdue?THEME.bad:THEME.lead,fontWeight:600 }}>{isOverdue?"Просрочен":date}</div>
                     </div>
                   </div>
                 ))}
@@ -985,7 +985,7 @@ export function ManagerPage({ manager, onLogout }) {
                           <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
                             <div style={{ width:7,height:7,borderRadius:"50%",background:THEME.grad }}/>
                             <span style={{ fontWeight:700,color:T.text,fontSize:13 }}>{m.name}</span>
-                            {m.role==="team_lead"&&<span style={{ background:"rgba(20,184,166,.15)",color:"#14b8a6",fontSize:9,padding:"1px 5px",borderRadius:4,fontWeight:700 }}>ТЛ</span>}
+                            {m.role==="team_lead"&&<span className="badge-role" style={{ fontSize:9,padding:"1px 5px" }}>ТЛ</span>}
                           </div>
                           <div style={{ fontSize:11,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{mPlayers.length}</strong></div>
                           <div style={{ fontSize:11,color:T.muted }}>Депозитов: <strong style={{ color:T.text }}>{mActive.length}</strong></div>
@@ -1023,7 +1023,7 @@ export function ManagerPage({ manager, onLogout }) {
                               <span style={{ fontSize:11,color:plannedAvg<(plat.target_avg_check||0)-1?"#F4B740":T.sub,fontWeight:600 }}>план {plannedAvg.toFixed(1)}€</span>
                               <span style={{ fontSize:11,color:T.muted }}>/ {plat.target_avg_check}€</span>
                             </div>
-                            {needMore>0&&<div style={{ fontSize:11,color:"#f59e0b" }}>↑ {needMore.toFixed(0)}€</div>}
+                            {needMore>0&&<div style={{ fontSize:11,color:"#F4B740" }}>↑ {needMore.toFixed(0)}€</div>}
                             <div style={{ marginTop:1 }}>
                               <div style={{ display:"flex",justifyContent:"space-between",fontSize:10,color:T.muted,marginBottom:2 }}>
                                 <span>Капа</span><span>{allActive}{plat.cap?`/${plat.cap}`:""}</span>
@@ -1046,7 +1046,7 @@ export function ManagerPage({ manager, onLogout }) {
                         <option value="">Все статусы</option>
                         {STATUSES.map(s=><option key={s}>{s}</option>)}
                       </select>
-                      {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:"#f87171",padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
+                      {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
                     </div>
                     <PlayersTable
                       players={allPlayers.filter(p=>p&&p.id&&p.manager_id===viewing&&!hiddenPlatIds.has(p.platform_id)&&(geoPlatforms.some(gp=>gp.id===p.platform_id)||!p.platform_id)).filter(p=>{
@@ -1107,14 +1107,14 @@ export function ManagerPage({ manager, onLogout }) {
                       const rds=getPlayerRds(player.id);
                       const lastRd=rds[rds.length-1];
                       return(
-                        <tr key={player.id} className="row-hover" style={{ background:dark?"rgba(239,68,68,.04)":"rgba(239,68,68,.03)" }}>
+                        <tr key={player.id} className="row-hover" style={{ background:"rgba(242,112,110,.04)" }}>
                           <td style={{ ...S.td,fontWeight:600,color:T.text }}>{player.name}</td>
                           <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{plat?.name||"—"}</td>
                           {isTeamLead&&<td style={{ ...S.td,color:T.sub,fontSize:12 }}>{mgr?.name||"—"}</td>}
                           <td style={{ ...S.td,color:T.muted,fontSize:11,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&navigator.clipboard.writeText(player.sub18)}>{player.sub18||"—"}</td>
                           <td style={{ ...S.td,color:T.sub,fontSize:12 }}>{lastRd?`РД${lastRd.rd_number}: ${lastRd.amount}€`:"—"}</td>
-                          <td style={S.td}><span style={{ color:"#f87171",fontWeight:700,fontSize:12 }}>{overdueDate?(([y,m,d])=>`${d}.${m}.${y}`)(overdueDate.split("-")):"—"}</span></td>
-                          <td style={S.td}><span style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)",color:"#fca5a5",padding:"2px 8px",borderRadius:6,fontWeight:700,fontSize:11 }}>{daysDiff} дн.</span></td>
+                          <td style={S.td}><span style={{ color:THEME.bad,fontWeight:700,fontSize:12 }}>{overdueDate?(([y,m,d])=>`${d}.${m}.${y}`)(overdueDate.split("-")):"—"}</span></td>
+                          <td style={S.td}><span style={{ background:THEME.badSoft,color:THEME.bad,padding:"2px 8px",borderRadius:THEME.rChip,fontWeight:600,fontSize:11 }}>{daysDiff} дн.</span></td>
                           <td style={S.td}><StatusBadge status={player.status} dark={dark}/></td>
                         </tr>
                       );
@@ -1184,7 +1184,7 @@ export function ManagerPage({ manager, onLogout }) {
             <div style={{ display:"flex",flexDirection:"column",gap:10,marginBottom:18 }}>
               {[["is_active","Платформа активна"],["reset_monthly","Сбрасывать СЧ каждый месяц"]].map(([k,l])=>(
                 <label key={k} style={{ display:"flex",alignItems:"center",gap:8,cursor:"pointer" }}>
-                  <input type="checkbox" checked={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.checked}))} style={{ width:14,height:14,accentColor:"#6366f1",cursor:"pointer" }}/>
+                  <input type="checkbox" checked={pForm[k]} onChange={e=>setPForm(f=>({...f,[k]:e.target.checked}))} style={{ width:14,height:14,accentColor:"#A78BFA",cursor:"pointer" }}/>
                   <span style={{ color:T.sub,fontSize:13 }}>{l}</span>
                 </label>
               ))}
@@ -1339,7 +1339,7 @@ export function ManagerPage({ manager, onLogout }) {
                             </div>
                           :<span style={{ color:T.muted }}>—</span>}
                       </td>
-                      <td style={{ ...S.td,color:"#f59e0b",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"—"}</td>
+                      <td style={{ ...S.td,color:"#F4B740",fontWeight:700 }}>{need>0?need.toFixed(0)+"€":"—"}</td>
                     </tr>
                   );
                 }).filter(Boolean)}
@@ -1382,8 +1382,8 @@ export function ManagerPage({ manager, onLogout }) {
                       <div style={{ flex:1 }}/>
                       <span style={{ fontSize:12,color:T.muted }}>Лидов: <strong style={{ color:T.text }}>{active.length}</strong></span>
                       <span style={{ fontSize:12,color:T.muted }}>Сумма: <strong style={{ color:T.text }}>{total.toFixed(0)}€</strong></span>
-                      {overdue.length>0&&<span style={{ fontSize:12,color:"#fca5a5" }}>Просроч: <strong>{overdue.length}</strong></span>}
-                      {noPlanned.length>0&&<span style={{ fontSize:12,color:"#f59e0b" }}>Без план РД: <strong>{noPlanned.length}</strong></span>}
+                      {overdue.length>0&&<span style={{ fontSize:12,color:THEME.bad }}>Просроч: <strong>{overdue.length}</strong></span>}
+                      {noPlanned.length>0&&<span style={{ fontSize:12,color:THEME.warn }}>Без план РД: <strong>{noPlanned.length}</strong></span>}
                     </div>
                     {active.length>0&&(
                       <table style={{ width:"100%",borderCollapse:"collapse" }}>
@@ -1422,7 +1422,7 @@ export function ManagerPage({ manager, onLogout }) {
         const isToday=dayDate===P.todayStr();
         const byUser={}; crmUsers.forEach(u=>{ byUser[String(u.crm_user_id)]=u; });
         const byPres={}; crmPresence.forEach(u=>{ byPres[String(u.id)]=u; });
-        const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:T.muted}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); return { txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""), c:isTd?"#16a34a":days>=3?"#dc2626":T.sub }; };
+        const loginInfo=(m)=>{ const u=m.crm_user_id?byPres[String(m.crm_user_id)]:null; const ts=u&&u.last_logged_at; if(!ts) return {txt:"—",c:T.muted}; const d=new Date(ts); const days=Math.floor((now-d.getTime())/86400000); const isTd=d.toDateString()===new Date().toDateString(); return { txt:isTd?"сегодня "+d.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("ru",{day:"2-digit",month:"2-digit"})+(days>0?" ("+days+" дн)":""), c:isTd?THEME.ok:days>=3?THEME.bad:T.sub }; };
         const liveNow=(m)=>{ if(!isToday) return false; const u=m.crm_user_id?crmMsgs[String(m.crm_user_id)]:null; const ts=u&&u.last_outgoing_at; return ts&&((now-new Date(ts).getTime())/60000<=15); };
         const dayFor=(m)=>{ const ev=[...((m.crm_user_id&&dayData[String(m.crm_user_id)])||[]), ...((dayTracker[m.id])||[])]; return P.computeSessions(ev,20); };
         const crmName=(m)=>{ if(!m.crm_user_id) return null; const k=String(m.crm_user_id); return (byPres[k]&&byPres[k].full_name)||(byUser[k]&&byUser[k].crm_user_name)||k; };
@@ -1435,7 +1435,7 @@ export function ManagerPage({ manager, onLogout }) {
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
             <input type="date" value={dayDate} max={P.todayStr()} onChange={e=>{ setDayDate(e.target.value); setExpandedId(null); loadDay(e.target.value); }} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12,outline:"none",colorScheme:dark?"dark":"light" }}/>
             {!isToday&&<button onClick={()=>{ const t=P.todayStr(); setDayDate(t); loadDay(t); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12 }}>Сегодня</button>}
-            <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?T.border:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
+            <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?T.border:THEME.grad,border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
           </div>
           <p style={{ color:T.muted,fontSize:12,marginBottom:18 }}>«Отработал» — активное время (исходящие сообщения в CRM + действия в трекере), окно — от первой до последней активности, разрыв ≥20 мин = отсутствие. Нажми «Отсутствие», чтобы увидеть интервалы.</p>
           <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
@@ -1447,19 +1447,19 @@ export function ManagerPage({ manager, onLogout }) {
                   return (
                     <Fragment key={m.id}>
                     <tr>
-                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {live&&<span style={{ color:"#16a34a",fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
+                      <td style={{ ...S.td,fontWeight:600,color:T.text }}>{m.name} {live&&<span style={{ color:THEME.ok,fontSize:11,fontWeight:700,marginLeft:4 }}>● сейчас</span>} {m.role==="team_lead"&&<span style={{ color:T.muted,fontSize:11,fontWeight:400 }}>тимлид</span>}</td>
                       <td style={{ ...S.td,color:m.crm_user_id?T.sub:T.muted,fontSize:12 }}>{crmName(m)||"—"}</td>
-                      <td style={{ ...S.td,color:s.activeMin>0?"#16a34a":T.muted,fontWeight:700 }}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
+                      <td style={{ ...S.td,color:s.activeMin>0?THEME.ok:T.muted,fontWeight:700 }}>{s.count>0?P.fmtDur(s.activeMin):"—"}</td>
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(s.first)}</td>
                       <td style={{ ...S.td,color:T.sub }}>{P.fmtTime(s.last)}</td>
-                      <td style={{ ...S.td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#d97706":T.muted }} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
+                      <td style={{ ...S.td,cursor:s.gaps.length?"pointer":"default",color:s.gaps.length?"#F4B740":T.muted }} onClick={()=>s.gaps.length&&setExpandedId(open?null:m.id)}>{s.gaps.length?`${s.gaps.length} · ${P.fmtDur(s.idleMin)} ${open?"▲":"▼"}`:"—"}</td>
                       <td style={{ ...S.td,color:li.c,fontSize:12 }}>{li.txt}</td>
                     </tr>
                     {open&&s.gaps.length>0&&(
                       <tr><td colSpan={7} style={{ background:dark?"#15171f":"#f1f5f9",borderBottom:`1px solid ${T.border}`,padding:"10px 16px" }}>
                         <div style={{ color:T.sub,fontSize:12,marginBottom:6 }}>Интервалы отсутствия ({m.name}):</div>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
-                          {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(217,119,6,.1)",border:"1px solid #b45309",color:"#d97706",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
+                          {s.gaps.map((g,i)=><span key={i} style={{ background:"rgba(244,183,64,.1)",border:"1px solid rgba(244,183,64,.4)",color:"#F4B740",padding:"4px 10px",borderRadius:6,fontSize:12 }}>{P.fmtInterval(g)} · {P.fmtDur(g.min)}</span>)}
                         </div>
                       </td></tr>
                     )}
