@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../constants.js";
-import { THEME as T } from "../constants.js";
+import { supabase } from "../supabaseClient";
+import { THEME } from "../constants";
 
-const THEME = T;
-
-// Порог: платформа появляется если осталось ≤ THRESHOLD до капы
 const THRESHOLD = 5;
 
 export default function CapaView({ platforms=[], players=[], managers=[], myGeos=[], activeGeo, managerId, isTeamLead, showToast }) {
