@@ -36,7 +36,8 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
       ref={innerRef}
       style={{
         position: "fixed", zIndex: 99999,
-        top: pos.top, left: pos.left, width: pos.width,
+        top: pos.top, left: pos.left,
+        minWidth: pos.width, width: "max-content", maxWidth: "min(420px, 90vw)",
         maxHeight: pos.maxHeight, overflowY: "auto",
         background: "rgba(14,14,16,.97)",
         backdropFilter: "blur(24px) saturate(150%)",
@@ -112,6 +113,7 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
                 color: isSel ? "#fff" : "#c8c8d4",
                 background: isSel ? T.grad : "transparent",
                 fontWeight: isSel ? 600 : 400,
+                whiteSpace: "nowrap",
                 transition: "background .1s",
               }}
               onMouseEnter={e => { if(!isSel) e.currentTarget.style.background="rgba(255,255,255,.07)"; }}
