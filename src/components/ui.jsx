@@ -61,18 +61,19 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth }) {
 export function Select({ value, onChange, options=[], placeholder="—", style={}, disabled=false, minWidth }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const skipClose = useRef(false);
 
   // normalise options
   const opts = options.map(o => typeof o === "string" ? {value:o,label:o} : {value:o.value??o.id??"",label:o.label??o.name??""});
   const selected = opts.find(o => String(o.value) === String(value));
 
-  // close on outside click — portal is outside ref so we check both
+  // close on outside click — but not when clicking inside the portal dropdown
   useEffect(() => {
     if (!open) return;
     const fn = (e) => {
+      if (skipClose.current) { skipClose.current = false; return; }
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    // use capture so we get it before React's bubbling
     document.addEventListener("mousedown", fn, true);
     return () => document.removeEventListener("mousedown", fn, true);
   }, [open]);
@@ -102,7 +103,9 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
         {opts.map((o, i) => {
           const isSel = String(o.value) === String(value);
           return (
-            <div key={i} onClick={() => { onChange(o.value); setOpen(false); }}
+            <div key={i}
+              onMouseDown={() => { skipClose.current = true; }}
+              onClick={() => { onChange(o.value); setOpen(false); }}
               style={{
                 padding: "9px 14px", fontSize: 13, cursor: "pointer",
                 color: isSel ? "#fff" : T.sub,
@@ -149,6 +152,7 @@ function fmtDisplay(str) {
 
 export function DatePicker({ value, onChange, placeholder="Выбрать дату", style={}, disabled=false }) {
   const [open, setOpen] = useState(false);
+  const skipClose = useRef(false);
   const [view, setView] = useState(() => {
     const d = value ? toLocal(value) : new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -158,6 +162,7 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
   useEffect(() => {
     if (!open) return;
     const fn = (e) => {
+      if (skipClose.current) { skipClose.current = false; return; }
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", fn, true);
@@ -215,9 +220,9 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
         <div style={{ padding:"14px 14px 10px", minWidth:280 }}>
           {/* Month/year nav */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <button onClick={prevMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>←</button>
+            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={prevMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>←</button>
             <span style={{ color:T.text, fontSize:13, fontWeight:700 }}>{RU_MONTHS[month]} {year}</span>
-            <button onClick={nextMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>→</button>
+            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={nextMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>→</button>
           </div>
           {/* Day headers */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
@@ -233,7 +238,7 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
               const isSel = str===value;
               const isToday = str===today;
               return (
-                <div key={i} onClick={()=>selectDay(d)}
+                <div key={i} onMouseDown={()=>{ skipClose.current=true; }} onClick={()=>selectDay(d)}
                   style={{
                     textAlign:"center", padding:"6px 2px", borderRadius:6, fontSize:12, cursor:"pointer",
                     fontWeight: isSel||isToday ? 700 : 400,
@@ -250,8 +255,8 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
           </div>
           {/* Footer */}
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:8, borderTop:"1px solid rgba(255,255,255,.06)" }}>
-            {value && <button onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
-            <button onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
+            {value && <button onMouseDown={()=>{ skipClose.current=true; }} onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
+            <button onMouseDown={()=>{ skipClose.current=true; }} onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
           </div>
         </div>
       </Dropdown>
