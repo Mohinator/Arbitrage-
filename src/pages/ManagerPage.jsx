@@ -781,7 +781,7 @@ export function ManagerPage({ manager, onLogout }) {
           )}
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
             <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
-            <Select value={filterPlatform} onChange={v=>setFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={filterPlatform} onChange={v=>setFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
             <Select value={filterStatus} onChange={v=>setFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
           </div>
@@ -794,7 +794,7 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи и просрочки</h2>
-            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
               <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
@@ -885,7 +885,7 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи на сегодня</h2>
-            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
               <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
@@ -1025,7 +1025,7 @@ export function ManagerPage({ manager, onLogout }) {
                     </div>
                     <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
                       <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
-                      <Select value={teamFilterPlatform} onChange={v=>setTeamFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+                      <Select value={teamFilterPlatform} onChange={v=>setTeamFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
                       <Select value={teamFilterStatus} onChange={v=>setTeamFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
                       {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
                     </div>
@@ -1054,7 +1054,7 @@ export function ManagerPage({ manager, onLogout }) {
         <div style={{ padding:"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Просроченные РД</h2>
-            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
             {isTeamLead&&(
               <Select value={todoMgrFilter} onChange={v=>setTodoMgrFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все менеджеры"},...allManagers.map(m=>({value:m.id,label:m.name}))]}/>
             )}
@@ -1175,7 +1175,7 @@ export function ManagerPage({ manager, onLogout }) {
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Платформы</h2>
             <Select value={filterMonth} onChange={v=>setFilterMonth(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все месяцы"},...Array.from({length:12},(_,idx)=>({value:String(idx+1).padStart(2,"0"),label:["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"][idx]}))]} />
-            <Select value={statPlatform} onChange={v=>setStatPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...platforms.map(p=>({value:p.id,label:p.name}))]}/>
+            <Select value={statPlatform} onChange={v=>setStatPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatforms.map(p=>({value:p.id,label:p.name}))]}/>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20 }}>
             {[
