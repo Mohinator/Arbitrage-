@@ -330,7 +330,6 @@ export function ManagerPage({ manager, onLogout }) {
   const hiddenPlatIds = new Set(platforms.filter(p=>p&&p.is_hidden).map(p=>p.id));
   const geoPlatforms = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo&&!p.is_hidden) : platforms.filter(p=>!p.is_hidden);
   const geoPlatformsAll = activeGeo ? platforms.filter(p=>p.geo_id===activeGeo) : platforms.slice();
-  const addPlatforms = geoPlatforms.filter(p=>p.is_active!==false);
 
   const runSverka = async () => {
     setShowSverka(true); setSverkaLoading(true); setSverkaData(null);
@@ -644,7 +643,7 @@ export function ManagerPage({ manager, onLogout }) {
         <AddLeadForm
           dark={dark} T={T} IS={IS}
           leadForm={leadForm} setLeadForm={setLeadForm}
-          geoPlatforms={addPlatforms} myGeos={myGeos} activeGeo={activeGeo}
+          geoPlatforms={geoPlatformsAll} myGeos={myGeos} activeGeo={activeGeo}
           onSubmit={addLead} onClose={()=>setShowAddLead(false)}
         />
       )}
