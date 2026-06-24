@@ -223,9 +223,9 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
         <div style={{ padding:"14px 14px 10px", minWidth:280 }}>
           {/* Month/year nav */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <button onClick={prevMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>←</button>
+            <button onClick={prevMonth} style={{ background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"#F0F0F2",cursor:"pointer",width:28,height:28,borderRadius:7,fontSize:15,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center" }}>←</button>
             <span style={{ color:T.text, fontSize:13, fontWeight:700 }}>{RU_MONTHS[month]} {year}</span>
-            <button onClick={nextMonth} style={{ background:"none",border:"none",color:T.sub,cursor:"pointer",padding:"4px 8px",borderRadius:6 }}>→</button>
+            <button onClick={nextMonth} style={{ background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"#F0F0F2",cursor:"pointer",width:28,height:28,borderRadius:7,fontSize:15,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center" }}>→</button>
           </div>
           {/* Day headers */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
@@ -258,8 +258,8 @@ export function DatePicker({ value, onChange, placeholder="Выбрать дат
           </div>
           {/* Footer */}
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:8, borderTop:"1px solid rgba(255,255,255,.06)" }}>
-            {value && <button onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:T.muted,fontSize:11,cursor:"pointer" }}>Очистить</button>}
-            <button onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:11,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
+            {value && <button onClick={()=>{onChange("");setOpen(false);}} style={{ background:"none",border:"none",color:"#8B8B9A",fontSize:12,fontWeight:500,cursor:"pointer" }}>Очистить</button>}
+            <button onClick={goToday} style={{ background:"none",border:"none",color:"#A78BFA",fontSize:12,fontWeight:600,cursor:"pointer",marginLeft:"auto" }}>Сегодня</button>
           </div>
         </div>
       </Dropdown>
