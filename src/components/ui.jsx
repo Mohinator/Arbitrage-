@@ -17,10 +17,12 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
     const update = () => {
       const r = anchorRef.current?.getBoundingClientRect();
       if (!r) return;
-      const spaceBelow = window.innerHeight - r.bottom - 8;
-      const spaceAbove = r.top - 8;
-      const maxH = Math.min(260, Math.max(spaceBelow, spaceAbove));
-      const top = spaceBelow >= spaceAbove ? r.bottom + 4 : r.top - Math.min(260, spaceAbove) - 4;
+      const spaceBelow = window.innerHeight - r.bottom - 12;
+      const spaceAbove = r.top - 12;
+      const CAP = Math.min(440, window.innerHeight * 0.6); // потолок высоты списка
+      const openDown = spaceBelow >= spaceAbove;
+      const maxH = Math.min(CAP, openDown ? spaceBelow : spaceAbove);
+      const top = openDown ? r.bottom + 4 : Math.max(8, r.top - maxH - 4);
       setPos({ top, left: r.left, width: Math.max(r.width, minWidth || 0), maxHeight: maxH });
     };
     update();
