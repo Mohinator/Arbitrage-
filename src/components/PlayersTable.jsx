@@ -88,7 +88,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
     onReload && onReload();
   };
 
-  const [dateSortDir, setDateSortDir] = useState(null);
+  const [sort, setSort] = useState({ key: null, dir: null }); // key: "date" | "platform"
   // Сравнение по времени добавления: created_at, иначе sort_order
   const cmpAdded = (a, b, dir) => {
     const ta = a.created_at, tb = b.created_at;
@@ -97,19 +97,34 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
     if (sa !== sb) return dir==="asc" ? (sa-sb) : (sb-sa);
     return 0;
   };
-  // Сортировка: по дню, затем внутри дня по времени добавления — единое направление
-  const sortPlayers = (arr, dir) => [...arr].filter(p=>p&&p.id).sort((a,b)=>{
-    const da=a.date||"", db=b.date||"";
-    if (da!==db) return dir==="asc" ? (da<db?-1:1) : (da<db?1:-1);
-    return cmpAdded(a, b, dir);
-  });
-  const sortByDate = () => {
+  const platName = (p) => (platforms.find(pl=>pl.id===p.platform_id)?.name || "").toLowerCase();
+  // Единая сортировка: дата (день+время добавления) или платформа (имя), внутри — новые сверху
+  const sortPlayers = (arr, key, dir) => {
+    const base = [...arr].filter(p=>p&&p.id);
+    if (!key) return base;
+    return base.sort((a,b)=>{
+      if (key==="date") {
+        const da=a.date||"", db=b.date||"";
+        if (da!==db) return dir==="asc" ? (da<db?-1:1) : (da<db?1:-1);
+        return cmpAdded(a, b, dir);
+      }
+      if (key==="platform") {
+        const pa=platName(a), pb=platName(b);
+        if (pa!==pb) return dir==="asc" ? (pa<pb?-1:1) : (pa<pb?1:-1);
+        return cmpAdded(a, b, "desc"); // внутри платформы — новые сверху
+      }
+      return 0;
+    });
+  };
+  const toggleSort = (key) => {
     if (readonly) return;
-    const dir = dateSortDir==="desc" ? "asc" : "desc"; // первый клик → новые сверху
-    const sorted = sortPlayers(localPlayers, dir);
+    // первый клик: дата → desc (новые сверху), платформа → asc (А→Я); далее переключаем
+    const dir = sort.key===key ? (sort.dir==="asc" ? "desc" : "asc") : (key==="date" ? "desc" : "asc");
+    const sorted = sortPlayers(localPlayers, key, dir);
     setLocalPlayers(sorted);
-    setDateSortDir(dir);
-    showToast(dir==="asc" ? "Старые сверху" : "Новые сверху");
+    setSort({ key, dir });
+    if (key==="date") showToast(dir==="asc" ? "Старые сверху" : "Новые сверху");
+    else showToast(dir==="asc" ? "Платформы: А→Я" : "Платформы: Я→А");
     // Сохраняем порядок в фоне — без await и без onReload, чтобы не было дрожания
     Promise.all(sorted.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id))).catch(()=>{});
   };
@@ -117,9 +132,9 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   // При обновлении данных переприменяем активную сортировку (новые записи встают на место)
   useEffect(() => {
     const base = (players||[]).filter(p=>p&&p.id);
-    setLocalPlayers(dateSortDir ? sortPlayers(base, dateSortDir) : base);
+    setLocalPlayers(sort.key ? sortPlayers(base, sort.key, sort.dir) : base);
     // eslint-disable-next-line
-  }, [players, dateSortDir]);
+  }, [players, sort]);
 
   const today = new Date().toISOString().slice(0,10);
   const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
@@ -290,7 +305,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
     const wasRow = dragMode==="row";
     setDragIdx(null); setDragMode(null);
     if (!wasRow) return;
-    setDateSortDir(null); // ручной порядок перетаскиванием отменяет авто-сортировку
+    setSort({ key:null, dir:null }); // ручной порядок перетаскиванием отменяет авто-сортировку
     await Promise.all(localPlayers.filter(p=>p&&p.id).map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
   };
 
@@ -389,8 +404,8 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
               <th style={{ ...S.th,width:28,textAlign:"center" }}>#</th>
               {!readonly && <th style={{ ...S.th,width:20 }}></th>}
               {!readonly && <th style={{ ...S.th,width:24 }}></th>}
-              <th style={{ ...S.th, cursor:readonly?"default":"pointer", userSelect:"none" }} onClick={sortByDate} title={readonly?"":"Сортировать по дате"}>Дата {!readonly && <span style={{ opacity:0.6,fontSize:9 }}>{dateSortDir==="asc"?"▲":dateSortDir==="desc"?"▼":"⇅"}</span>}</th>
-              <th style={S.th}>Продукт</th>
+              <th style={{ ...S.th, cursor:readonly?"default":"pointer", userSelect:"none" }} onClick={()=>toggleSort("date")} title={readonly?"":"Сортировать по дате"}>Дата {!readonly && <span style={{ opacity:0.6,fontSize:9 }}>{sort.key==="date"?(sort.dir==="asc"?"▲":"▼"):"⇅"}</span>}</th>
+              <th style={{ ...S.th, cursor:readonly?"default":"pointer", userSelect:"none" }} onClick={()=>toggleSort("platform")} title={readonly?"":"Сортировать по платформе"}>Продукт {!readonly && <span style={{ opacity:0.6,fontSize:9 }}>{sort.key==="platform"?(sort.dir==="asc"?"▲":"▼"):"⇅"}</span>}</th>
               <th style={S.th}>Имя</th>
               <th style={S.th}>SUB18</th>
               <th style={S.th}>Деп</th>
