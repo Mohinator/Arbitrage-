@@ -89,21 +89,37 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   };
 
   const [dateSortDir, setDateSortDir] = useState(null);
-  const sortByDate = async () => {
+  // Сравнение по времени добавления: created_at, иначе sort_order
+  const cmpAdded = (a, b, dir) => {
+    const ta = a.created_at, tb = b.created_at;
+    if (ta && tb) { if (ta !== tb) return dir==="asc" ? (ta<tb?-1:1) : (ta<tb?1:-1); return 0; }
+    const sa = a.sort_order ?? 0, sb = b.sort_order ?? 0;
+    if (sa !== sb) return dir==="asc" ? (sa-sb) : (sb-sa);
+    return 0;
+  };
+  // Сортировка: по дню, затем внутри дня по времени добавления — единое направление
+  const sortPlayers = (arr, dir) => [...arr].filter(p=>p&&p.id).sort((a,b)=>{
+    const da=a.date||"", db=b.date||"";
+    if (da!==db) return dir==="asc" ? (da<db?-1:1) : (da<db?1:-1);
+    return cmpAdded(a, b, dir);
+  });
+  const sortByDate = () => {
     if (readonly) return;
-    const dir = dateSortDir==="asc" ? "desc" : "asc";
-    const sorted = [...localPlayers].filter(p=>p&&p.id).sort((a,b)=>{
-      const da=a.date||"", db=b.date||"";
-      if (da===db) return 0;
-      return dir==="asc" ? (da<db?-1:1) : (da<db?1:-1);
-    });
-    setLocalPlayers(sorted); setDateSortDir(dir);
-    await Promise.all(sorted.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
-    showToast(dir==="asc"?"Отсортировано: старые сверху":"Отсортировано: новые сверху");
-    onReload && onReload();
+    const dir = dateSortDir==="desc" ? "asc" : "desc"; // первый клик → новые сверху
+    const sorted = sortPlayers(localPlayers, dir);
+    setLocalPlayers(sorted);
+    setDateSortDir(dir);
+    showToast(dir==="asc" ? "Старые сверху" : "Новые сверху");
+    // Сохраняем порядок в фоне — без await и без onReload, чтобы не было дрожания
+    Promise.all(sorted.map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id))).catch(()=>{});
   };
 
-  useEffect(() => { setLocalPlayers((players||[]).filter(p=>p&&p.id)); }, [players]);
+  // При обновлении данных переприменяем активную сортировку (новые записи встают на место)
+  useEffect(() => {
+    const base = (players||[]).filter(p=>p&&p.id);
+    setLocalPlayers(dateSortDir ? sortPlayers(base, dateSortDir) : base);
+    // eslint-disable-next-line
+  }, [players, dateSortDir]);
 
   const today = new Date().toISOString().slice(0,10);
   const getPlayerRds = (pid) => (redeposits||[]).filter(r=>r&&r.player_id===pid).sort((a,b)=>a.rd_number-b.rd_number);
@@ -274,6 +290,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
     const wasRow = dragMode==="row";
     setDragIdx(null); setDragMode(null);
     if (!wasRow) return;
+    setDateSortDir(null); // ручной порядок перетаскиванием отменяет авто-сортировку
     await Promise.all(localPlayers.filter(p=>p&&p.id).map((p,i)=>supabase.from("players").update({sort_order:i}).eq("id",p.id)));
   };
 
