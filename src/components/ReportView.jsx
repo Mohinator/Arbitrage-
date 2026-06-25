@@ -20,8 +20,13 @@ export function ReportView({ players, redeposits, platforms, managers, geos, use
   const passMgr=(p)=> !fMgr || p.manager_id===fMgr;
   const playerById=(id)=>players.find(p=>p.id===id);
   const inPeriod=(d)=>{ if(!d) return false; if(period==="all") return true; if(period==="month") return d.slice(0,7)===fDate.slice(0,7); return d===fDate; };
+  // День, когда редеп РЕАЛЬНО внесён (created_at в локальной зоне), а не на какое число записан
+  const rdReportDate=(r)=>{
+    if(r&&r.created_at){ const d=new Date(r.created_at); if(!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+    return r?r.date:null;
+  };
   const dayPlayers=(players||[]).filter(p=>p&&inPeriod(p.date)&&passGeo(p)&&passMgr(p));
-  const dayRds=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&inPeriod(r.date)&&passGeo(p)&&passMgr(p); });
+  const dayRds=(redeposits||[]).filter(r=>{ const p=playerById(r.player_id); return p&&inPeriod(rdReportDate(r))&&passGeo(p)&&passMgr(p); });
   const mgrIds=[...new Set([...dayPlayers.map(p=>p.manager_id), ...dayRds.map(r=>playerById(r.player_id)?.manager_id)].filter(Boolean))];
   const rows=mgrIds.map(mid=>{
     const mp=dayPlayers.filter(p=>p.manager_id===mid);
