@@ -10,6 +10,7 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
   const setExcludedIds = _setExcludedIds || _setLocalExcluded;
   const [platformPopup, setPlatformPopup] = useState(null);
   const [dateEdit, setDateEdit] = useState(null);
+  const [depEdit, setDepEdit] = useState(null); // playerId редактируемого депозита
   const [statusPopup, setStatusPopup] = useState(null);
   const [colorPopup, setColorPopup] = useState(null);
   const [showEditRd, setShowEditRd] = useState(null);
@@ -469,7 +470,23 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                         <td style={{ ...S.td,color:T.muted,fontSize:10,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&copyToClipboard(player.sub18)} title="Скопировать">
                           <span style={{ borderBottom:`1px dashed ${T.border}` }}>{player.sub18||"—"}</span>
                         </td>
-                        <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums" }}>{player.deposit}€</td>
+                        <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums",cursor:readonly?"default":"pointer" }} onClick={readonly||depEdit===player.id?undefined:()=>setDepEdit(player.id)}>
+                          {depEdit===player.id&&!readonly
+                            ?<input autoFocus type="text" inputMode="numeric" defaultValue={player.deposit}
+                                onMouseDown={e=>e.stopPropagation()}
+                                onBlur={async e=>{
+                                  const val=Number(e.target.value);
+                                  setDepEdit(null);
+                                  if(e.target.value===""||isNaN(val)||val===Number(player.deposit)) return;
+                                  const prev=Number(player.deposit);
+                                  await supabase.from("players").update({deposit:val}).eq("id",player.id);
+                                  showToast("Депозит обновлён","ok",async()=>{ await supabase.from("players").update({deposit:prev}).eq("id",player.id); showToast("Отменено"); onReload(); });
+                                  onReload();
+                                }}
+                                onKeyDown={e=>{ if(e.key==="Enter") e.target.blur(); if(e.key==="Escape") setDepEdit(null); }}
+                                style={{ ...IS,fontSize:13,padding:"2px 6px",width:70,fontFamily:THEME.fontGilroy }}/>
+                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.deposit}€</span>}
+                        </td>
                         {rdArr.map((rd,i)=>{
                           const slot=i+1;
                           const isToday=rd&&!rd.isFact&&rd.date===today;
