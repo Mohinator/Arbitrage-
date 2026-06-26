@@ -19,9 +19,9 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
       if (!r) return;
       const spaceBelow = window.innerHeight - r.bottom - 12;
       const spaceAbove = r.top - 12;
-      const CAP = Math.min(440, window.innerHeight * 0.6); // потолок высоты списка
       const openDown = spaceBelow >= spaceAbove;
-      const maxH = Math.min(CAP, openDown ? spaceBelow : spaceAbove);
+      // используем всю доступную высоту в выбранном направлении (минус небольшой отступ)
+      const maxH = Math.max(180, (openDown ? spaceBelow : spaceAbove));
       const top = openDown ? r.bottom + 4 : Math.max(8, r.top - maxH - 4);
       setPos({ top, left: r.left, width: Math.max(r.width, minWidth || 0), maxHeight: maxH });
     };
@@ -36,6 +36,7 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
   return createPortal(
     <div
       ref={innerRef}
+      className="cui-dd"
       style={{
         position: "fixed", zIndex: 99999,
         top: pos.top, left: pos.left,
@@ -47,8 +48,9 @@ function Dropdown({ anchorRef, open, onClose, children, minWidth, innerRef }) {
         border: "1px solid rgba(255,255,255,.1)",
         borderRadius: 8,
         boxShadow: "0 20px 56px rgba(0,0,0,.7)",
-        overflow: "hidden",
         pointerEvents: "auto",
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(255,255,255,.2) transparent",
       }}
     >
       {children}
@@ -111,7 +113,7 @@ export function Select({ value, onChange, options=[], placeholder="—", style={
             <div key={i}
               onClick={() => { onChange(o.value); setOpen(false); }}
               style={{
-                padding: "10px 14px", fontSize: 13, cursor: "pointer",
+                padding: "8px 14px", fontSize: 13, cursor: "pointer",
                 color: isSel ? "#fff" : "#c8c8d4",
                 background: isSel ? T.grad : "transparent",
                 fontWeight: isSel ? 600 : 400,
