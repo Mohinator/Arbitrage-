@@ -470,22 +470,22 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
                         <td style={{ ...S.td,color:T.muted,fontSize:10,fontFamily:"monospace",cursor:"pointer" }} onClick={()=>player.sub18&&copyToClipboard(player.sub18)} title="Скопировать">
                           <span style={{ borderBottom:`1px dashed ${T.border}` }}>{player.sub18||"—"}</span>
                         </td>
-                        <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums",cursor:readonly?"default":"pointer" }} onClick={readonly||depEdit===player.id?undefined:()=>setDepEdit(player.id)}>
-                          {depEdit===player.id&&!readonly
-                            ?<input autoFocus type="text" inputMode="numeric" defaultValue={player.deposit}
-                                onMouseDown={e=>e.stopPropagation()}
-                                onBlur={async e=>{
-                                  const val=Number(e.target.value);
-                                  setDepEdit(null);
-                                  if(e.target.value===""||isNaN(val)||val===Number(player.deposit)) return;
-                                  const prev=Number(player.deposit);
-                                  await supabase.from("players").update({deposit:val}).eq("id",player.id);
-                                  showToast("Депозит обновлён","ok",async()=>{ await supabase.from("players").update({deposit:prev}).eq("id",player.id); showToast("Отменено"); onReload(); });
-                                  onReload();
-                                }}
-                                onKeyDown={e=>{ if(e.key==="Enter") e.target.blur(); if(e.key==="Escape") setDepEdit(null); }}
-                                style={{ ...IS,fontSize:13,padding:"2px 6px",width:70,fontFamily:THEME.fontGilroy }}/>
-                            :<span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}` }}>{player.deposit}€</span>}
+                        <td style={{ ...S.td,color:T.text,fontWeight:600,fontFamily:THEME.fontGilroy,fontVariantNumeric:"tabular-nums",cursor:readonly?"default":"pointer",position:"relative" }} onClick={readonly||depEdit===player.id?undefined:()=>setDepEdit(player.id)}>
+                          <span style={{ borderBottom:readonly?"none":`1px dashed ${T.border}`,visibility:depEdit===player.id&&!readonly?"hidden":"visible" }}>{player.deposit}€</span>
+                          {depEdit===player.id&&!readonly&&
+                            <input autoFocus type="text" inputMode="numeric" defaultValue={player.deposit}
+                              onMouseDown={e=>e.stopPropagation()}
+                              onBlur={async e=>{
+                                const val=Number(e.target.value);
+                                setDepEdit(null);
+                                if(e.target.value===""||isNaN(val)||val===Number(player.deposit)) return;
+                                const prev=Number(player.deposit);
+                                await supabase.from("players").update({deposit:val}).eq("id",player.id);
+                                showToast("Депозит обновлён","ok",async()=>{ await supabase.from("players").update({deposit:prev}).eq("id",player.id); showToast("Отменено"); onReload(); });
+                                onReload();
+                              }}
+                              onKeyDown={e=>{ if(e.key==="Enter") e.target.blur(); if(e.key==="Escape") setDepEdit(null); }}
+                              style={{ position:"absolute",top:"50%",left:8,transform:"translateY(-50%)",width:64,boxSizing:"border-box",background:T.surface,border:`1px solid ${T.border}`,color:T.text,fontSize:13,fontWeight:600,padding:"3px 6px",borderRadius:6,fontFamily:THEME.fontGilroy,outline:"none",zIndex:5 }}/>}
                         </td>
                         {rdArr.map((rd,i)=>{
                           const slot=i+1;
