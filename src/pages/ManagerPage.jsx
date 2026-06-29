@@ -29,6 +29,7 @@ function SbIcon({ name }) {
 export function ManagerPage({ manager, onLogout }) {
   const [dark, setDark] = useState(true);
   const [isMobile, setIsMobile] = useState(typeof window!=="undefined" && window.innerWidth<=640);
+  const [sbOpen, setSbOpen] = useState(false);
   useEffect(()=>{ const fn=()=>setIsMobile(window.innerWidth<=640); window.addEventListener("resize",fn); return ()=>window.removeEventListener("resize",fn); },[]);
   const [platforms, setPlatforms] = useState([]);
   const [allManagers, setAllManagers] = useState([]);
@@ -479,7 +480,9 @@ export function ManagerPage({ manager, onLogout }) {
     <div style={{ minHeight:"100vh",background:T.bg,color:T.text,fontFamily:"'Inter',sans-serif" }}>
       <style>{CSS}</style>
       {/* ── SIDEBAR v3 ── */}
-      <aside style={{ position:"fixed",top:0,left:0,bottom:0,width:60,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 0",zIndex:400 }}>
+      {/* затемнение фона при открытом drawer (моб.) */}
+      {isMobile&&sbOpen&&<div onClick={()=>setSbOpen(false)} style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.55)",backdropFilter:"blur(2px)",zIndex:399 }}/>}
+      <aside style={{ position:"fixed",top:0,left:0,bottom:0,width:60,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 0",zIndex:400,transform:isMobile&&!sbOpen?"translateX(-100%)":"translateX(0)",transition:"transform .25s ease",boxShadow:isMobile&&sbOpen?"8px 0 32px rgba(0,0,0,.5)":"none" }}>
         <div style={{ width:38,height:38,borderRadius:12,background:THEME.grad,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:18,boxShadow:"0 0 20px rgba(155,79,224,.4)",flexShrink:0 }}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="rgba(255,255,255,.95)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
@@ -507,7 +510,7 @@ export function ManagerPage({ manager, onLogout }) {
             const capaPlatCount = key==="capa" ? platforms.filter(p=>p.geo_id===activeGeo&&p.cap&&p.is_active!==false&&!p.is_hidden&&(p.cap-(capaPlayers.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))<=5&&(p.cap-(capaPlayers.filter(pl=>pl.platform_id===p.id&&pl.status==="Да").length))>=0).length : 0;
             const badge=(key==="tasks"&&overdueRds.length>0)?overdueRds.length:(key==="capa"&&capaPlatCount>0)?capaPlatCount:null;
             return (
-              <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); }} className="sb-tip" data-tip={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
+              <div key={key} onClick={()=>{ setTab(key); setViewingManager(null); setSbOpen(false); }} className="sb-tip" data-tip={label} style={{ position:"relative",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:11,color:on?"#fff":T.muted,background:on?THEME.gradSoft:"transparent",border:on?"1px solid rgba(155,79,224,.4)":"1px solid transparent",cursor:"pointer" }}>
                 <SbIcon name={key}/>
                 {badge&&<span style={{ position:"absolute",top:3,right:3,minWidth:14,height:14,padding:"0 3px",background:THEME.bad,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:THEME.fontGilroy,fontSize:8,fontWeight:700,color:"#fff" }}>{badge}</span>}
               </div>
@@ -522,7 +525,7 @@ export function ManagerPage({ manager, onLogout }) {
         </div>
       </aside>
       {/* ── контент со сдвигом под сайдбар ── */}
-      <div style={{ marginLeft:60 }}>
+      <div style={{ marginLeft:isMobile?0:60 }}>
       {toast&&<Toast msg={toast.msg} type={toast.type} onUndo={toast.onUndo}/>}
 
       {showSverka&&(
@@ -691,6 +694,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* ── TOPBAR v3 ── */}
       <header style={{ position:"sticky",top:0,zIndex:300,minHeight:52,background:T.hdrBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",padding:isMobile?"8px 10px":"0 20px",gap:isMobile?6:10,flexWrap:isMobile?"wrap":"nowrap" }}>
+        {isMobile&&<button onClick={()=>setSbOpen(o=>!o)} aria-label="Меню" style={{ width:36,height:36,display:"inline-flex",alignItems:"center",justifyContent:"center",borderRadius:9,background:THEME.gradSoft,border:"1px solid rgba(155,79,224,.35)",color:"#c8a8ff",cursor:"pointer",flexShrink:0 }}><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>}
         <span style={{ fontSize:11,fontWeight:700,fontFamily:THEME.fontGilroy,background:THEME.gradSoft,color:"#c8a8ff",padding:"3px 9px",borderRadius:50,letterSpacing:".05em",border:"1px solid rgba(155,79,224,.3)" }}>{isTeamLead?"ТИМ ЛИД":"МЕНЕДЖЕР"}</span>
         {!isMobile && <span style={{ color:T.muted,fontSize:13 }}>/ <b style={{ color:T.sub,fontWeight:500 }}>{manager.name}</b></span>}
         <div style={{ flex:1 }}/>
