@@ -1,14 +1,17 @@
+import { useState, useEffect } from "react";
 import { Select, DatePicker } from "./ui";
 import { STATUSES } from "../constants";
 import { StatusBadge } from "./common";
 
 export function AddLeadForm({ dark, T, IS, leadForm, setLeadForm, geoPlatforms, myGeos, activeGeo, onSubmit, onClose }) {
+  const [isMobile, setIsMobile] = useState(typeof window!=="undefined" && window.innerWidth<=640);
+  useEffect(()=>{ const fn=()=>setIsMobile(window.innerWidth<=640); window.addEventListener("resize",fn); return ()=>window.removeEventListener("resize",fn); },[]);
   const isPoland = myGeos.find(g=>g.id===activeGeo)?.code==='PL';
   return (
     <div style={{ position:"fixed",inset:0,background:"transparent",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="slide-in" style={{ background:"rgba(16,16,18,.25)",backdropFilter:"blur(24px) saturate(150%)",WebkitBackdropFilter:"blur(24px) saturate(150%)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:24,width:"100%",maxWidth:500,boxShadow:"0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)" }}>
         <h3 style={{ color:T.text,marginBottom:18,fontSize:15,fontWeight:700 }}>Добавить лида</h3>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12 }}>
+        <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12 }}>
           {[["Дата","date","date"],["Продукт","platform_id","select"],["Имя лида","name","text"],["SUB18","sub18","text"],["Депозит (€)","deposit","number"]].map(([l,k,t])=>(
             <div key={k} style={{ gridColumn:k==="name"?"1/-1":undefined }}>
               <label style={{ display:"block",fontSize:10,color:T.muted,marginBottom:4,fontWeight:700,textTransform:"uppercase" }}>{l}</label>

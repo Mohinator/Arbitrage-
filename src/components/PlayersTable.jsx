@@ -397,8 +397,8 @@ export function PlayersTable({ players, redeposits, plannedRds, platforms, manag
         </div>
       )}
 
-      <div style={{ overflowX:"auto",border:`1px solid ${T.border}`,borderRadius:18,background:T.surface }}>
-        <table style={{ width:"100%",borderCollapse:"collapse" }}>
+      <div style={{ overflowX:"auto",WebkitOverflowScrolling:"touch",border:`1px solid ${T.border}`,borderRadius:18,background:T.surface }}>
+        <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
           <thead>
             <tr><th style={{ ...S.th,padding:"6px 8px" }} colSpan={(readonly?0:2)+18+(isPoland?1:0)}>ЛИДЫ{readonly?" (только просмотр)":""}</th></tr>
             <tr>

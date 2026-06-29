@@ -28,6 +28,8 @@ function SbIcon({ name }) {
 
 export function ManagerPage({ manager, onLogout }) {
   const [dark, setDark] = useState(true);
+  const [isMobile, setIsMobile] = useState(typeof window!=="undefined" && window.innerWidth<=640);
+  useEffect(()=>{ const fn=()=>setIsMobile(window.innerWidth<=640); window.addEventListener("resize",fn); return ()=>window.removeEventListener("resize",fn); },[]);
   const [platforms, setPlatforms] = useState([]);
   const [allManagers, setAllManagers] = useState([]);
   const [geos, setGeos] = useState([]);
@@ -688,18 +690,18 @@ export function ManagerPage({ manager, onLogout }) {
       )}
 
       {/* ── TOPBAR v3 ── */}
-      <header style={{ position:"sticky",top:0,zIndex:300,height:52,background:T.hdrBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",padding:"0 20px",gap:10 }}>
+      <header style={{ position:"sticky",top:0,zIndex:300,minHeight:52,background:T.hdrBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",padding:isMobile?"8px 10px":"0 20px",gap:isMobile?6:10,flexWrap:isMobile?"wrap":"nowrap" }}>
         <span style={{ fontSize:11,fontWeight:700,fontFamily:THEME.fontGilroy,background:THEME.gradSoft,color:"#c8a8ff",padding:"3px 9px",borderRadius:50,letterSpacing:".05em",border:"1px solid rgba(155,79,224,.3)" }}>{isTeamLead?"ТИМ ЛИД":"МЕНЕДЖЕР"}</span>
-        <span style={{ color:T.muted,fontSize:13 }}>/ <b style={{ color:T.sub,fontWeight:500 }}>{manager.name}</b></span>
+        {!isMobile && <span style={{ color:T.muted,fontSize:13 }}>/ <b style={{ color:T.sub,fontWeight:500 }}>{manager.name}</b></span>}
         <div style={{ flex:1 }}/>
-        <button onClick={()=>{ genAutomation(); setShowAutomation(true); }} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>Автоматизация</button>
-        <button onClick={runSverka} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 16px",fontSize:13 }}>Сверка</button>
-        <button onClick={()=>setShowAddLead(true)} className="btn-p" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:"0 18px",fontSize:13 }}>+ Добавить лида</button>
+        <button onClick={()=>{ genAutomation(); setShowAutomation(true); }} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:isMobile?"0 11px":"0 16px",fontSize:13 }}>{isMobile?"Авто":"Автоматизация"}</button>
+        <button onClick={runSverka} className="btn-g" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:isMobile?"0 11px":"0 16px",fontSize:13 }}>Сверка</button>
+        <button onClick={()=>setShowAddLead(true)} className="btn-p" style={{ height:36,display:"inline-flex",alignItems:"center",gap:7,padding:isMobile?"0 13px":"0 18px",fontSize:13 }}>{isMobile?"+ Лид":"+ Добавить лида"}</button>
       </header>
 
       {/* Sticky platform panel - shown always on main tab */}
       {tab==="main"&&(
-        <div style={{ position:"sticky",top:52,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"8px 20px" }}>
+        <div style={{ position:"sticky",top:52,zIndex:200,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:isMobile?"8px 8px":"8px 20px" }}>
           <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch" }}>
             {geoPlatforms.filter(p=>pinnedPlatforms.includes(p.id)).map(plat=>{
               const allActive=allPlayers.filter(p=>p&&p.platform_id===plat.id&&p.status==="Да");
@@ -764,7 +766,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* MAIN */}
       {tab==="main"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           {todayRds.length>0&&(
             <div style={{ background:T.alertBg,border:`1px solid ${T.alertBorder}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap" }}>
               <span className="alert-pulse" style={{ fontSize:18 }}></span>
@@ -780,7 +782,7 @@ export function ManagerPage({ manager, onLogout }) {
             </div>
           )}
           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
-            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
+            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:isMobile?"100%":220,flex:isMobile?"1 1 100%":undefined }}/>
             <Select value={filterPlatform} onChange={v=>setFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatformsAll.map(p=>({value:p.id,label:p.name}))]}/>
             <Select value={filterStatus} onChange={v=>setFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
             <span style={{ color:T.muted,fontSize:12,marginLeft:"auto" }}>Показано: <strong style={{ color:T.text }}>{filteredPlayers.length}</strong></span>
@@ -791,7 +793,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* TASKS + OVERDUE (объединённая вкладка) */}
       {tab==="tasks"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи и просрочки</h2>
             <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatformsAll.map(p=>({value:p.id,label:p.name}))]}/>
@@ -882,7 +884,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* TODO (legacy, unused) */}
       {false&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Задачи на сегодня</h2>
             <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatformsAll.map(p=>({value:p.id,label:p.name}))]}/>
@@ -947,7 +949,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* TEAM */}
       {tab==="team"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <h2 style={{ color:T.text,marginBottom:16,fontSize:18 }}>Команда</h2>
           {myGeos.length===0&&<p style={{ color:T.muted,fontSize:13 }}>Вы не назначены ни на одно гео. Обратитесь к администратору.</p>}
           {myGeos.filter(geo=>geo&&geo.id===activeGeo).map(geo=>{
@@ -1024,7 +1026,7 @@ export function ManagerPage({ manager, onLogout }) {
                       }).filter(Boolean)}
                     </div>
                     <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap" }}>
-                      <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:220 }}/>
+                      <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Поиск по имени / SUB18" style={{ ...IS,width:isMobile?"100%":220,flex:isMobile?"1 1 100%":undefined }}/>
                       <Select value={teamFilterPlatform} onChange={v=>setTeamFilterPlatform(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatformsAll.map(p=>({value:p.id,label:p.name}))]}/>
                       <Select value={teamFilterStatus} onChange={v=>setTeamFilterStatus(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"7px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все статусы"},...STATUSES.map(s=>({value:s,label:s}))]}/>
                       {(teamSearch||teamFilterPlatform||teamFilterStatus)&&<button onClick={()=>{ setTeamSearch(""); setTeamFilterPlatform(""); setTeamFilterStatus(""); }} style={{ background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"7px 12px",borderRadius:7,cursor:"pointer",fontSize:12 }}>Сбросить</button>}
@@ -1051,7 +1053,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* OVERDUE */}
       {false&&( /* overdue legacy */
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Просроченные РД</h2>
             <Select value={todoPlatFilter} onChange={v=>setTodoPlatFilter(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"5px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все платформы"},...geoPlatformsAll.map(p=>({value:p.id,label:p.name}))]}/>
@@ -1104,7 +1106,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* REPORT */}
       {tab==="report"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           {(()=>{
             const myGeoIds=new Set(myGeos.map(g=>g.id));
             const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
@@ -1117,7 +1119,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* HISTORY */}
       {tab==="history"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           {(()=>{
             const myGeoIds=new Set(myGeos.map(g=>g.id));
             const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
@@ -1171,7 +1173,7 @@ export function ManagerPage({ manager, onLogout }) {
 
       {/* PLATFORMS */}
       {tab==="platforms"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap" }}>
             <h2 style={{ color:T.text,fontSize:18,margin:0 }}>Платформы</h2>
             <Select value={filterMonth} onChange={v=>setFilterMonth(v)} style={{ background:T.surface,border:`1px solid ${T.border}`,color:T.sub,padding:"6px 10px",borderRadius:7,fontSize:12 }} options={[{value:"",label:"Все месяцы"},...Array.from({length:12},(_,idx)=>({value:String(idx+1).padStart(2,"0"),label:["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"][idx]}))]} />
@@ -1285,7 +1287,7 @@ export function ManagerPage({ manager, onLogout }) {
       )}
 
       {tab==="overview"&&(
-        <div style={{ padding:"16px 20px" }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px" }}>
           <h2 style={{ color:T.text,marginBottom:20,fontSize:22,fontWeight:800,fontFamily:THEME.fontGilroy }}>Сводка</h2>
 
           {/* Platform summary - admin style */}
@@ -1409,7 +1411,7 @@ export function ManagerPage({ manager, onLogout }) {
         const accessibleMgrIds=new Set(userGeos.filter(ug=>myGeoIds.has(ug.geo_id)).map(ug=>ug.manager_id));
         const teamMgrs=allManagers.filter(m=>accessibleMgrIds.has(m.id));
         return (
-        <div style={{ padding:"16px 20px",maxWidth:1040 }}>
+        <div style={{ padding:isMobile?"10px 8px":"16px 20px",maxWidth:1040 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:6,flexWrap:"wrap" }}>
             <h2 style={{color:T.text,margin:0,fontSize:18}}>Активность менеджеров</h2>
             <DatePicker value={dayDate} onChange={v=>{setDayDate(v);setExpandedId&&setExpandedId(null);loadDay(v);}} style={{ background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,padding:"6px 10px",borderRadius:8,fontSize:12 }}/>
