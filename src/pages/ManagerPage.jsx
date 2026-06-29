@@ -1292,7 +1292,7 @@ export function ManagerPage({ manager, onLogout }) {
 
           {/* Platform summary - admin style */}
           <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700,fontFamily:THEME.fontGilroy }}>Общий СЧ по платформам</h3>
-          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
+          <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto",WebkitOverflowScrolling:"touch",marginBottom:28 }}>
             <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
               <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
