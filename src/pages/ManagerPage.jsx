@@ -657,7 +657,7 @@ export function ManagerPage({ manager, onLogout }) {
             <p style={{ color:T.muted,fontSize:13,marginBottom:18 }}>РД распределены для достижения целевого СЧ платформы</p>
             {automationPreview.length===0?<p style={{ color:T.muted }}>Нет лидов для автоматизации</p>:(
               <div style={{ border:`1px solid ${T.border}`,borderRadius:8,overflow:"hidden",marginBottom:18,overflowX:"auto" }}>
-                <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
                   <thead><tr style={{ background:T.thBg }}>{["Лид","Платформа","РД1","РД2","РД3","РД4","РД5","РД6","РД7","РД8","РД9","СЧ"].map(h=><th key={h} style={{ padding:"7px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:T.muted,textTransform:"uppercase",borderBottom:`1px solid ${T.border}` }}>{h}</th>)}</tr></thead>
                   <tbody>
                     {automationPreview.map(item=>{
@@ -1072,8 +1072,8 @@ export function ManagerPage({ manager, onLogout }) {
             }).sort((a,b)=>new Date(overdueDatesByPlayer[a.id])-new Date(overdueDatesByPlayer[b.id]));
             if(filtered.length===0) return <div style={{ textAlign:"center",padding:40,color:T.muted }}>Нет просроченных РД</div>;
             return(
-              <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-                <table style={{ width:"100%",borderCollapse:"collapse" }}>
+              <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
+                <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
                   <thead><tr>{["Лид","Платформа",...(isTeamLead?["Менеджер"]:[]),"SUB18","Последний РД","Просроченная дата","Дней","Статус"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                   <tbody>
                     {filtered.map(player=>{
@@ -1217,8 +1217,8 @@ export function ManagerPage({ manager, onLogout }) {
                   {isTeamLead&&<button onClick={()=>setShowGeoForm(true)} className="btn-a" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Гео</button>}
                   {isTeamLead&&<button onClick={()=>{ setPForm(f=>({...f,geo_id:geo.id})); openPlatformForm(); }} className="btn-p" style={{ padding:"6px 14px",fontSize:13,borderRadius:8,height:34 }}>+ Добавить</button>}
                 </div>
-                <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
-                  <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
+                  <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
                     <thead><tr>{["Платформа","Дата","Мин. деп","BLIK деп","Цель СЧ","Капа","Лидов","Сумма","СЧ факт","BLIK","Нужно добрать","Статус",...(isTeamLead?["Действия"]:[])].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
                     <tbody>
                       {geoPlatStats.length===0&&<tr><td colSpan={isTeamLead?13:12} style={{ padding:18,textAlign:"center",color:T.muted,fontSize:13 }}>Нет платформ</td></tr>}
@@ -1293,7 +1293,7 @@ export function ManagerPage({ manager, onLogout }) {
           {/* Platform summary - admin style */}
           <h3 style={{ color:T.text,fontSize:14,marginBottom:12,fontWeight:700,fontFamily:THEME.fontGilroy }}>Общий СЧ по платформам</h3>
           <div style={{ border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",marginBottom:28 }}>
-            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+            <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
               <thead><tr>{["Платформа","Лидов","Сумма","СЧ факт","СЧ цель","Капа","Нужно добрать"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
                 {geoPlatforms.map(plat=>{
@@ -1354,7 +1354,7 @@ export function ManagerPage({ manager, onLogout }) {
                 const avg=active.length>0?total/active.length:0;
                 const mgrGeos=userGeos.filter(ug=>ug.manager_id===mgr.id).map(ug=>geos.find(g=>g.id===ug.geo_id)).filter(Boolean);
                 return(
-                  <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden" }}>
+                  <div key={mgr.id} style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:active.length>0?`1px solid ${T.border}`:"none" }}>
                       <div style={{ width:7,height:7,borderRadius:"50%",background:THEME.grad,flexShrink:0 }}/>
                       <span style={{ fontWeight:700,color:T.text,fontSize:14 }}>{mgr.name}</span>
@@ -1367,7 +1367,7 @@ export function ManagerPage({ manager, onLogout }) {
                       {noPlanned.length>0&&<span style={{ fontSize:12,color:THEME.warn }}>Без план РД: <strong>{noPlanned.length}</strong></span>}
                     </div>
                     {active.length>0&&(
-                      <table style={{ width:"100%",borderCollapse:"collapse" }}>
+                      <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
                         <thead><tr>{["Платформа","Лидов","Сумма","СЧ цель","СЧ факт"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
                         <tbody>
                           {geoPlatforms.map(plat=>{
@@ -1419,8 +1419,8 @@ export function ManagerPage({ manager, onLogout }) {
             <button onClick={()=>{ loadCrmPresence(); loadCrmMsgs(); loadDay(); }} disabled={dayBusy} style={{ background:dayBusy?T.border:THEME.grad,border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:dayBusy?"default":"pointer",fontSize:12,fontWeight:700 }}>{dayBusy?"Считаю…":"Обновить"}</button>
           </div>
           <p style={{ color:T.muted,fontSize:12,marginBottom:18 }}>«Отработал» — активное время (исходящие сообщения в CRM + действия в трекере), окно — от первой до последней активности, разрыв ≥20 мин = отсутствие. Нажми «Отсутствие», чтобы увидеть интервалы.</p>
-          <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden" }}>
-            <table style={{ width:"100%",borderCollapse:"collapse" }}>
+          <div style={{ background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
+            <table style={{ width:"100%",minWidth:"max-content",borderCollapse:"collapse" }}>
               <thead><tr>{["Менеджер","CRM","Отработал","Первая","Последняя","Отсутствие","Вход в CRM"].map(h=><th key={h} style={{ ...S.th,fontSize:10 }}>{h}</th>)}</tr></thead>
               <tbody>
                 {teamMgrs.map(m=>{
